@@ -103,7 +103,10 @@ Existing classic-mode installs need SDL_image's JPEG feature for help artwork,
 OpenSSL, `vcpkg install openssl:x64-windows --classic`.
 
 vcpkg can live anywhere — just point `-DCMAKE_TOOLCHAIN_FILE` at wherever you
-put it in the next step. `vcpkg integrate install` is optional.
+put it in the next step. `vcpkg integrate install` is optional. When you update
+the dependencies, move the baseline deliberately and check the DLL names the
+build deploys beside the executable against the client's startup whitelist
+([build commands](docs/build/build-commands.md#the-windows-presets)).
 
 The [browser and WebSocket guide](docs/browser/browser-client.md) covers the
 WebAssembly / WebGL 2 build, asset packaging, gateway configuration and browser
@@ -168,12 +171,19 @@ required test is registered:
 ./tools/ci/verify-windows.ps1 -ConfigurePreset windows-asan -BuildPresets windows-asan
 ```
 
-It builds every configured target, runs the whole suite and checks the warning
-budget; logs go under `build/verification/`. It needs no game data and does not
-launch the game. [Build commands](docs/build/build-commands.md) has the other
-presets (`windows-release`, `windows-asan`, the `windows-clang` ISO C++ check),
-what to do when PowerShell refuses to run scripts, and local preset overrides.
-CI runs these scripts on pushes to `master` and on manual dispatch, never on a
+The script builds every configured target, runs the whole suite and checks the
+warning budget; logs go under `build/verification/`. It needs no game data and
+does not launch the game. If PowerShell reports that running scripts is
+disabled, run it in a child process with the policy overridden for that process
+only:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& ./tools/ci/verify-windows.ps1 -ConfigurePreset windows -BuildPresets windows-debug,windows-release"
+```
+
+[Build commands](docs/build/build-commands.md) has the other presets
+(`windows-release`, `windows-asan`, the `windows-clang` ISO C++ check) and local
+preset overrides. CI runs these scripts on pushes to `master` and on manual dispatch, never on a
 pull request ([CI](docs/build/ci.md)).
 
 ### 5. AddressSanitizer (optional)
@@ -217,9 +227,16 @@ There are two, and neither subsumes the other: `build/vs2022` has `/RTC1`
 and stack overflows, use-after-free, double free). Use the ordinary tree day to
 day, and switch to the sanitized one when you have a memory error to chase — a
 wild pointer, a crash inside the allocator, damage that shows up far from its
-cause. Configure prints which checks are on; exactly one of the two lines should
-appear. [Build commands](docs/build/build-commands.md#the-two-windows-debug-trees)
-has the full table and the lines to look for.
+cause. Configure prints which checks are on; exactly one of these two lines
+should appear on a Debug configure, and if neither does, the flags are wrong:
+
+```
+-- Debug runtime checks: /RTC1 (uninitialised locals, stack frames)
+-- AddressSanitizer enabled (/fsanitize=address)
+```
+
+[Build commands](docs/build/build-commands.md#the-two-windows-debug-trees) has
+the full table.
 
 ### Never commit `build/`
 
@@ -257,7 +274,7 @@ step 3:
 Remove-Item -Recurse -Force build\vs2022
 ```
 
-**`find_package(SDL2 REQUIRED)` fails / configure stops at `CMakeLists.txt:90`**
+**`find_package(SDL2 REQUIRED)` fails**
 
 Either vcpkg packages are missing (step 2), or the toolchain file wasn't passed
 on the first configure. Delete `build/vs2022` and redo step 3 — adding the
@@ -454,7 +471,21 @@ Docker, `tools/linux/Dockerfile` is the same environment as an image;
 commands, and the x86_64 run an Apple Silicon Mac needs for the warning check.
 
 The executable is `build/presets/linux/bin/DarkEden`, run with the `Data/`
-tree beside it as in [Point the build at the data](#point-the-build-at-the-data).
+tree beside it. The equivalent of the junctions and the copy in
+[Point the build at the data](#point-the-build-at-the-data) is two symbolic
+links and a one-time copy of the English UI text (written from the code, not
+yet run against the game data). `src` must be an absolute path: a relative one
+is resolved against `$dest`, and the link then points at nothing. `-sfn`
+replaces a link from an earlier run; plain `ln -s` on an existing link to a
+directory follows it and creates a link back to itself inside the game data.
+
+```bash
+dest=build/presets/linux/bin
+src=/path/to/your/unpacked/darkeden
+ln -sfn "$src/Data"    "$dest/Data"
+ln -sfn "$src/UserSet" "$dest/UserSet"
+cp -R tools/i18n/ui-text/Data/. "$src/Data/"  # the English UI text, once
+```
 
 ## Build on macOS
 
@@ -492,23 +523,9 @@ differently: under Apple Clang 21 the build and the tests pass while the budget
 step reports more warnings than CI's ([the macOS notes](docs/build/linux-and-macos.md#status-on-macos)).
 
 The executable is `build/presets/macos/bin/DarkEden`, run with the `Data/`
-tree beside it as on Linux. The macOS equivalent of the junctions and the copy
-in *Point the build at the data* is two symbolic links and a one-time copy
-(written from the code, not yet run against the game data). `src` must be an
-absolute path: a relative one is resolved against `$dest`, and the link then
-points at nothing. `-sfn` replaces a link from an earlier run; plain `ln -s` on
-an existing link to a directory follows it and creates a link back to itself
-inside the game data.
-
-```bash
-dest=build/presets/macos/bin
-src=/path/to/your/unpacked/darkeden
-ln -sfn "$src/Data"    "$dest/Data"
-ln -sfn "$src/UserSet" "$dest/UserSet"
-cp -R tools/i18n/ui-text/Data/. "$src/Data/"  # the English UI text, once
-```
-
-Then launch it (the launcher arguments in *Launch* work the same way):
+tree beside it: link the data and copy the English UI text with the
+[Linux recipe](#build-on-linux)'s commands, setting
+`dest=build/presets/macos/bin`. Then launch it (the launcher arguments in *Launch* work the same way):
 
 ```bash
 ./build/presets/macos/bin/DarkEden

@@ -2,6 +2,13 @@
 
 ## 2026-10-23
 
+* **Update**: the review of the `CLAUDE.md` rewrite. The path-mismatch comment in
+  `CMakeLists.txt` now points at the [restructuring plan](reviews/RESTRUCTURING.md)'s task 4.0,
+  not the LNK4217 note; the three code comments that cited `CLAUDE.md`'s *Traps* point at
+  [client traps](architecture/client-traps.md); the headless Linux run, the `<SDL.h>` rule and
+  the 2026-09-30 macOS ctest run are stated once, in [Linux and macOS](build/linux-and-macos.md);
+  the line-ending rule says endings vary by file ([source style](process/source-style.md)); and
+  the README's link-and-copy data recipe moves from its macOS section to its Linux one.
 * **Update**: `README.md` is trimmed to the path from a clone to a running client. Its Windows
   presets and `windows-clang` detail, the sanitized tree's build steps and the full Debug-tree
   table now live in [build commands](build/build-commands.md); the Docker recipes and the Linux and
