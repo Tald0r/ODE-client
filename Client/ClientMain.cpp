@@ -1433,10 +1433,10 @@ int ClientMain(char* lpCmdLine, int nCmdShow)
 		else
 			g_bFullScreen = false;
 	// Upstream forced windowed mode here under #ifdef _DEBUG - which is live
-	// in every Debug build (MSVC defines _DEBUG under /MDd, see CLAUDE.md).
-	// Removed so the fullscreen command-line flag ('2'/'4' as the last
-	// character) works in Debug builds too; fullscreen is a borderless
-	// desktop-size window, so there is nothing debugger-hostile about it.
+	// in every Debug build (MSVC defines _DEBUG under /MDd, see
+	// docs/architecture/client-traps.md). Removed so the fullscreen flag
+	// ('2'/'4' as the last character) works in Debug builds too; fullscreen
+	// is a borderless desktop-size window, nothing debugger-hostile in it.
 	if (!CheckTerriblePatch())
 	{
 		ReleaseAllObjects();

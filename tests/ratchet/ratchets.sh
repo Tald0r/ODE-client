@@ -1984,7 +1984,7 @@ fi
 # call is snprintf(dst, sizeof(dst), ...) or an exact-length memcpy,
 # checked by hand, never by sizeof() on a pointer. Read with -a,
 # because VS_UI_GameCommon.cpp carries NUL bytes and a plain grep
-# stops at the first one (CLAUDE.md, Traps).
+# stops at the first one (docs/architecture/client-traps.md).
 #
 # What it cannot see: vsprintf, lstrcpy/lstrcat, strncpy, or a copy
 # spelled any other way; snprintf never matched. The old MinTr/DebugInfo

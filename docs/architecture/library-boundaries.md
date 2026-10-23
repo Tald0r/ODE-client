@@ -39,9 +39,10 @@ count of translation units compiled directly into `DarkEden` at **1**
 ([ratchets](../testing/ratchets.md)).
 
 **New library targets use explicit source lists, never `file(GLOB)`.** An explicit list makes
-membership reviewable and is what the ratchet script and the include checker parse. The globs that
-remain use `CONFIGURE_DEPENDS`, so a build re-globs on its own, but a direct MSBuild target can need
-a retry after a source-list change. After moving files, reconfigure both Debug trees.
+membership reviewable and is what the ratchet script and the include checker parse. The source
+globs that remain use `CONFIGURE_DEPENDS`, so a build re-globs on its own, but a direct MSBuild
+target can need a retry after a source-list change. After moving files, reconfigure both Debug
+trees.
 
 For a change, first identify the target that owns the implementation. Library code can be linked
 by unit tests; executable-only logic needs an existing exemption in the
@@ -53,13 +54,15 @@ prove that a component links independently: a [link proof](../testing/link-proof
 
 | Path | What |
 |---|---|
-| `Client/` | game logic (`GameMain`, `MZone`, `MCreature`, `MPlayer`, `MItem`, `MSkill`), compiled into `gamemodel` and `gameclient`; `SDLMain.cpp` is the executable |
+| `Client/` | game logic (`GameMain`, `MZone`, `MCreature`, `MPlayer`, `MItem`, `MSkill`), compiled into `gamemodel`, `gameview` and `gameclient`; `SDLMain.cpp` is the executable |
 | `Client/Packet/` | the wire layer, compiled once as `packetwire`; `Gpackets/` is server to client |
 | `Client/PacketHandler/` | the packet handlers, all `gamemodel` members, each bound to its id in `Client/PacketHandlerRegistry.cpp` |
 | `Client/SpriteLib/` | sprite decode and blitting, the SDL backend and GPU composition, the 555/565 variants |
 | `Client/DXLib/` | input, sound and music behind a DirectX-shaped interface, SDL underneath |
 | `Client/TextSystem/` | UTF-8 text rendering on SDL and freetype2 |
 | `Client/framelib/` | frames, frame packs and effect resources |
+| `Client/WinLib/`, `Client/SXml/` | the main loop's per-mode update base (`CWinUpdate`, a `gamemodel` member); `SXml.h`, the header of `VS_UI/SXml.cpp` |
+| `Client/Updater/`, `Client/tools/` | upstream's Smart Update patcher classes, which no target compiles; the `resource_validator` tool (`BUILD_RESOURCE_TOOLS`) |
 | `VS_UI/` | the UI framework: widgets, dialogs, skinning, the Korean IME |
 | `basic/` | memory, exceptions, typedefs, platform abstraction, logging, the checked formatter |
 | `third_party/` | vendored code: [de-core](decore.md), UnRAR, xBRZ |

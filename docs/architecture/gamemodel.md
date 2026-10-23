@@ -78,7 +78,8 @@ extractions through 4.87, with the later slices to 4.265 for the view and client
   accelerators (`MFunctionManager`), crash-report records and named profiling state, and the user,
   config and timed-item loaders with their string support.
 - **The world**: the creature, the creature that wears gear, the NPC, the fake creature, the
-  player and the zone, moved in October 2026 with the handlers that drive them.
+  player and the zone, moved on 2026-10-15 (tasks 4.242 to 4.247), the day after the last of the
+  handlers that drive them.
 
 # The packet handlers
 
@@ -93,6 +94,7 @@ trade box (`GCTradeMoney`, `GCTradeRemoveItem`), `GCSystemAvailabilities`,
 (`GCHolyLandBonusInfo`, `GCSweeperBonusInfo`, `GCSkillInfo`, whose `ApplySkillInfo` rebuild clears
 model-owned sweeper bonuses and asks `BonusSkillHost` for the live refresh), and the login lists
 (`LCWorldList`, `LCServerList`). The rest followed in later slices, each over the hosts its body
-reaches, until the executable's own source was `Client/SDLMain.cpp` alone (task 4.265,
-2026-10-19; [library boundaries](library-boundaries.md)). `test_model_handlers.cpp` runs every
+reaches; the last, the player's update on entering a zone, moved in task 4.198 (2026-10-14). The
+executable's own source has been `Client/SDLMain.cpp` alone since task 4.265 (2026-10-19;
+[library boundaries](library-boundaries.md)). `test_model_handlers.cpp` runs every
 out-of-range slot byte past the phone handlers ([packet input safety](../protocol/packet-input-safety.md)).

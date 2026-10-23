@@ -355,9 +355,9 @@ add_subdirectory(Client/framelib)
 # and the inbound peer connection manager, every packet class in every direction, and
 # the factory/validator tables (docs/reviews/RESTRUCTURING.md tasks 1.1, 2.4 and
 # 5.1). The packet handlers
-# live in Client/PacketHandler and compile into the executable, except
-# the few that reach only model state, which gamemodel lists (task 4.15);
-# the packet headers only declare them.
+# live in Client/PacketHandler and compile into gamemodel, every one
+# since task 4.198 (tests/arch/gamemodel_files.txt); the packet headers
+# only declare them.
 #
 # Membership is tests/arch/packetwire_files.txt, one repository-relative
 # path per line. Three readers, one file, so the target and the rules
@@ -374,7 +374,7 @@ add_subdirectory(Client/framelib)
 # CLIENT_MAIN_SOURCES below matches - file(GLOB) returns absolute paths,
 # and a relative entry is silently not removed (that mismatch is exactly
 # how sources end up compiled into both a library and the executable,
-# see the LNK4217 note in docs/build/reading-build-output.md).
+# see task 4.0 in docs/reviews/RESTRUCTURING.md).
 set(PACKETWIRE_MEMBERSHIP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/arch/packetwire_files.txt)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${PACKETWIRE_MEMBERSHIP_FILE})
 # Every line is stripped before it is matched, so an indented path is
@@ -964,10 +964,10 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		Client/*.cpp
 		Client/Packet/*.cpp
 		Client/Packet/*/*.cpp
-		# The packet handlers (task 2.4): executable-side, bound by
+		# The packet handlers (task 2.4), bound by
 		# Client/PacketHandlerRegistry.cpp; the wire classes they handle
-		# are in packetwire. The handlers gamemodel lists (task 4.15) are
-		# removed from this list below with the other gamemodel members.
+		# are in packetwire. Every one is a gamemodel member since task
+		# 4.198, removed from this list below with the others.
 		Client/PacketHandler/*.cpp
 		Client/SXml/*.cpp
 		Client/WinLib/*.cpp
@@ -1059,8 +1059,8 @@ if(USE_SDL_BACKEND OR NOT WIN32)
 		# Three anchored "^Client/..." filters used to sit here, for the
 		# root-level *Handler.cpp files, Client.cpp and ClientFunction.cpp.
 		# None ever matched: the glob yields absolute paths. There is no
-		# root-level *Handler.cpp any more, Client.cpp compiles into the
-		# executable on every platform and ClientFunction.cpp into gamemodel
+		# root-level *Handler.cpp any more, Client.cpp is gameclient's
+		# ClientMain.cpp (task 4.265) and ClientFunction.cpp went to gamemodel
 		# (task 4.236), so the filters are gone rather than fixed - fixing
 		# them would have changed what links.
 		# Note: PacketFunction.cpp now included with proper platform guards

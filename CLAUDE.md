@@ -10,8 +10,8 @@ rather than restating it. The rules, and the incidents behind them, live in the 
 under `docs/` (Google's Open Knowledge Format): start at [docs/index.md](docs/index.md);
 [docs/knowledge-bundle.md](docs/knowledge-bundle.md) says how it is kept. This file is the index:
 one line per rule and a link to the concept that explains it. **Open the linked concept before you
-work in its area** - the line here is a reminder, not the rule. A line marked *(user instruction)*
-is the user's own and binds as written.
+work in its area** - the line here is a reminder, not the rule. Every line binds; one marked
+*(user instruction)* is in the user's own words.
 
 ## Build & test
 
@@ -40,6 +40,7 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 - On Apple Silicon the arm64 Docker image has no warning budget: check its log against the x86_64 profile before pushing - [reading build output](docs/build/reading-build-output.md), [Linux and macOS](docs/build/linux-and-macos.md).
 - A skipped check is not a pass: a ctest that must run everywhere goes on both verify scripts' required lists - [CI](docs/build/ci.md).
 - A docs-only change still runs `knowledge_bundle`, and `git status` must list every file you wrote - [CI](docs/build/ci.md).
+- Run the Linux Docker image from a git worktree with the common git directory mounted, or `ratchets` and `source_encoding` fail on "not a git repository"; configure the `windows` and `windows-asan` trees one after the other (they share `vcpkg_installed`) - [testing overview](docs/testing/overview.md#running-them), [build commands](docs/build/build-commands.md#the-windows-presets).
 
 ## Testability and testing
 
@@ -84,7 +85,7 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 
 ## Conventions and process
 
-- Tabs, English only, Hungarian notation and banner comments as the file has them; sources are CRLF, so edit them with the Edit tool, never `sed -i` or `awk` - [source style](docs/process/source-style.md).
+- Tabs, English only, Hungarian notation and banner comments as the file has them; line endings vary by file (`git ls-files --eol`) and each keeps its own, so edit with the Edit tool or `perl -pi -e` on the exact files, never `sed -i` or `awk` - [source style](docs/process/source-style.md).
 - Commit messages are `type: lowercase imperative summary`, then prose on why the change is right, what was verified and what is deliberately out of scope; `a41eec9` is the model - [commit messages](docs/process/commit-messages.md).
 - A `fix:` commit carries a `Test path:` line (`lib + test`, `moved, then fixed` or `exempt`); `tools/git-hooks/commit-msg` refuses one without, after `git config core.hooksPath tools/git-hooks` once per clone - [commit messages](docs/process/commit-messages.md).
 - Trailer: `Co-Authored-By: <the authoring model> <noreply@anthropic.com>`, e.g. `Claude Fable 5.1` - [commit messages](docs/process/commit-messages.md).
@@ -100,4 +101,4 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 - [Fuzzing the packet readers](docs/protocol/fuzzing.md) - the one check that models no route; it stops at `read()`.
 - [Format strings](docs/protocol/format-strings.md) - C19 is closed; read its review entry before trusting a ratchet at zero.
 - [Code-health reconciliation](docs/reviews/code-health-reconciliation-2026-09-23.md) - the current disposition of the [review](docs/reviews/code-health-review-2026-08-29.md)'s 197 findings.
-- [The restructuring plan](docs/reviews/RESTRUCTURING.md) - complete; its *What the review rounds settled* section is the standing rulebook for library work.
+- [The restructuring plan](docs/reviews/RESTRUCTURING.md) - original plan complete as of 2026-09-09 (task 4.12 is still open); its *What the review rounds settled* section is the standing rulebook for library work.

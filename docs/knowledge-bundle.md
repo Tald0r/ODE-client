@@ -70,9 +70,9 @@ enforced_by: [wire_inventory_fresh, unit_tests]   # the ctest or gate that fails
 
 4. Link to other documents with relative paths. When you move a document, grep the whole repo
    for its old path (comments in `Client/`, `basic/`, `tests/` and the scripts name docs by
-   path), fix every reference, and add a `log.md` entry with the old-to-new map. Sources are
-   CRLF: rewrite a path with `perl -pi -e 's{old}{new}g'` on the exact files grep found, never
-   with a tool that normalises line endings.
+   path), fix every reference, and add a `log.md` entry with the old-to-new map. Line endings
+   vary by file: rewrite a path with `perl -pi -e 's{old}{new}g'` on the exact files grep found,
+   never with a tool that normalises line endings.
 
 `tests/tools/check_knowledge_bundle.pl` (ctest `knowledge_bundle`, required by
 `tools/ci/verify-linux.sh` and `verify-windows.ps1`) fails the suite on a concept without a

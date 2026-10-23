@@ -17,8 +17,9 @@ verified. The port's plan and sizing are the
 # The Linux image
 
 `tools/ci/verify-linux.sh <preset>` (any Linux or macOS preset but the fuzz ones) runs configure,
-build and test the way the Linux workflow (`.github/workflows/linux.yml`) does, with UBSan reports
-made fatal under `linux-asan` ([build commands](build-commands.md#the-full-check)). On a Windows
+build and test the way the Linux and macOS workflows (`.github/workflows/linux.yml`, `macos.yml`)
+do, with UBSan reports made fatal under `linux-asan` and `macos-asan`
+([build commands](build-commands.md#the-full-check)). On a Windows
 machine or a Mac with Docker (OrbStack, which this was verified with, or Docker Desktop),
 `tools/linux/Dockerfile` is the same environment as an image, on an x86_64 host:
 

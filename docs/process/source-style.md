@@ -1,7 +1,7 @@
 ---
 type: Rule
 title: "Source style"
-description: "Tabs, English only, Hungarian notation and banner comments as the surrounding file has them; sources are CRLF, so edit them with the Edit tool and never sed -i or awk."
+description: "Tabs, English only, Hungarian notation and banner comments as the surrounding file has them; line endings vary by file and each keeps its own, so edit with the Edit tool or perl -pi on the exact files, never sed -i or awk."
 tags: [process]
 generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
 ---
@@ -14,7 +14,9 @@ generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
   you touch that code, and never add more.
 - Hungarian notation (`m_pFoo`, `g_pBar`, `bFlag`) and banner comments above functions and
   sections: follow the file you are in.
-- **Sources are CRLF**; use the Edit tool, not `sed -i`/`awk`, to modify them. A scripted
+- **Line endings vary by file**: most sources are LF, many are CRLF and a few are mixed
+  (`git ls-files --eol` shows each). Every file keeps its own: use the Edit tool, or
+  `perl -pi -e` on the exact files, never `sed -i`/`awk`. A scripted
   rewrite that must touch many files bounds its pattern and is followed by a sweep
   ([scripted rewrites](scripted-rewrites.md)). `tests/tools/check_source_encoding.pl` (ctest
   `source_encoding`) holds every source to the UTF-8 compiler contract on every platform.

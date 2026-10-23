@@ -61,20 +61,20 @@ identical in all four builds (`decore_tests`: 13 tests, 2009 checks on the same 
   (Clang 18.1) in the Docker image, its native arm64 on an Apple Silicon Mac, with the totals read
   by running `build/presets/<preset>/bin/unit_tests` in it (the scripts stop at the warning step,
   which has no `aarch64` baseline, after ctest passed).
-- **macOS**: Apple Clang 21, the `macos` preset, read with `build/defects/run-tests.sh unit_tests ''`,
-  and the `macos-asan` preset's `unit_tests` under `ASAN_OPTIONS=detect_leaks=0` and
-  `UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan report.
+- **macOS**: Apple Clang 21, the `macos` preset's `unit_tests`, run through a local helper
+  (`build/defects/run-tests.sh`, never committed), and the `macos-asan` preset's `unit_tests`
+  under `ASAN_OPTIONS=detect_leaks=0` and `UBSAN_OPTIONS=halt_on_error=1`, with no ASan or UBSan
+  report.
 
 The Windows trees were not re-measured for this figure, and no CI run produced it; the macOS CI
-job has not produced these totals either. The same Mac ran the `macos` preset's 20 ctest tests
-green that day, of which `verify-linux.sh` and `verify-windows.ps1` then required 16 by name
+job has not produced these totals either. The same Mac ran the `macos` preset's ctest tests green
+that day ([Linux and macOS](../build/linux-and-macos.md#status-on-macos)), of which
+`verify-linux.sh` and `verify-windows.ps1` then required 16 by name
 (`fuzz_replay_client_datagram` the latest; the list is 21 names on 2026-10-23). A
 platform-conditional test can make the check totals differ by one between platforms; that is not a
 failure. Keep a new measurement with the change that produced it; this concept records the last
-one, not a live count. `tools/ci/verify-linux.sh` prints the suite's own totals line, the line a measurement like
-this one reads, after ctest passes.
+one, not a live count. `tools/ci/verify-linux.sh` prints the suite's own totals line, the line a
+measurement like this one reads, once ctest and the warning check have passed.
 
-`DarkEden` builds and links on Linux and macOS, and on Linux run headless
-(`SDL_VIDEODRIVER=dummy`) with the data tree beside it reaches the main menu and exits cleanly on
-`SDL_QUIT`; login and beyond are unverified off Windows. A `<SDL2/...>` include spelling breaks
-the Homebrew build: it is `<SDL.h>` everywhere (`basic/Platform.h` says why).
+What the Linux and macOS client runs have verified, and the `<SDL.h>` include rule, are in
+[Linux and macOS](../build/linux-and-macos.md).
