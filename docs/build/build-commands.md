@@ -61,7 +61,7 @@ tools/ci/verify-linux.sh linux          # or linux-clang, linux-asan, macos, mac
 `verify-linux.sh` writes `build.log`, `test.log` and `warnings.json` to
 `build/verification/<preset>/`; `verify-windows.ps1` writes `<build preset>-build.log`,
 `-tests.xml` and `-warnings.json` to `build/verification/<configure preset>/`. CI runs the Linux
-presets on `ubuntu-24.04` directly; locally they run in the `darkeden-linux` image
+presets on `ubuntu-24.04` directly; on a Windows machine or a Mac they run in the `darkeden-linux` image
 (`tools/linux/Dockerfile`, with the commands in the [README](../../README.md)), and run from a git
 worktree the container also needs the common git directory mounted
 ([testing overview](../testing/overview.md#running-them)).
