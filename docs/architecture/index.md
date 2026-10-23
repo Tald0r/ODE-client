@@ -7,7 +7,7 @@
 
 # Designs
 
-* [The gamemodel library](gamemodel.md) - The pure game model extracted from the executable, with the seventeen packet handlers whose bodies reach only model state and named hosts; membership is tests/arch/gamemodel_files.txt.
+* [The gamemodel library](gamemodel.md) - The game model extracted from the executable, every packet handler under Client/PacketHandler among it, each piece reaching the running game through a named host; membership is tests/arch/gamemodel_files.txt.
 * [The gameview and gameclient libraries](gameview-and-gameclient.md) - gameview draws the model with SpriteLib over the packs MTopView hands it; gameclient puts the game together, from GameInitInfo to ClientMain, each piece behind a host the executable installs.
 * [The packetwire library](packetwire.md) - Every .cpp under Client/Packet is compiled once as packetwire, the wire layer that reaches the program around it only through WireHost.h's entries the executable installs in GameInit.cpp.
 

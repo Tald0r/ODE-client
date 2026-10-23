@@ -1,6 +1,7 @@
 # Guides
 
 * [Build commands](build-commands.md) - The two Windows Debug trees and why neither subsumes the other, the first configure's vcpkg toolchain, and the presets and verification scripts every platform's full check runs.
+* [Linux and macOS](linux-and-macos.md) - The darkeden-linux Docker image and its x86_64 run on Apple Silicon, what is verified of the Linux and macOS builds and runs, and the platform notes: Homebrew's SDL, the macOS warning budget, the app bundle's data lookup and Retina scaling.
 
 # Rules
 

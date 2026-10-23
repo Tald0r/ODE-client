@@ -4,7 +4,7 @@ title: "CI"
 description: "The four workflows run on master pushes and manual dispatch only, never on a pull request, so a change is verified locally and dispatched by hand; the verification scripts assert the required ctests by name."
 tags: [build, process]
 enforced_by: [tools/ci/verify-linux.sh, tools/ci/verify-windows.ps1]
-generated: { by: claude-code/claude-opus-5-5, at: 2026-10-23T11:11:26Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-10-23T12:03:53Z }
 ---
 
 # CI
@@ -27,7 +27,9 @@ for w in windows linux macos web; do gh workflow run $w.yml --ref <branch>; done
 
 Each native verify job uploads its `build/verification/` diagnostics and the browser job its
 build and logs (7 days); the plain `windows`, `linux` and `macos` jobs also upload the packaged
-client (30 days).
+client (30 days). `windows.yml` caches the vcpkg dependency binaries between runs, needs no
+game data and never launches the game; live-server testing stays separate and optional
+([executable-only code](../testing/executable-only-code.md)).
 
 **A skipped check is not a pass.** ctest exits 0 over an empty inventory, and a perl or bash
 check that could not be registered is simply absent, so `verify-linux.sh` and

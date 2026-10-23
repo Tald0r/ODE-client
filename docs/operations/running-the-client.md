@@ -3,7 +3,7 @@ type: Runbook
 title: "Running the client"
 description: "DarkEden.exe runs from the Visual Studio debugger and is not launched by an agent unless asked; an unlisted DLL beside it exits -1 before main, resources are read loose first and then from the .rpk, and off Windows the headless run reaches the main menu."
 tags: [operations]
-generated: { by: claude-code/claude-fable-5-1, at: 2026-10-21T19:53:16Z }
+generated: { by: claude-code/claude-opus-5-5, at: 2026-10-23T12:03:53Z }
 ---
 
 # Running the client
@@ -13,8 +13,9 @@ debugger, and launching it separately steals the stack trace and locks the build
 startup failure has to be bisected, ask: running it is sometimes the only way to see the exit
 code, and no test binary can reach that code. Live-server verification is optional and never a
 merge gate ([executable-only code](../testing/executable-only-code.md)). [README.md](../../README.md)'s
-*Run* section owns the data layout, the resource text encoding, the renderer toggles and how to
-connect to a server.
+*Run* section owns the data layout, the display options and how to connect to a server; the
+[resource text encoding](resource-text-encoding.md) and the
+[renderer settings](../rendering/native-gpu-renderer.md#the-xbrz-setting) have their own concepts.
 
 **A silent `-1` exit with no log written is the DLL whitelist** until proven otherwise.
 `Client/ClientMain.cpp` walks `*.dll` in the working directory against a hardcoded list and
@@ -31,5 +32,6 @@ never to disk. Keep the UnRAR notices beside distributed binaries (`third_party/
 (`SDL_VIDEODRIVER=dummy`) with the data tree beside it, it reaches the main menu and exits cleanly
 on `SDL_QUIT`. Login and beyond are unverified there (the
 [port assessment](../build/linux-macos-port-assessment-2026-09-07.md)'s area F); nothing has been
-watched on a Mac's display. The browser build has its own loop and exit path
-([browser client](../browser/browser-client.md), [login and logout](../browser/login-and-logout.md)).
+watched on a Mac's display. [Linux and macOS](../build/linux-and-macos.md) has what is verified
+there, the app bundle's data lookup and Retina scaling. The browser build has its own loop and
+exit path ([browser client](../browser/browser-client.md), [login and logout](../browser/login-and-logout.md)).

@@ -13,6 +13,6 @@ seam to cut. Move first, prove the build, then fix, in separate commits, so the 
 behaviour is readable. A file that only links once its reaches go through a host moves and cuts
 in one commit (the Phase 4 pattern of the [restructuring plan](../reviews/RESTRUCTURING.md)), and
 that commit names every change that is not the move. After moving files, reconfigure both Debug
-trees, because the existing globs do not use `CONFIGURE_DEPENDS`. A `fix:` that follows a move
+trees ([library boundaries](../architecture/library-boundaries.md)). A `fix:` that follows a move
 names its test path as `moved, then fixed` ([commit messages](commit-messages.md)); a class that
 cannot be cut moves whole ([class splits](../architecture/class-splits.md)).

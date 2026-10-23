@@ -14,7 +14,10 @@ of the [code-health review](../reviews/code-health-review-2026-08-29.md) is clos
 the [restructuring plan](../reviews/RESTRUCTURING.md)'s task 5.4, fifth slice): **315 sites** are
 converted to `SafeFormat::Format` in `basic/SafeFormat.h`, which checks a table entry's
 conversions against the arguments the call site really passed, across `Client`, `VS_UI`, the
-`AddFormat` family (through `CMessageArray::AddSafeFormat`) and `MString::FormatChecked`.
+`AddFormat` family (through `CMessageArray::AddSafeFormat`) and `MString::FormatChecked`. The
+class's other two criticals were fixed on 2026-09-01: C20, `CMessageArray::AddFormat` and
+`AddFormatVL` formatting into a fixed static buffer (`0e9d247`), and C22, server-supplied quest
+text used as a format string (`31f5f2f`).
 
 **Two ratchets hold it, and the pair is the point.** R7 counts a lookup *spelled at the format
 argument*; R8 counts every printf-family call whose format is not a string literal, whatever it is

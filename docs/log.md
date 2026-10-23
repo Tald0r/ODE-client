@@ -2,6 +2,29 @@
 
 ## 2026-10-23
 
+* **Creation**: [Linux and macOS](build/linux-and-macos.md) and
+  [resource text encoding](operations/resource-text-encoding.md), from the README's platform
+  sections and its *Resource text encoding* section, which the README now links instead of
+  restating in full.
+* **Move**: what `CLAUDE.md` and `README.md` stated and no concept did moves into one: the
+  per-class detail of what `gamemodel` holds ([gamemodel](architecture/gamemodel.md)), the source
+  layout ([library boundaries](architecture/library-boundaries.md#source-layout)), the LNK4217
+  note ([reading build output](build/reading-build-output.md)), the full Debug-tree table, the
+  sanitized tree's build steps, the Windows presets and `windows-clang`
+  ([build commands](build/build-commands.md)), the Windows workflow's cache ([CI](build/ci.md)),
+  what the last baseline measured and how ([testing overview](testing/overview.md#baseline)), the
+  fuzz preset's verification ([fuzzing](protocol/fuzzing.md)) and the xBRZ setting
+  ([native GPU renderer](rendering/native-gpu-renderer.md#the-xbrz-setting)).
+* **Fix**: the code disagreed with concepts drafted on 2026-10-21. Every packet handler, not
+  seventeen, is a `gamemodel` member, and the executable is `Client/SDLMain.cpp` alone (task
+  4.265), so [gamemodel](architecture/gamemodel.md),
+  [library boundaries](architecture/library-boundaries.md),
+  [protocol overview](protocol/overview.md) and
+  [executable-only code](testing/executable-only-code.md) say so. `Client/D3DLib/`, `VolumeLib/`,
+  `DEUtil/`, `MZLib/` and `TextLib/`, which `CLAUDE.md`'s layout table listed, no longer exist.
+  Every remaining source glob uses `CONFIGURE_DEPENDS`, so the reason
+  [library boundaries](architecture/library-boundaries.md) and
+  [move, then fix](process/move-then-fix.md) gave for explicit lists is replaced.
 * **Fix**: [build/index.md](build/index.md), [build commands](build/build-commands.md),
   [reading build output](build/reading-build-output.md) and [CI](build/ci.md), which the
   restructuring below linked but `.gitignore`'s `[Bb]uild/` kept out of its commit, are written

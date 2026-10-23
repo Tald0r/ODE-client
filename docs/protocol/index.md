@@ -1,6 +1,6 @@
 # Overview
 
-* [Protocol overview](overview.md) - Packet classes and factories live under Client/Packet and compile as packetwire; handler bodies live under Client/PacketHandler, bound to ids in PacketHandlerRegistry.cpp, and are executable-side except the seventeen gamemodel compiles.
+* [Protocol overview](overview.md) - Packet classes and factories live under Client/Packet and compile as packetwire; handler bodies live under Client/PacketHandler, bound to ids in PacketHandlerRegistry.cpp, and all compile into gamemodel.
 
 # Guides
 
