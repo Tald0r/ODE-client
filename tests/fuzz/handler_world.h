@@ -33,8 +33,9 @@
 //     row in the game too (CTypeTable), so a crash on one is a crash a
 //     server can cause. The game strings are the English build's
 //     (InitGameStringTable), so the operator name prefix the chat
-//     replies test is "GM", and the zone's row masks another race's
-//     chat. The ones no run changes are made once per process
+//     replies test is "GM", the nickname table has a row of text per
+//     index, as the file the game will not start without has, and the
+//     zone's row masks another race's chat. The ones no run changes are made once per process
 //     (MakeStaticTables); the skill-info and rank-bonus tables, which
 //     handlers write, and the managers are made for every run;
 //   - the message logs and string tables InitGame makes, and the peer
@@ -186,6 +187,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <functional>
+#include <string>
 #include <vector>
 
 // The two packet-function steps of entering a zone (PacketFunction.cpp).
@@ -201,6 +203,8 @@ namespace HandlerFuzz {
 
 // Rows per item class: types below it read a row, as the game's do.
 inline const int		kItemTypes = 32;
+// Rows of the nickname table.
+inline const int		kNicknames = 32;
 // Rows of the creature table; the highest player type is 812.
 inline const int		kCreatureTypes = 1024;
 // The size of three of the game's zones; the server's map files hold
@@ -350,7 +354,6 @@ private:
 	{
 		Make(g_pClientConfig, new ClientConfig);
 		Make(g_pUserOption, new UserOption);
-		Make(g_pNickNameStringTable, new MStringArray);
 		Make(g_pSkillInfoTable, new MSkillInfoTable);
 		Make(g_pRankBonusTable, new RankBonusTable);
 		Make(g_pNPCScriptTable, new MNPCScriptTable);
@@ -548,6 +551,15 @@ inline void	MakeStaticTables()
 	// player's.
 	g_pGameStringTable = new MStringArray;
 	InitGameStringTable();
+
+	// The nickname file InitGame loads, or the game does not start: a row
+	// of text per index. The add-creature replies fall back to row 0 for an
+	// index past the table and copy its text as a C string, so an empty
+	// table (no row 0) was a gap in this world, not the game's.
+	g_pNickNameStringTable = new MStringArray;
+	g_pNickNameStringTable->Init(kNicknames);
+	for (int i = 0; i < kNicknames; i++)
+		g_pNickNameStringTable->Set(i, ("Nickname " + std::to_string(i)).c_str());
 }
 
 //----------------------------------------------------------------------
