@@ -2,8 +2,15 @@
 
 ## 2026-10-23
 
+* **Update**: the review of the handler fuzz targets. [Fuzzing](protocol/fuzzing.md) says the
+  world now holds the English game strings, resets what replies leave behind, and aborts a run that
+  disconnects its socket; it lists the handler targets in its build line and corrects its claim
+  about the UDP manager's NULL tests. The [code-health review](reviews/code-health-review-2026-08-29.md)
+  records the seven values found, the harness gaps the review and the later run found (the
+  game strings, the nickname table, the per-run reset), and four casts UBSan cannot see as open; the [index](index.md) and [the knowledge bundle](knowledge-bundle.md) name the
+  handler fuzzers.
 * **Update**: the [code-health review](reviews/code-health-review-2026-08-29.md)'s *Found by
-  fuzzing* records the handler targets' first runs and their four findings, and
+  fuzzing* records the handler targets' first runs and their findings, and
   [fuzzing](protocol/fuzzing.md) summarises them.
 * **Update**: [fuzzing](protocol/fuzzing.md) is now *Fuzzing the packet readers and handlers*:
   two libFuzzer targets run the client's receive loop into the packet handlers, in the world

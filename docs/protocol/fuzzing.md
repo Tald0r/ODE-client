@@ -43,7 +43,8 @@ The world they dispatch into is `tests/fuzz/handler_world.h` (its header is the 
 description): empty data tables sized where code assumes a row exists (an id past a table reads
 its default row in the game too, so a crash there is one a server can cause), the English build's
 game strings (an empty table left the operator name prefix empty, which made every chat line an
-operator's and hid the replies' player branch), `InitGameObject` itself, and for the game target a 32 by 32 zone with the player in its middle (the size of three
+operator's and hid the replies' player branch) and a nickname table with a row of text per index
+(the game will not start without its nickname file), `InitGameObject` itself, and for the game target a 32 by 32 zone with the player in its middle (the size of three
 of the game's zones; the server's map files hold zones from 17 by 25 to 256 by 256, and a wire
 coordinate is a byte). `InitGameObject` installs the executable's host adapters; the run removes
 them all (`ReleaseGameObjectHosts`) and puts back the model's, `ZoneState`, `CreatureState`,
@@ -195,6 +196,10 @@ finding, and `unit_tests` and the fuzz ctests passed under that preset's Clang A
 
 The findings so far are under *Found by fuzzing* in the
 [code-health review](../reviews/code-health-review-2026-08-29.md). The handler targets' first
-runs (about an hour for the game target, half an hour for the login one) found four wire values
-cast to an enum with no fixed type, one of which, an effect status, reached a heap write; no crash
-in them was the harness's. The game target's coverage was still rising when they stopped.
+runs, and the review that followed, found seven wire values read into an enum with no fixed type,
+fixed in six commits: a gear slot, a weather, a kick type, a system message type, an effect
+status, a chat race and a character's sex. The effect status reached a heap write; the rest are
+undefined behaviour that only Clang's UBSan stops on. Two harness gaps hid findings and are
+fixed in the harness: an empty game string table made every chat sender an operator (found in
+review; it hid the race), and an empty nickname table, which the game always loads, crashed the
+add-creature replies once the sex load stopped halting first.

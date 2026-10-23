@@ -21,7 +21,7 @@ each, and `CLAUDE.md` links them. `README.md` stays the human setup guide.
 | `architecture/` | the library boundaries, the host interfaces, the vendored de-core and the traps |
 | `browser/` | the WebAssembly client, its gateway transport and its login and logout flows |
 | `build/` | the two Debug trees, reading build output, CI, Linux and macOS, the warning cleanup and the port assessment |
-| `protocol/` | the wire layer: layout pins, input safety, format strings and the packet-read fuzzers |
+| `protocol/` | the wire layer: layout pins, input safety, format strings and the packet-read and packet-handler fuzzers |
 | `rendering/` | the GPU renderer, frame interpolation and widescreen scaling designs |
 | `testing/` | what can be tested, the framework, the fix policy and the ratchets |
 | `process/` | commits, source style, moves, status lines and the lessons the review rounds settled |

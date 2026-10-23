@@ -455,24 +455,42 @@ for every run (the production `InitGameObject`, a 32 by 32 zone with the
 player in it for the game target, and the model's hosts only; [fuzzing the
 packet readers and handlers](../protocol/fuzzing.md#the-handler-targets)
 has the design). The game target runs each input as a slayer, a vampire and
-an ousters. Its first runs found four defects of one class, a wire value
-cast to an enum with no fixed type, which Clang's UBSan halts on: three
-were undefined behaviour with no memory effect, and the fourth was a heap
-write. In all, the game target ran about 62 minutes single-process (macOS
-27, Apple Clang 21, Homebrew llvm@21's libFuzzer; six runs, the last two
-with length control off, 200 to 260 inputs a second, each input three
-worlds), its coverage rising from 29,051 to 40,705 points and still
-rising at the end; the login target ran 30 minutes (two runs, about 230
-inputs a second, seven worlds each) from 11,805 to 12,659 points, flat for
-its last ten. Apart from the four, nothing crashed: no sanitizer report,
-timeout or out-of-memory, and no crash turned out to be the harness's.
+an ousters. Its first runs found five wire values of one class, a value
+read into an enum with no fixed type, which Clang's UBSan halts on: a gear
+slot, a weather, a kick type and a system message type were undefined
+behaviour with no memory effect, and an effect status reached a heap
+write. The branch's adversarial review then found a gap in the harness
+that hid a sixth: the game string table was empty, so the operator name
+prefix the chat replies test (`UI_STRING_MESSAGE_MASTER_NAME`) matched
+every sender and their player branch never ran; with the English build's
+strings a `GCWhisper` race byte of 0x50 halted at its cast to `Race`. The
+same review found the per-run reset incomplete (the storages a stash or
+store reply makes, and the flags and gear pointers the replies write,
+carried from one run to the next) and the two not-dispatched regression
+inputs pinning nothing; both are fixed in the harness. A further run with
+the corrected world found a seventh value, a character's sex (5 in a
+`GCAddVampire`), and, behind it, one more harness gap: the world's
+nickname table was empty, which the game's never is (it will not start
+without the file), so the add-creature replies' fallback to row 0 copied
+a NULL string. That one is the harness's and was fixed there. In all, the game target ran about 85 minutes single-process (macOS
+27, Apple Clang 21, Homebrew llvm@21's libFuzzer; eight runs, two with
+length control off, the last two in the corrected world, 200 to 270
+inputs a second, each input three worlds), its coverage rising from
+29,051 to 42,309 points and still rising slowly at the end; the login
+target ran 35 minutes (three runs, the last in the corrected world, about
+230 inputs a second, seven worlds each), from 11,805 to 13,401 points.
+Beyond the findings below and the nickname gap, nothing crashed: no
+sanitizer report, timeout or out-of-memory; the last 15-minute game run
+was clean.
 The seed corpus reaches 124 handlers and the game corpus the runs left
 157, of the 283 the registry binds; the login corpus reaches 16 of the 17
 `LC` handlers. Every input is under
 `tests/fuzz/regressions/client_stream_handlers`, which the
-`fuzz_replay_client_stream_handlers` ctest replays on every platform; the
-first three replay green in a tree without Clang's UBSan, so their unit
-tests are the guard in every tree.
+`fuzz_replay_client_stream_handlers` ctest replays on every platform. The
+inputs of the undefined-behaviour rows replay green in a tree without
+Clang's UBSan, and the effect status's write is seen only where ASan
+runs, so the unit tests are the guard in every tree; the effect status's
+test fails in the plain tree too.
 
 What the targets do not reach: what a presentation host's adapter does
 with a handler's value (the handler targets install no UI, view or sound
@@ -492,6 +510,9 @@ reply to a request the player made (the world records none in
 | A gear slot byte cast to the gear's enum (handler target) | `GCAddGearToZone` and `GCAddGearToInventory` cast their wire slot byte to `MSlayerGear::GEAR_SLAYER`, `MVampireGear::GEAR_VAMPIRE` or `MOustersGear::GEAR_OUSTERS` before the gear's range test; past the enum's bit width (the fuzzer sent 75) that is undefined, and Clang's UBSan halted in `GetItem`. The range test was right, so no memory was touched. The three enums have the fixed type `int`. Pinned by `RideGearReplies.ASlotPastTheRacesGearDropsNothing`, `PlayerStateHandlers.GearTakenOffFromASlotPastTheRacesGearMovesNothing` and `GCAddGearToZone-slot-0x4b.hex` | fixed 2026-10-23 (`23c29210`) |
 | A weather, kick or system message type stored in an enum (handler target) | `GCChangeWeather`, `GCKickMessage` and `GCSystemMessage` store their wire byte in `Weather`, `KickMessageType` and `SystemMessageType`; the handlers' getters loaded 33, 254 and 101, past each enum's bit width, which Clang's UBSan halted on. The handlers and the weather host switch on the value, so no memory was touched. The three enums have the fixed type `BYTE`. Pinned by three `PacketFuzzFindings` tests and three regression inputs | fixed 2026-10-23 (`60e88c27`) |
 | An effect status below the status table writes before the creature's flags (handler target) | a server names an effect status with a 32-bit value (`GCModifyInformation`'s `EFFECT_STAT`, which a dozen replies cast to `EFFECTSTATUS`). `MCreature::AddEffectStatus` and the two `RemoveEffectStatus` refused only a status at or past the table's size, so a value of 2^31 or more, negative as an int, passed, and `AddEffectStatus` set `m_bEffectStatus[status]`, a heap write before the array (ASan, `GCModifyInformation` with `0xffffffff`; the fuzzer found the class through `GCThrowBombOK2` with `0x50000000`, where UBSan halted at the cast). Each test refuses a negative status too, and `EFFECTSTATUS` has the fixed type `int`. `HasEffectStatus` still indexes unchecked; no reply hands it a wire value. Pinned by `Creature.AStatusTheTableHasNoRowForIsRefused` (a bus error in the plain tree on the unfixed code) and two regression inputs | fixed 2026-10-23 (`68295986`) |
+| A chat packet's race byte cast to `Race` (handler target, after the harness fix) | `GCWhisper`, `GCGlobalChat` and `CRWhisper` carry the sender's race as a wire byte, and their handlers cast it to `Race` before comparing it with the player's to mask another race's words; past the enum's values (0x50) that is undefined, and Clang's UBSan halted. Nothing was indexed by it. The handlers keep the byte as an `int`; `Race` itself, with twenty-two includers, is unchanged. Pinned by a test in each handler's file and `GCWhisper-race-0x50.hex`, `GCGlobalChat-race-0x50.hex` | fixed 2026-10-23 (`c22858cc`) |
+| A character's sex stored in `Sex` (handler target) | the PC info readers (`PCSlayerInfo2`, `PCVampireInfo`, `PCVampireInfo2`, `PCVampireInfo3`, `PCOustersInfo`, `PCOustersInfo2`, `PCOustersInfo3`) store their wire sex byte in `Sex`, an enum of two values; `GCAddVampireHandler`'s `getSex()` loaded 5, which Clang's UBSan halted on. The replies only compare it with `MALE`. `Sex` has the fixed type `BYTE`. Pinned by `PacketFuzzFindings.VampireSexPastTheEnumReadsBackAsSent` and `GCAddVampire-sex-0x05.hex` | fixed 2026-10-23 (`815dca30`) |
+| The same cast where UBSan does not look | four more wire values reach an enum without a fixed type as a prvalue, which UBSan does not check: `RCRequestedFile::read` (`REQUEST_FILE_TYPE`, a peer's byte; its handler was deleted, so nothing loads it), `GCShopSoldHandler` (`SHELF_TYPE`, passed to `MShop::GetShelf`), and the `switch` statements on cast values in `GCNPCResponseHandler` (`QuestMessage`) and `LCRegisterPlayerErrorHandler` (`ErrorID`). Each is the conversion the fixes above remove; none indexes memory | open, undefined behaviour only |
 | `Assert`-only bounds that hostile input reaches | in its 15-minute run the game target failed about a thousand `Assert`s (1,013) at five sites: `CGSMSSend::read`'s four length and count checks and `GCTimeLimitItemInfo::read`'s count check. In a build without `NDEBUG` an `Assert` throws, which the receive loop treats as a rejected packet; Release compiles them out, and then the values are accepted. Each one guards a growing container (a `std::list`, a `std::string`, a `std::map`), and the frame's size cap bounds what the loop can read, so none is a memory error; recorded as a class rather than fixed one by one. `CGSMSSend` is reached at all because `PacketFactoryManager` registers a factory for this client-to-server packet and `CPS_NORMAL` accepts every registered id, so the client parses it and only then refuses it for lack of a handler | open, not a memory error |
 
 ### Gear-addon follow-up from the packet-index pass
