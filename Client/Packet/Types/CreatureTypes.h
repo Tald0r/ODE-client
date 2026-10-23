@@ -135,7 +135,9 @@ const std::string OustersSylphType2String[] =
 //////////////////////////////////////////////////////////////////////////////
 // 성별
 //////////////////////////////////////////////////////////////////////////////
-enum Sex 
+// A fixed type: the PC info readers store the wire byte in it, and any byte
+// is then a value of it; the replies test it against MALE.
+enum Sex : BYTE
 { 
 	FEMALE ,	// female == 0   -_-; why? don't know?
 	MALE		// male == 1     -_-;
