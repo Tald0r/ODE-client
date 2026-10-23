@@ -39,4 +39,4 @@ goes on both lists.
 `perl tests/tools/check_knowledge_bundle.pl .` before pushing one
 ([the knowledge bundle](../knowledge-bundle.md)) and check `git status` lists every file you
 wrote: `.gitignore` ignores every `build/` folder but this one, and a page it swallowed broke
-every native job on master on 2026-10-22.
+every native verify job on master on 2026-10-22.

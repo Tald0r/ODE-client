@@ -4,8 +4,8 @@
 
 # Rules
 
-* [Reading build output](reading-build-output.md) - A clean Debug build has warnings only from third-party code and the Windows SDK, so a warning in project code is new and fails its preset's budget; judge a build by error C####, LNK, MSB or fatal error, never by grepping for "error".
 * [CI](ci.md) - The four workflows run on master pushes and manual dispatch only, never on a pull request, so a change is verified locally and dispatched by hand; the verification scripts assert the required ctests by name.
+* [Reading build output](reading-build-output.md) - A clean Debug build has warnings only from third-party code and the Windows SDK, so a warning in project code is new and fails its preset's budget; judge a build by error C####, LNK, MSB or fatal error, never by grepping for "error".
 
 # Designs
 

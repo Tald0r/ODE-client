@@ -31,14 +31,17 @@ architecture, through `tools/ci/check-warnings.pl` (its parser is pinned by
 is tightened in the same change. [tools/ci/warnings.md](../../tools/ci/warnings.md) has how
 warnings are counted and the command that records a new baseline.
 
-**There is no `aarch64` Linux budget.** On an Apple Silicon Mac, `verify-linux.sh` in the
-`darkeden-linux` image stops at the warning step after ctest has passed, so a GCC- or Clang-only
-warning passes every local check and fails Linux CI. Apply the x86_64 budget to the local log;
-it gives CI's verdict:
+**There is no `aarch64` Linux budget.** `warning-baselines.json` records the x86_64 runner's
+warnings only, so on an Apple Silicon Mac `verify-linux.sh` in the arm64 `darkeden-linux` image
+stops at the warning step (`missing warning baseline for linux-aarch64`) after ctest has passed,
+and a GCC- or Clang-only warning passes every local check and fails Linux CI. The
+[README](../../README.md)'s `--platform linux/amd64` run gets the x86_64 profile and its budget
+directly, emulated. The quicker check applies the x86_64 budget to the arm64 log; that matched
+CI's counts when it was measured (2026-09-30), but the two architectures can warn differently:
 
 ```bash
-perl tools/ci/check-warnings.pl --log build/verification/linux/build.log \
-  --profile linux-x86_64 --baseline tools/ci/warning-baselines.json --report /tmp/warnings.json
+perl tools/ci/check-warnings.pl --log build/verification/<preset>/build.log \
+  --profile <preset>-x86_64 --baseline tools/ci/warning-baselines.json --report /tmp/warnings.json
 ```
 
-Run it for `linux` and `linux-clang` and require no growth before pushing.
+Run it for `linux` and `linux-clang` and require it to pass before pushing.
