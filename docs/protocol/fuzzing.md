@@ -186,4 +186,7 @@ Installing it was verified on 2026-09-29: the target built, fuzzed for two minut
 finding, and `unit_tests` and the fuzz ctests passed under that preset's Clang ASan and UBSan.
 
 The findings so far are under *Found by fuzzing* in the
-[code-health review](../reviews/code-health-review-2026-08-29.md).
+[code-health review](../reviews/code-health-review-2026-08-29.md). The handler targets' first
+runs (about an hour for the game target, half an hour for the login one) found four wire values
+cast to an enum with no fixed type, one of which, an effect status, reached a heap write; no crash
+in them was the harness's. The game target's coverage was still rising when they stopped.

@@ -2,6 +2,9 @@
 
 ## 2026-10-23
 
+* **Update**: the [code-health review](reviews/code-health-review-2026-08-29.md)'s *Found by
+  fuzzing* records the handler targets' first runs and their four findings, and
+  [fuzzing](protocol/fuzzing.md) summarises them.
 * **Update**: [fuzzing](protocol/fuzzing.md) is now *Fuzzing the packet readers and handlers*:
   two libFuzzer targets run the client's receive loop into the packet handlers, in the world
   `tests/fuzz/handler_world.h` builds, with how a run is reset, what counts as a finding and how a

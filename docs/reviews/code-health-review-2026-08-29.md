@@ -445,19 +445,53 @@ pad byte (an `RCSay` with an empty body reads its name length from it) and
 a reader that stops short of the declared body is not refused. Neither
 reaches memory outside the buffer, and the server's `Datagram` is the same.
 
-What the targets do not reach: the handlers under `Client/PacketHandler`,
-which are executable-side (a crash in `read()` is found; a crash in what a
-handler does with an accepted value is not, the four `RC` handlers
-included); and the `toString()` methods, which `ClientPlayer`'s
-receive loop calls only in a `__DEBUG_OUTPUT__` build (most of them are
-compiled only under it; `PCOustersInfo::toString()` is not, see its row
-under *Found by reading*).
+Two handler targets followed on 2026-10-23 on `fuzz/packet-handlers`, once
+every handler had become a `gamemodel` member:
+`tests/fuzz/fuzz_client_stream_handlers.cpp` and
+`fuzz_client_login_stream_handlers.cpp` run `ClientPlayer::processCommand`
+itself, so a frame that reads is dispatched to its handler through the
+production registry, in a world `tests/fuzz/handler_world.h` builds afresh
+for every run (the production `InitGameObject`, a 32 by 32 zone with the
+player in it for the game target, and the model's hosts only; [fuzzing the
+packet readers and handlers](../protocol/fuzzing.md#the-handler-targets)
+has the design). The game target runs each input as a slayer, a vampire and
+an ousters. Its first runs found four defects of one class, a wire value
+cast to an enum with no fixed type, which Clang's UBSan halts on: three
+were undefined behaviour with no memory effect, and the fourth was a heap
+write. In all, the game target ran about 62 minutes single-process (macOS
+27, Apple Clang 21, Homebrew llvm@21's libFuzzer; six runs, the last two
+with length control off, 200 to 260 inputs a second, each input three
+worlds), its coverage rising from 29,051 to 40,705 points and still
+rising at the end; the login target ran 30 minutes (two runs, about 230
+inputs a second, seven worlds each) from 11,805 to 12,659 points, flat for
+its last ten. Apart from the four, nothing crashed: no sanitizer report,
+timeout or out-of-memory, and no crash turned out to be the harness's.
+The seed corpus reaches 124 handlers and the game corpus the runs left
+157, of the 283 the registry binds; the login corpus reaches 16 of the 17
+`LC` handlers. Every input is under
+`tests/fuzz/regressions/client_stream_handlers`, which the
+`fuzz_replay_client_stream_handlers` ctest replays on every platform; the
+first three replay green in a tree without Clang's UBSan, so their unit
+tests are the guard in every tree.
+
+What the targets do not reach: what a presentation host's adapter does
+with a handler's value (the handler targets install no UI, view or sound
+host, so `GameMain`'s `SetWeather` or a dialog's text is never called), a
+reply to a request the player made (the world records none in
+`TempInformation`), the peer-to-peer `RC` handlers as
+`ClientCommunicationManager::Update` dispatches them, and the
+`toString()` methods, which `ClientPlayer`'s receive loop calls only in a
+`__DEBUG_OUTPUT__` build (most of them are compiled only under it;
+`PCOustersInfo::toString()` is not, see its row under *Found by reading*).
 
 | Defect | Symptom | Commit |
 |---|---|---|
 | `NicknameInfo::read` aborts the client on an unknown nickname type | its type switch ended in `default: assert(false);`, the libc assert, which aborts in every build without `NDEBUG`. The type is a wire byte in `GCModifyNickname`, `GCAddNickname`, `GCAddSlayer`, `GCAddVampire`, `GCAddOusters`, `GCNicknameList` and `GCUpdateInfo`, so one byte from a hostile or corrupt server ended any Debug client. The fuzzer found it through `GCModifyNickname` (types 0xff and 0xb3) and `GCAddNickname` (0x80). The default case throws `InvalidProtocolException`, as the server's copy of the class does. `getSize()` and `write()` keep the same assert, which no received value can reach any more. Pinned by `tests/unit/test_packet_fuzz_findings.cpp` and three regression inputs; before the fix, the unit test process aborted | fixed 2026-09-29 (`c705ea09`) |
 | `StoreInfo::read` writes past its 20-item vector | the item count is a wire byte, up to 255, and the loop read that many `StoreItemInfo` records into `m_Items`, which the constructor sizes to `MAX_ITEM_NUM` (20): a heap overflow of attacker-chosen length through `GCMyStoreInfo` or `GCOtherStoreInfo`, on the ordinary personal-shop path. ASan reported the write in `StoreItemInfo::read`. A count past `m_Items.size()` is refused before any item is read. The server's de-kernel copy has the identical loop, masked only because `GamePlayer::processCommand` skips the two store packets; a separate server change fixes it there. Pinned by `tests/unit/test_packet_fuzz_findings.cpp` and one regression input | fixed 2026-09-29 (`0c782d10`) |
 | `LCPCList::read` stores a character past its three-entry list | each character's slot is a wire byte, up to 255, which `PCSlayerInfo::read`, `PCVampireInfo::read` and `PCOustersInfo::read` cast to `Slot` unchecked, and `LCPCList::read` stored the info's pointer at `m_pPCInfos[getSlot()]`, an array of `SLOT_MAX` (3): a slot of 3 wrote one entry past it, and a slot of 4 or more, no `Slot` value at all (Clang's UBSan stops at the load), wrote up to 2 KB past the heap-allocated packet. The login server sends `LCPCList` after every login and character change, and a hostile game server reaches the same read, since `CPS_NORMAL` accepts every registered id (on the unfixed code the regression input stopped the game target's replay too; it is kept only with the login target's regressions). The login target found it through a slayer slot byte of 188. Each reader now refuses a slot of `SLOT_MAX` or more with `InvalidProtocolException` before the cast; `PCSlayerInfo::read` also lost a `catch (Throwable&)` around its body that would have swallowed the refusal, as it swallowed its two name-length refusals, and `LCPCList::read` owns each info until it stores it, so a refused read no longer leaks it. Pinned by five tests in `tests/unit/test_packet_fuzz_findings.cpp` (three failed on the unfixed code, with 18, 2 and 2 failed checks) and one regression input | fixed 2026-09-29 (`7c81f583`) |
+| A gear slot byte cast to the gear's enum (handler target) | `GCAddGearToZone` and `GCAddGearToInventory` cast their wire slot byte to `MSlayerGear::GEAR_SLAYER`, `MVampireGear::GEAR_VAMPIRE` or `MOustersGear::GEAR_OUSTERS` before the gear's range test; past the enum's bit width (the fuzzer sent 75) that is undefined, and Clang's UBSan halted in `GetItem`. The range test was right, so no memory was touched. The three enums have the fixed type `int`. Pinned by `RideGearReplies.ASlotPastTheRacesGearDropsNothing`, `PlayerStateHandlers.GearTakenOffFromASlotPastTheRacesGearMovesNothing` and `GCAddGearToZone-slot-0x4b.hex` | fixed 2026-10-23 (`23c29210`) |
+| A weather, kick or system message type stored in an enum (handler target) | `GCChangeWeather`, `GCKickMessage` and `GCSystemMessage` store their wire byte in `Weather`, `KickMessageType` and `SystemMessageType`; the handlers' getters loaded 33, 254 and 101, past each enum's bit width, which Clang's UBSan halted on. The handlers and the weather host switch on the value, so no memory was touched. The three enums have the fixed type `BYTE`. Pinned by three `PacketFuzzFindings` tests and three regression inputs | fixed 2026-10-23 (`60e88c27`) |
+| An effect status below the status table writes before the creature's flags (handler target) | a server names an effect status with a 32-bit value (`GCModifyInformation`'s `EFFECT_STAT`, which a dozen replies cast to `EFFECTSTATUS`). `MCreature::AddEffectStatus` and the two `RemoveEffectStatus` refused only a status at or past the table's size, so a value of 2^31 or more, negative as an int, passed, and `AddEffectStatus` set `m_bEffectStatus[status]`, a heap write before the array (ASan, `GCModifyInformation` with `0xffffffff`; the fuzzer found the class through `GCThrowBombOK2` with `0x50000000`, where UBSan halted at the cast). Each test refuses a negative status too, and `EFFECTSTATUS` has the fixed type `int`. `HasEffectStatus` still indexes unchecked; no reply hands it a wire value. Pinned by `Creature.AStatusTheTableHasNoRowForIsRefused` (a bus error in the plain tree on the unfixed code) and two regression inputs | fixed 2026-10-23 (`68295986`) |
 | `Assert`-only bounds that hostile input reaches | in its 15-minute run the game target failed about a thousand `Assert`s (1,013) at five sites: `CGSMSSend::read`'s four length and count checks and `GCTimeLimitItemInfo::read`'s count check. In a build without `NDEBUG` an `Assert` throws, which the receive loop treats as a rejected packet; Release compiles them out, and then the values are accepted. Each one guards a growing container (a `std::list`, a `std::string`, a `std::map`), and the frame's size cap bounds what the loop can read, so none is a memory error; recorded as a class rather than fixed one by one. `CGSMSSend` is reached at all because `PacketFactoryManager` registers a factory for this client-to-server packet and `CPS_NORMAL` accepts every registered id, so the client parses it and only then refuses it for lack of a handler | open, not a memory error |
 
 ### Gear-addon follow-up from the packet-index pass
