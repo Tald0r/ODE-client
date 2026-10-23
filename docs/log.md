@@ -1,5 +1,12 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-23
+
+* **Fix**: [build/index.md](build/index.md), [build commands](build/build-commands.md),
+  [reading build output](build/reading-build-output.md) and [CI](build/ci.md), which the
+  restructuring below linked but `.gitignore`'s `[Bb]uild/` kept out of its commit, are written
+  from `CLAUDE.md`, the workflows and `tools/ci/`; `.gitignore` re-includes `docs/build/`.
+
 ## 2026-10-21
 
 * **Creation**: the bundle is restructured like the sidecar's: `docs/` is the bundle root with
