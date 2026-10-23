@@ -16,7 +16,9 @@ jobs:
   verify:
     name: ${{ matrix.preset }}
     runs-on: windows-2022
-    timeout-minutes: 60
+    # The windows job configures, then builds and tests Debug and Release in
+    # one step: about 62 minutes on 2026-10-23, past the 60 it used to have.
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
