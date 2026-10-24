@@ -70,24 +70,17 @@ TEST(AlphaBox, AColouredBoxBlendsOverWhatIsUnder)
 	DrawAlphaBox(target.surface, kScreen, RECT{0, 0, 2, 2}, RGB565(31, 63, 31), 31);
 	DrawAlphaBox(target.surface, kScreen, RECT{2, 0, 4, 2}, RGB565(31, 63, 31), 0);
 	DrawAlphaBox(target.surface, kScreen, RECT{4, 0, 6, 2}, RGB565(30, 60, 20), 16);
-#ifdef PLATFORM_WINDOWS
-	// Recorded, not changed: Windows blends through BltColorAlpha, a stub,
-	// so a coloured box draws nothing there.
-	CHECK_EQ(0, Pixel(target.surface, 0, 0));
-	CHECK_EQ(0, Pixel(target.surface, 4, 0));
-#else
-	// The colour at alpha 31, nothing at 0, in between by alpha/31.
-	CHECK_EQ(RGB565(31, 63, 31), Pixel(target.surface, 0, 0));
-	CHECK_EQ(RGB565(31, 63, 31), Pixel(target.surface, 1, 1));
+	// Every platform blends through BltColorAlpha, the DirectDraw blend: per
+	// channel colour * alpha/32 + under * (31 - alpha)/32. Windows drew
+	// nothing (a stub) and the others an 8-bit approximation.
+	CHECK_EQ(RGB565(30, 61, 30), Pixel(target.surface, 0, 0));
+	CHECK_EQ(RGB565(30, 61, 30), Pixel(target.surface, 1, 1));
 	CHECK_EQ(0, Pixel(target.surface, 2, 0));
-	const int alpha8 = 16 * 255 / 31;
-	CHECK_EQ(RGB565(30 * alpha8 / 255, 60 * alpha8 / 255, 20 * alpha8 / 255), Pixel(target.surface, 4, 0));
+	CHECK_EQ(RGB565(15, 30, 10), Pixel(target.surface, 4, 0));
 	// Over a colour, both count.
 	Surface over(8, 6, RGB565(10, 20, 30));
 	DrawAlphaBox(over.surface, kScreen, RECT{0, 0, 1, 1}, RGB565(30, 60, 0), 16);
-	CHECK_EQ(RGB565((30 * alpha8 + 10 * (255 - alpha8)) / 255, (60 * alpha8 + 20 * (255 - alpha8)) / 255, (30 * (255 - alpha8)) / 255),
-		Pixel(over.surface, 0, 0));
-#endif
+	CHECK_EQ(RGB565(15 + 4, 30 + 9, 0 + 14), Pixel(over.surface, 0, 0));
 	CHECK_EQ(0, Pixel(target.surface, 6, 0));
 	CHECK_EQ(0, Pixel(target.surface, 0, 2));
 }

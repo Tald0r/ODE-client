@@ -71,12 +71,12 @@ MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 // lays the blits it should make onto another; the two must match. The
 // surfaces are grey, so a shadow, a half blend and a screen blend show.
 //
-// SpriteLib's SDL backend stubs several blits a test here meets (each
-// pinned where it shows): BltColorAlpha draws nothing, so the screen
-// fade, the alpha box and the endings' fades are invisible;
-// BltSpriteOutline draws nothing, so a selected item or burrow is not
-// drawn at all; SetClipRight is a no-op, so a party HP bar is never cut;
-// BltSpriteAlphaFilter and BltIndexSpriteColor draw plain. BltSpriteHalf
+// The screen fade, the alpha box and the endings' fades blend through
+// BltColorAlpha, which Blended below restates. SpriteLib's SDL backend
+// stubs several other blits a test here meets (each pinned where it
+// shows): BltSpriteOutline draws nothing, so a selected item or burrow is
+// not drawn at all; SetClipRight is a no-op, so a party HP bar is never
+// cut; BltSpriteAlphaFilter and BltIndexSpriteColor draw plain. BltSpriteHalf
 // is not reached at all: its CPU fallback reads a CSprite's (null) 565
 // pixel buffer, so a half image object is undefined behaviour headless.
 struct MTopViewTestAccess3
@@ -195,6 +195,17 @@ void Palette(MPalette& palette, WORD colour)
 	palette[1] = colour;
 }
 
+// What BltColorAlpha makes of `under`: per 5:6:5 channel colour * (31 -
+// alpha2) / 32 + under * alpha2 / 32, each share rounded down, so alpha2
+// is the 32nds of what lies under that are kept.
+WORD Blended(WORD colour, WORD under, int alpha2)
+{
+	const auto channel = [&](int shift, int mask) {
+		return (((colour >> shift) & mask) * (31 - alpha2) >> 5) + (((under >> shift) & mask) * alpha2 >> 5);
+	};
+	return WORD(channel(11, 0x1F) << 11 | channel(5, 0x3F) << 5 | channel(0, 0x1F));
+}
+
 struct Canvas
 {
 	CSpriteSurface surface;
@@ -219,6 +230,21 @@ struct Canvas
 		return pixels;
 	}
 	WORD At(int x, int y) { return Picture()[size_t(y * width + x)]; }
+	// The colour blended over `rect` as BltColorAlpha does.
+	void ColorAlpha(const RECT& rect, WORD colour, int alpha2)
+	{
+		DWORD pitch = 0;
+		unsigned char* base = static_cast<unsigned char*>(surface.Lock(nullptr, &pitch));
+		CHECK(base != nullptr);
+		if (base == nullptr) return;
+		for (int y = int(rect.top); y < int(rect.bottom); ++y)
+			for (int x = int(rect.left); x < int(rect.right); ++x)
+			{
+				WORD& pixel = reinterpret_cast<WORD*>(base + y * pitch)[x];
+				pixel = Blended(colour, pixel, alpha2);
+			}
+		surface.Unlock();
+	}
 	bool Blank() { for (WORD pixel : Picture()) if (pixel != kPaper) return false; return true; }
 	void Sprite(int x, int y, CSprite& sprite) { POINT p = {x, y}; surface.BltSprite(&p, &sprite); }
 	void Index(int x, int y, CIndexSprite& sprite) { POINT p = {x, y}; surface.BltIndexSprite(&p, &sprite); }
@@ -601,8 +627,9 @@ TEST(TopView3AlphaBox, LocksAnUnlockedSurfaceOnlyWhileItDraws)
 	CHECK(!scene.drawn.surface.IsLock());
 	Access::DrawAlphaBox(scene.View(), &rect, 200, 100, 50, 16);
 	CHECK(!scene.drawn.surface.IsLock());
-	// Recorded defect: BltColorAlpha is an SDL stub, so a coloured box draws nothing.
-	CHECK(scene.drawn.Blank());
+	// The box keeps 16/32 of what is under it, and nothing outside changes.
+	scene.expected.ColorAlpha(RECT{4, 4, 40, 40}, CSDLGraphics::Color(200, 100, 50), 16);
+	CHECK(scene.Same());
 }
 
 TEST(TopView3AlphaBox, LeavesALockedSurfaceLocked)
@@ -613,7 +640,8 @@ TEST(TopView3AlphaBox, LeavesALockedSurfaceLocked)
 	Access::DrawAlphaBox(scene.View(), &rect, 200, 100, 50, 16);
 	CHECK(scene.drawn.surface.IsLock());
 	scene.drawn.surface.Unlock();
-	CHECK(scene.drawn.Blank());
+	scene.expected.ColorAlpha(RECT{4, 4, 40, 40}, CSDLGraphics::Color(200, 100, 50), 16);
+	CHECK(scene.Same());
 }
 
 TEST(TopView3AlphaBox, ABlackBoxDrawsNothing)
@@ -651,8 +679,10 @@ TEST(TopView3Fade, DrawsTheShadeThenStepsOnAChangedFrame)
 	Access::DrawFade(scene.View());
 	CHECK_EQ(15, int(Access::Fade(scene.View()).Value()));
 	CHECK(!scene.drawn.surface.IsLock());
-	// Recorded defect: BltColorAlpha is an SDL stub, so the fade is invisible.
-	CHECK(scene.drawn.Blank());
+	// Both draws laid the white over the screen at 20, keeping 20/32.
+	scene.expected.ColorAlpha(g_GameRect, CSDLGraphics::Color(255, 255, 255), 20);
+	scene.expected.ColorAlpha(g_GameRect, CSDLGraphics::Color(255, 255, 255), 20);
+	CHECK(scene.Same());
 }
 
 TEST(TopView3Fade, ADelayedFadeStepsByTheCurrentFrame)
@@ -3008,6 +3038,9 @@ struct Ending : Scene
 	}
 	// The scroll's progress p: -500 at the start, one step every 66 ms.
 	void Progress(MEvent* event, int p) { s_EndingNow = event->eventStartTickCount + MonotonicClock::Millis(DWORD(66 * (p + 500) + 33)); }
+	// The fade from white over the screen that ends each picture: it keeps
+	// a 32nd of the picture each 10 ms of the event's clock, 31 at most.
+	void Fade(const MEvent* event) { expected.ColorAlpha(g_GameRect, 0xFFFF, int((std::min)(DWORD(31), event->ElapsedMillis() / 10))); }
 };
 
 } // namespace
@@ -3041,11 +3074,18 @@ TEST(TopView3AdvancementEnding, ALoadedPackStartsTheEnding)
 	CHECK(event->eventStartTickCount == s_EndingNow);
 	CHECK_EQ(size_t(1), Sounds().size());
 	if (!Sounds().empty()) CHECK_EQ(int(SOUND_SLAYER_ENCHANT_B2), Sounds()[0]);
-	// Its first picture: the second of the pair.
+	// Its first picture: the second of the pair, under the fade, which
+	// keeps none of it yet...
 	scene.Pack(0, 0, scene.View().m_AdvacementQuestEnding, 2);
+	scene.Fade(event);
 	CHECK(scene.Same());
+	// ... and 6/32 of it 60 ms on, before the scroll's first step.
+	s_EndingNow += MonotonicClock::Millis(60);
 	CHECK(!scene.Advancement());
 	CHECK_EQ(size_t(1), Sounds().size());				// started once
+	scene.Pack(0, 0, scene.View().m_AdvacementQuestEnding, 2);
+	scene.Fade(event);
+	CHECK(scene.Same());
 }
 
 TEST(TopView3AdvancementEnding, ASpritePairPastThePackCancelsIt)
@@ -3075,7 +3115,8 @@ TEST(TopView3AdvancementEnding, ThePairCrossfadesByItsCountdown)
 		MEvent* event = scene.Start(EVENTID_ADVANCEMENT_QUEST_ENDING, 3);
 		event->parameter1 = 9998;
 		event->parameter3 = c.countdown;
-		CHECK(!scene.Advancement());						// the scroll has not risen yet
+		scene.Progress(event, 30);							// the fade over, the scroll gone by
+		CHECK(!scene.Advancement());
 		if (c.first) scene.Pack(0, 0, pack, 3);
 		if (c.second && c.first)
 		{
@@ -3083,6 +3124,7 @@ TEST(TopView3AdvancementEnding, ThePairCrossfadesByItsCountdown)
 			scene.expected.surface.BltSpriteAlpha(&origin, &pack[4], BYTE(c.countdown));
 		}
 		else if (c.second) scene.Pack(0, 0, pack, 4);
+		scene.Fade(event);
 		CHECK(scene.Same());
 	}
 }
@@ -3128,6 +3170,7 @@ TEST(TopView3AdvancementEnding, TheScrollRisesWithTheClock)
 		CHECK_EQ(9998, int(event->parameter1));
 		scene.Pack(0, 0, pack, 0);
 		if (c.bottom > c.top) scene.Clip(380, c.y, pack, 0, c.top, c.bottom);
+		scene.Fade(event);
 		CHECK(scene.Same());
 	}
 }
@@ -3212,9 +3255,15 @@ TEST(TopView3OustersEnding, ALoadedPackStartsTheEndingOverTheBackground)
 	CHECK(event->eventStartTickCount == s_EndingNow);
 	CHECK_EQ(size_t(1), Sounds().size());
 	if (!Sounds().empty()) CHECK_EQ(int(SOUND_SLAYER_ENCHANT_B2), Sounds()[0]);
-	CHECK(scene.drawn.Blank());						// the scroll has not risen
+	// The scroll has not risen: only the fade, which keeps none of the
+	// screen yet, and 6/32 of it 60 ms on.
+	scene.Fade(event);
+	CHECK(scene.Same());
+	s_EndingNow += MonotonicClock::Millis(60);
 	CHECK(Access::OustersEnding(scene.View()));
 	CHECK_EQ(size_t(1), Sounds().size());
+	scene.Fade(event);
+	CHECK(scene.Same());
 	// A background event still hides the background under it.
 	scene.Event(EVENTID_BG_CLOUD, EVENTFLAG_EVENT_BACKGROUND);
 	CHECK(!Access::OustersEnding(scene.View()));
@@ -3241,6 +3290,7 @@ TEST(TopView3OustersEnding, TheScrollRisesAndTheCaptionFollows)
 		CHECK_EQ(9998, int(event->parameter1));
 		scene.Clip(380, c.y, pack, 0, c.top, c.bottom);
 		if (c.captionRows > 0) scene.Clip(388, c.captionY, pack, 1, 0, c.captionRows);
+		scene.Fade(event);
 		CHECK(scene.Same());
 	}
 }
@@ -3382,16 +3432,35 @@ struct Fin : Ending
 		g_pModifyStatusManager = oldStatus;
 	}
 	static std::string Script(char who, int n) { return std::string(1, who) + char('0' + n); }
-	// A scene at its step, its clock started now.
+	// A scene at its step, its clock started now. The ending is begun first,
+	// which sets its fade back to white from what a scene before left.
 	MEvent* Scene(DWORD scene, DWORD step)
 	{
 		MEvent* event = Start(EVENTID_OUSTERS_FIN);
+		CHECK(Run());
+		Sounds().clear();
+		Clear();
 		event->parameter1 = scene;
 		event->parameter2 = step;
 		return event;
 	}
 	void After(MEvent* event, int millis) { s_EndingNow = event->eventStartTickCount + MonotonicClock::Millis(DWORD(millis)); }
 	bool Run() { return Access::OustersEnding(View()); }
+	// A step starts the fade's clock again: the picture `lay` lays is hidden
+	// at once and shows again 310 ms on, when the fade keeps 31/32 of it.
+	template<class Lay> void Flash(MEvent* event, Lay lay)
+	{
+		lay();
+		Fade(event);
+		CHECK(Same());
+		Clear();
+		After(event, 310);
+		CHECK(Run());
+		Lines(View());
+		lay();
+		Fade(event);
+		CHECK(Same());
+	}
 	// The scene's picture: its figure (sprite 3 or 2) and, past step 0,
 	// sprites 4 to 10 round it.
 	void Ring(int figure, bool round)
@@ -3434,6 +3503,7 @@ TEST(TopView3OustersEnding, TheSlayersSceneSpeaksALineEveryFourSecondsThenDiesAn
 	CHECK(Sounds().empty());
 	CHECK(Lines(view).empty());
 	scene.Ring(3, false);
+	scene.Fade(event);
 	CHECK(scene.Same());
 	// Each four seconds a step, a sound and a line: the round shows.
 	for (int step = 1; step <= 8; ++step)
@@ -3450,8 +3520,7 @@ TEST(TopView3OustersEnding, TheSlayersSceneSpeaksALineEveryFourSecondsThenDiesAn
 		const std::vector<Line> said = Lines(view);
 		CHECK(!said.empty());
 		CHECK(SameLines(said, scene.Chat(talk)));
-		scene.Ring(3, true);
-		CHECK(scene.Same());
+		scene.Flash(event, [&] { scene.Ring(3, true); });
 		CHECK(me.IsAlive());
 	}
 	for (int sound : Sounds()) CHECK_EQ(int(SOUND_SLAYER_ENCHANT_B2), sound);
@@ -3494,12 +3563,14 @@ TEST(TopView3OustersEnding, TheSlayersSceneDressesItsFigureInWhatThePlayerWears)
 	scene.Ring(3, false);
 	CIndexSprite::SetUsingColorSet(30, 60);
 	scene.expected.Index(384 + 3, 312 + 4, scene.View().m_AddonSPK[0]);
+	scene.Fade(event);
 	CHECK(scene.Same());
 	// A part without the action's frame is not drawn.
 	scene.Clear();
 	scene.player->m_Action = ACTION_MOVE;
 	CHECK(scene.Run());
 	scene.Ring(3, false);
+	scene.Fade(event);
 	CHECK(scene.Same());
 }
 
@@ -3524,6 +3595,7 @@ TEST(TopView3OustersEnding, TheVampiresSceneShowsItsBodyInItsColoursAndDiesAtSte
 	CHECK(Sounds().empty());
 	scene.Ring(2, false);
 	body();
+	scene.Fade(event);
 	CHECK(scene.Same());
 	for (int step = 1; step <= 8; ++step)
 	{
@@ -3535,9 +3607,7 @@ TEST(TopView3OustersEnding, TheVampiresSceneShowsItsBodyInItsColoursAndDiesAtSte
 		const std::vector<Line> said = Lines(view);
 		CHECK(!said.empty());
 		CHECK(SameLines(said, scene.Chat(talk)));
-		scene.Ring(2, true);
-		body();
-		CHECK(scene.Same());
+		scene.Flash(event, [&] { scene.Ring(2, true); body(); });
 		CHECK(me.IsAlive());
 	}
 	scene.After(event, 4000);

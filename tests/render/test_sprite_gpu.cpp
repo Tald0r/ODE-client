@@ -947,6 +947,52 @@ TEST(SpriteGpu, MapRegionTintMatchesChannelMasksAndClipsToSurface)
 		CHECK_EQ(x >= 2 && x < 5 && y >= 3 && y < 6 ? 0x07e0 : 0xffff, f.Pixel(x, y));
 }
 
+namespace {
+// The DirectDraw colour blend per 5:6:5 channel: alpha2 is the share of
+// what lies under, out of 32.
+WORD ColorAlpha565(WORD color, WORD under, int alpha2)
+{
+	auto channel = [&](int shift, int mask) {
+		return ((((color >> shift) & mask) * (31 - alpha2)) >> 5) + ((((under >> shift) & mask) * alpha2) >> 5);
+	};
+	return WORD(channel(11, 31) << 11 | channel(5, 63) << 5 | channel(0, 31));
+}
+}
+
+TEST(SpriteGpu, ColorAlphaBlendsEveryRgb565ColorAndClipsToSurface)
+{
+	// Coloured fades and translucent boxes; BltColorAlpha was a stub that
+	// drew nothing.
+	Fixture f;
+	CSpriteSurface surface;
+	CHECK(surface.Init(256, 256));
+	const std::pair<WORD, int> cases[]{{0xffff, 0}, {0xffff, 31}, {0xf7be, 16}, {0x2bf1, 7}, {0, 20}, {0x07e0, 40}};
+	for (const auto& [color, alpha2] : cases) {
+		DWORD pitch = 0;
+		auto* bytes = static_cast<BYTE*>(surface.Lock(nullptr, &pitch));
+		CHECK(bytes != nullptr);
+		for (int y = 0; y < 256; ++y) for (int x = 0; x < 256; ++x)
+			reinterpret_cast<WORD*>(bytes + y * pitch)[x] = WORD(y * 256 + x);
+		surface.Unlock();
+		RECT area{-100, -100, 256, INT_MAX};
+		const auto before = SpriteGpu::GetCounters();
+		surface.BltColorAlpha(&area, color, BYTE(alpha2));
+		if (SpriteGpuEffects::Active()) {
+			CHECK_EQ(before.shaderDraws + 1, SpriteGpu::GetCounters().shaderDraws);
+			CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
+		}
+		CHECK(SpriteGpu::CpuAccess(surface.GetBackendSurface(), false));
+		const int held = (std::min)(alpha2, 31);	// the original wrapped past 31
+		for (int y = 0; y < 256; ++y) for (int x = 0; x < 256; ++x)
+			CHECK_EQ(ColorAlpha565(color, WORD(y * 256 + x), held), reinterpret_cast<WORD*>(bytes + y * pitch)[x]);
+	}
+	f.surface.FillSurface(0xffff);
+	RECT area{2, 3, 5, 6};
+	f.surface.BltColorAlpha(&area, 0, 0);
+	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
+		CHECK_EQ(x >= 2 && x < 5 && y >= 3 && y < 6 ? 0 : 0xffff, f.Pixel(x, y));
+}
+
 TEST(SpriteGpu, TransientCompositionSkipsReadbackButRetainsPersistentSurfaces)
 {
 	Fixture f;

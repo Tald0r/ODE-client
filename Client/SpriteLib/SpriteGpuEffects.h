@@ -6,7 +6,7 @@
 // Shader operations use integer RGB565 channel arithmetic. SDL continues to
 // own the context, render targets and texture lifetime.
 namespace SpriteGpuEffects {
-enum class Effect { Copy, Gamma, Color, Darkness, GrayScale, Gradation, PaletteCopy, PaletteScreen, PaletteAlpha, LightGrid };
+enum class Effect { Copy, Gamma, Color, Darkness, GrayScale, Gradation, PaletteCopy, PaletteScreen, PaletteAlpha, LightGrid, ColorAlpha };
 struct LightCell { SDL_Rect rect; Uint8 light; };
 bool Attach(SDL_Renderer* renderer);
 void Detach();

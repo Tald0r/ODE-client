@@ -376,12 +376,35 @@ void CSpriteSurface::ChangeBrightnessBit(RECT* pRect, BYTE DarkBits)
 	/* TODO: Implement */
 }
 
+/* ============================================================================
+ * BltColorAlpha - blend a colour over pRect, keeping alpha2/32 of what lies
+ * under: per 5:6:5 channel colour * (31 - alpha2) / 32 + under * alpha2 / 32.
+ * The DirectDraw original packed pixels into words with each path masking
+ * the channels differently; this is the per-channel blend they approximate.
+ * Clipped to the surface like GammaBox565; alpha2 past 31 is held at 31.
+ * ============================================================================ */
 void CSpriteSurface::BltColorAlpha(RECT* pRect, WORD color, BYTE alpha2)
 {
-	(void)pRect;
-	(void)color;
-	(void)alpha2;
-	/* TODO: Implement */
+	if (!pRect) return;
+	if (pRect->left < 0) pRect->left = 0;
+	if (pRect->right > m_width) pRect->right = m_width;
+	if (pRect->top < 0) pRect->top = 0;
+	if (pRect->bottom > m_height) pRect->bottom = m_height;
+	if (pRect->left >= pRect->right || pRect->top >= pRect->bottom) return;
+	const int kept = (std::min)(int(alpha2), 31);
+	const SDL_Rect region{int(pRect->left), int(pRect->top),
+		int(pRect->right - pRect->left), int(pRect->bottom - pRect->top)};
+	if (SpriteGpu::ColorAlpha(m_backend_surface, region, color, kept)) return;
+	SurfacePixelLock lock(m_backend_surface);
+	if (!lock.info.pixels) return;
+	auto blend = [&](WORD under, int shift, int mask) {
+		return (((color >> shift) & mask) * (31 - kept) >> 5) + (((under >> shift) & mask) * kept >> 5);
+	};
+	for (int y = pRect->top; y < pRect->bottom; ++y) {
+		auto* row = reinterpret_cast<WORD*>(static_cast<BYTE*>(lock.info.pixels) + y * lock.info.pitch);
+		for (int x = pRect->left; x < pRect->right; ++x)
+			row[x] = WORD(blend(row[x], 11, 31) << 11 | blend(row[x], 5, 63) << 5 | blend(row[x], 0, 31));
+	}
 }
 
 void CSpriteSurface::SetTransient(bool transient)

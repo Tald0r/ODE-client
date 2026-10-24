@@ -1859,6 +1859,15 @@ WORD PixelAt(CSpriteSurface& surface, int x, int y)
 	surface.Unlock();
 	return pixel;
 }
+// What BltColorAlpha makes of `under`: per 5:6:5 channel colour * (31 -
+// alpha2) / 32 + under * alpha2 / 32, each share rounded down.
+WORD Blended(WORD colour, WORD under, int alpha2)
+{
+	const auto channel = [&](int shift, int mask) {
+		return (((colour >> shift) & mask) * (31 - alpha2) >> 5) + (((under >> shift) & mask) * alpha2 >> 5);
+	};
+	return WORD(channel(11, 0x1F) << 11 | channel(5, 0x3F) << 5 | channel(0, 0x1F));
+}
 void Paint(CSpriteSurface& surface, int width, int height)
 {
 	DWORD pitch = 0;
@@ -1985,8 +1994,9 @@ struct TileScene : Scene
 			}
 		return wrong;
 	}
-	// The screen shows the tile surface's cells where the view says.
-	int WrongScreenCorners()
+	// The screen shows the tile surface's cells where the view says, under
+	// a fade of `fadeColour` (none if black) keeping alpha2 / 32 of them.
+	int WrongScreenCorners(WORD fadeColour = 0, int alpha2 = 0)
 	{
 		MTopView& view = View();
 		int wrong = 0;
@@ -1996,7 +2006,8 @@ struct TileScene : Scene
 				const int x = sx * TILE_X - view.m_FirstZonePixel.x, y = sy * TILE_Y - view.m_FirstZonePixel.y;
 				if (x < 0 || y < 0 || x >= g_GameRect.right || y >= g_GameRect.bottom) continue;
 				const int tx = sx * TILE_X - view.m_TileSurfaceFirstZonePixelX, ty = sy * TILE_Y - view.m_TileSurfaceFirstZonePixelY;
-				const WORD expected = PixelAt(Tiles(), tx, ty);
+				WORD expected = PixelAt(Tiles(), tx, ty);
+				if (fadeColour != 0) expected = Blended(fadeColour, expected, alpha2);
 				if (PixelAt(screen, x, y) != expected && wrong++ == 0)
 					std::printf("      sector (%d,%d) on the screen: %04x, not %04x\n", sx, sy, PixelAt(screen, x, y), expected);
 			}
@@ -2042,7 +2053,7 @@ TEST(TopView2Frame, TheFirstDrawLaysEveryTileAndEachDrawStepsTheFade)
 	view.Draw(0, 0);
 	CHECK(!view.m_bFirstTileDraw);
 	CHECK_EQ(0, scene.WrongCells([](int, int) { return 0; }));
-	CHECK_EQ(0, scene.WrongScreenCorners());
+	CHECK_EQ(0, scene.WrongScreenCorners(TileScene::kWhite, 20));		// under the fade's first shade
 	CHECK_EQ(15, int(Access::Fade(view).Value()));
 	// Later draws keep the tiles and step the fade on.
 	scene.Gen(1);

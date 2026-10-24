@@ -65,8 +65,9 @@ Normal device replacement synchronizes surfaces before destroying resources.
 ## Programmable effects
 
 `SpriteGpuEffects` implements RGB565 gamma, channel tinting, darkness,
-grayscale, color-set lookup, palette screen blending, and per-pixel palette
-alpha in GLSL. The effects preserve the CPU routines' integer channel math,
+grayscale, color-set lookup, palette screen blending, per-pixel palette alpha
+and the colour blend of fades and translucent boxes (`BltColorAlpha`) in GLSL.
+The effects preserve the CPU routines' integer channel math,
 including the six-bit green channel and alpha's 0..32 range. Transparent run
 coverage is separate from palette index and color, so opaque black stays
 opaque. Palette indices/alpha upload once per sprite; the 256-entry color

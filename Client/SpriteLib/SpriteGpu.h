@@ -43,6 +43,8 @@ bool DrawEffect(spritectl_surface_t dest, int x, int y, spritectl_sprite_t sprit
 	SpriteGpuEffects::Effect effect, int value = 0, const Uint16* gradation = nullptr);
 bool Gamma(spritectl_surface_t dest, const SDL_Rect& rect, int value);
 bool Tint(spritectl_surface_t dest, const SDL_Rect& rect, int channel);
+// alpha2 (0..31) is the share of what lies under that is kept, out of 32.
+bool ColorAlpha(spritectl_surface_t dest, const SDL_Rect& rect, uint16_t color, int alpha2);
 bool LightGrid(spritectl_surface_t dest, std::span<const SpriteGpuEffects::LightCell> cells);
 bool DrawPalette(spritectl_surface_t dest, int x, int y, const CSpritePalBase* sprite,
 	const MPalette& palette, bool alpha, bool screen);
