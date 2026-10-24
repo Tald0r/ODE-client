@@ -1,5 +1,6 @@
 #include "test_framework.h"
 #include "VS_UI_GameCommon2.h"
+#include "VS_UI_GlobalResource.h"
 #include "MString.h"
 #include "pi_core.h"
 #include "u_window.h"
@@ -8,6 +9,7 @@
 #include <cstring>
 #include <fstream>
 #include <iterator>
+#include <stdexcept>
 #include <string>
 
 // The mailbox's file: a flag, a tab count, then each tab's mail count and
@@ -114,4 +116,69 @@ TEST(MailboxFile, AnEmptyFileLoadsNoMail)
 	const std::string saved = LoadedAndSaved("");
 	CHECK_EQ(0u, CountAt(saved, 5));
 	CHECK_EQ(0u, CountAt(saved, 9));
+}
+
+// A mail's date: the DWORD the server sends, over a hundred, is YYMMDD, and
+// the box stores it as "YY/MM/DD". GCUnionOfferList's date and
+// GCNoticeEvent's parameter (through UI_RunNotice) both reach AddMail.
+namespace {
+
+// The date the box stores for a new mail of this date, as it saves it, or
+// "threw" when AddMail let an exception out: nothing between a packet
+// handler and the UI catches a std::exception.
+std::string DateStored(DWORD date)
+{
+	WindowScope windows;
+	C_GLOBAL_RESOURCE* oldResource = gpC_global_resource;
+	std::string saved;
+	bool threw = false;
+	{
+		C_GLOBAL_RESOURCE resource;	// Start's close button
+		gpC_global_resource = &resource;
+		C_VS_UI_MAILBOX box;
+		const SIZE size = {0, 0};
+		try
+		{
+			box.AddMail(C_VS_UI_MAILBOX::TAB_MAIL_ID, 7, size, "s", "t", date, false);
+		}
+		catch (const std::exception&)
+		{
+			threw = true;
+		}
+		if (box.Running()) box.Finish();
+		{
+			std::ofstream out(kPath, std::ios::binary | std::ios::trunc);
+			box.SaveToFile(out);
+		}
+		std::ifstream in(kPath, std::ios::binary);
+		saved.assign((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+	}
+	std::remove(kPath);
+	gpC_global_resource = oldResource;
+	if (threw) return "threw";
+	// Flag, tab count, mail count, then the mail's id and mark; its
+	// sender, title and contents come before the date.
+	size_t at = 4 + 1 + 4 + 4 + 1;
+	for (int i = 0; i < 3; i++) at += 4 + CountAt(saved, at);
+	return saved.substr(at + 4, CountAt(saved, at));
+}
+
+} // namespace
+
+TEST(MailboxDate, ADateUnderSixDigitsIsZeroPaddedNotRefused)
+{
+	// Under 10000 the year, month and day are all zero: the date was two
+	// or three characters, and the second '/' went in past its end.
+	CHECK(DateStored(0) == "00/00/00");
+	CHECK(DateStored(999) == "00/00/09");
+	CHECK(DateStored(9999) == "00/00/99");
+	// The year 2000 is four digits; it was stored as "01/20/5".
+	CHECK(DateStored(120512) == "00/12/05");
+}
+
+TEST(MailboxDate, ASixDigitDateIsStoredAsBefore)
+{
+	CHECK(DateStored(3120512) == "03/12/05");
+	CHECK(DateStored(23120512) == "23/12/05");
+	CHECK(DateStored(4294967295u) == "42/94/9672");
 }

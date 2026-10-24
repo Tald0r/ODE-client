@@ -271,6 +271,28 @@ TEST(NPCDialogue, ParameterPassesPreserveTheExistingMapOrder)
 	CHECK(text == "%(A)");
 }
 
+TEST(NPCDialogue, CascadingParametersStopAtTheLongestTextAScriptHolds)
+{
+	// Each server value may hold the next key's marker, so every level
+	// multiplies the text: here 63 * 63 * 64 bytes, and two more levels of
+	// a 255-parameter packet would reach gigabytes. Substitution stops
+	// before the text passes 65536 bytes, what a saved script string holds.
+	DialogueWorld world;
+	world.Add(1, "NPC", {"%(A)"}, {});
+	ScriptParameter a, b, c;
+	std::string many;
+	for (int i = 0; i < 63; ++i) many += "%(B)";
+	a.setValue(many);
+	many.clear();
+	for (int i = 0; i < 63; ++i) many += "%(C)";
+	b.setValue(many);
+	c.setValue(std::string(64, 'x'));
+	std::string text;
+	world.table.GetSubjectParameter(1, 0, {{"A", &a}, {"B", &b}, {"C", &c}}, text);
+	CHECK(text.size() <= 65536u);
+	CHECK(text.compare(0, 64, std::string(64, 'x')) == 0);	// it got as far as it could
+}
+
 TEST(NPCDialogue, EmptySubjectAndReplyTemplatesClearPreviousOutput)
 {
 	DialogueWorld world;

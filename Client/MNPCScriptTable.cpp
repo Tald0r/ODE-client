@@ -82,20 +82,34 @@ bool CanSave(const NPC_SCRIPT& script)
 void ApplyParameters(const char* source, const HashMapScriptParameter& parameters,
 	std::string& output)
 {
+	// A value may hold later keys' markers, so each level multiplies the
+	// text; a few hundred server bytes could grow it to gigabytes. Stop
+	// before it passes what a saved script string holds.
+	const std::string::size_type longest = 65536;
 	output = source ? source : "";
 	for (const auto& entry : parameters)
 	{
 		if (!entry.second) continue;
 		const std::string key = "%(" + entry.first + ")";
 		const std::string value = entry.second->getValue();
-		std::string::size_type position = 0;
-		while ((position = output.find(key, position)) != std::string::npos)
+		// One pass per key: placeholders this key inserts are not revisited,
+		// and later keys still run in map order (the existing cascading rule).
+		std::string next;
+		std::string::size_type from = 0, at;
+		while ((at = output.find(key, from)) != std::string::npos)
 		{
-			output.replace(position, key.size(), value);
-			// Do not revisit placeholders inserted by this key. Later keys
-			// still run in map order, preserving the existing cascading rule.
-			position += value.size();
+			next.append(output, from, at - from);
+			if (next.size() + value.size() + (output.size() - at - key.size()) > longest)
+			{
+				next.append(output, at, std::string::npos);
+				output.swap(next);
+				return;
+			}
+			next += value;
+			from = at + key.size();
 		}
+		next.append(output, from, std::string::npos);
+		output.swap(next);
 	}
 }
 

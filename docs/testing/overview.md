@@ -46,6 +46,11 @@ so a tree configured without it generates no test target at all. Linux and macOS
 container also needs the common git directory mounted, at its host path or with `GIT_DIR` and
 `GIT_WORK_TREE` set, or `ratchets` and `source_encoding` fail on "not a git repository".
 
+Keep the checkout's path short. Bug reports carry `__FILE__` inside a 128-byte payload, so from a
+root longer than about 68 characters (an agent worktree under `.claude/worktrees/` is one) seven
+`unit_tests` checks fail: `BugReport` and the `PacketPlayerItems`/`PacketZoneItems` reports lose
+the tail they assert. The game's own reports lose it the same way when built from a deep path.
+
 # Baseline
 
 Measured on 2026-09-30 on the skill-info branch merged with master at `71159e1c`, so the tree held
