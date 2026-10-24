@@ -73,5 +73,6 @@ here, so a new string sink is found by the same walk.
   (`C_VS_UI_TEAM_MEMBER_LIST::AddMemberList`);
 - a blood bible's zone looked up with no `NULL` test (`C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl`).
   It is one of 32 lines under `Client` and `VS_UI` that dereference `g_pZoneTable->Get(...)` untested;
-- a mail date too short for the `/` that `C_VS_UI_MAILBOX::AddMail` inserts, which throws a
-  `std::out_of_range` that no caller catches.
+- a mail date too short for the `/` that `C_VS_UI_MAILBOX::AddMail` inserts, which threw a
+  `std::out_of_range` that no caller catches. Fixed: the date is zero-padded to its six digits,
+  pinned by `tests/unit/test_mailbox_file.cpp`. The other three are open.

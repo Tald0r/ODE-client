@@ -5547,16 +5547,10 @@ void	C_VS_UI_MAILBOX::AddMail(TAB_ID tab_id, DWORD id, SIZE windowSize, const ch
 {
 	char szTemp[512];
 	std::string dateString;
-	SafeFormat::Format(szTemp, "%d", date/100);
-	
-	// 앞에 년도가 오면 03 이런식으로 오면 앞에 0이 없는데 출력할땐 03년 이렇게 찍어줘야 하므로 년도가 한자리수면 앞에 0을 붙여준다.
-//	if(date < 10000000)
-//		// 년도가 한자리일때
-//	{
-//		dateString = "0";
-//	}
-	if(strlen(szTemp) < 6)
-		dateString = "0";
+	// YYMMDD, the year first: a year of 00 to 09 arrives without its leading
+	// zeros, so the date is padded to six digits. A shorter string had no
+	// room for the second '/', and insert() threw out of AddMail.
+	SafeFormat::Format(szTemp, "%06d", date/100);
 
 	
 

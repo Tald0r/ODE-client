@@ -2,6 +2,8 @@
 
 ## 2026-10-24
 
+* **Update**: the mail-date row of the [code-health review](reviews/code-health-review-2026-08-29.md)
+  is fixed, and [packet input safety](protocol/packet-input-safety.md) says so.
 * **Update**: [packet input safety](protocol/packet-input-safety.md) records the audit of server
   strings into fixed buffers. It found no site, and it names server values used as UI indices as
   the next item. The [code-health review](reviews/code-health-review-2026-08-29.md)'s *Found by
