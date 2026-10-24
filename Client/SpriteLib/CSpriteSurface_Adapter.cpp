@@ -994,8 +994,22 @@ void CSpriteSurface::BltIndexSpriteDarkness(POINT* pPoint, CIndexSprite* pSprite
 		s_Value1 = bits;
 		return;
 	}
+	// CIndexSprite's clip-width blit lets its first visible run ignore the
+	// right edge, so the rest overrun it. Darken the whole sprite unclipped
+	// over two fills instead: a pixel it wrote is the same in both.
 	BltClippedSpriteEffect(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch, RECT* clip) {
-		pSprite->BltDarknessClipWidth(dest, pitch, clip, bits);
+		const int width = pSprite->GetWidth();
+		if (width > 0x7fff) return;	// its row pitch is a WORD
+		std::vector<WORD> unset(size_t(width) * pSprite->GetHeight(), 0x0000), set(unset.size(), 0xffff);
+		pSprite->BltDarkness(unset.data(), WORD(width * 2), bits);
+		pSprite->BltDarkness(set.data(), WORD(width * 2), bits);
+		for (int y = clip->top; y < clip->bottom; ++y) {
+			WORD* row = reinterpret_cast<WORD*>(reinterpret_cast<BYTE*>(dest) + size_t(y - clip->top) * pitch);
+			for (int x = clip->left; x < clip->right; ++x) {
+				const size_t i = size_t(y) * width + x;
+				if (unset[i] == set[i]) row[x - clip->left] = unset[i];
+			}
+		}
 	});
 }
 

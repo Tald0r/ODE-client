@@ -1042,6 +1042,33 @@ TEST(SpriteGpu, IndexSpriteDarknessShiftsEveryChannelOfWhatItDraws)
 			CHECK_EQ(drawnHere ? Darken565(drawn[x - 2], held) : 0x5a69, f.Pixel(x, y));
 		}
 	}
+	// Cut by the surface's right edge, one row above its last: only what
+	// BltIndexSprite shows there darkens. CIndexSprite's clip-width blit
+	// ran its later runs past the edge, onto the next row.
+	struct Clipped : CIndexSprite565 {
+		Clipped()
+		{
+			// Two indexed pixels, a hole, then three fixed pixels.
+			m_Width = 6; m_Height = 2;
+			m_Pixels = new WORD*[2];
+			for (int y = 0; y < 2; ++y)
+				m_Pixels[y] = new WORD[12]{2, 0, 2, 0x0002, 0x0003, 0, 1, 0, 3, 0xffe0, 0x07ff, 0xf800};
+			m_bInit = true;
+		}
+	} clipped;
+	CSpriteSurface plain;
+	CHECK(plain.Init(8, 8));
+	plain.FillSurface(0x5a69);
+	POINT corner{5, 5};
+	plain.BltIndexSprite(&corner, &clipped);
+	CHECK(SpriteGpu::CpuAccess(plain.GetBackendSurface(), false));
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSpriteDarkness(&corner, &clipped, 2);
+	const auto* shown = plain.GetBackendSurface()->surface;
+	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+		const WORD under = reinterpret_cast<const WORD*>(static_cast<const BYTE*>(shown->pixels) + y * shown->pitch)[x];
+		CHECK_EQ(under == 0x5a69 ? WORD(0x5a69) : Darken565(under, 2), f.Pixel(x, y));
+	}
 	CIndexSprite::SetUsingColorSetOnly(0, saved);
 }
 
