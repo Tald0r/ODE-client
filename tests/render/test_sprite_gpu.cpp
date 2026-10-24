@@ -382,9 +382,49 @@ TEST(SpriteGpu, AFullTextureCacheFreesAnEighthOldestFirst)
 	draw(9);
 	CHECK_EQ(8 * bytes, SpriteGpu::GetCounters().textureBytes);
 	const auto uploads = SpriteGpu::GetCounters().spriteUploads;
-	draw(0);
-	draw(3);
+	for (int i : {0, 3, 4, 5, 6, 7, 8, 9}) draw(i);
 	CHECK_EQ(uploads, SpriteGpu::GetCounters().spriteUploads);
+	for (auto sprite : big) spritectl_destroy_sprite(sprite);
+}
+
+TEST(SpriteGpu, AFullTextureCacheEvictsAnOlderPaletteTextureFirst)
+{
+	// RGB and palette textures share the budget and one age order.
+	Fixture f;
+	if (!SpriteGpuEffects::Active()) return;
+	PaletteFixture<CSpritePal> small;
+	small.BuildHoles(false);
+	MPalette palette;
+	palette.Init(5);
+	palette[0] = 0; palette[1] = 0xffff; palette[2] = 0xf800;
+	palette[3] = 0x07e0; palette[4] = 0x001f;
+	const auto previousEffect = CSpriteSurface::s_pMemcpyPalEffectFunction;
+	CSpriteSurface::s_pMemcpyPalEffectFunction = nullptr;
+	POINT origin{0, 0};
+	constexpr int side = 2048;
+	constexpr uint64_t bytes = uint64_t(side) * side * 4;
+	std::vector<uint16_t> pixels(size_t(side) * side, 0);
+	std::vector<spritectl_sprite_t> big;
+	for (int i = 0; i < 8; ++i) {
+		big.push_back(spritectl_create_sprite(side, side, SPRITECTL_FORMAT_RGB565,
+			pixels.data(), pixels.size() * sizeof(uint16_t)));
+		CHECK(big.back() != nullptr);
+	}
+	auto draw = [&](int i) {
+		CHECK_EQ(0, spritectl_blt_sprite(f.surface.GetBackendSurface(), 0, 0, big[i], 0, 255));
+	};
+	f.surface.BltSpritePalEffect(&origin, &small, palette);	// the oldest texture
+	const uint64_t base = SpriteGpu::GetCounters().textureBytes;	// it and the palette
+	const uint64_t smallBytes = uint64_t(small.GetWidth()) * small.GetHeight() * 4;
+	for (int i = 0; i < 7; ++i) draw(i);
+	draw(7);	// past the budget: the small sprite, then 0 and 1, make room
+	CHECK_EQ(base - smallBytes + 6 * bytes, SpriteGpu::GetCounters().textureBytes);
+	const auto uploads = SpriteGpu::GetCounters().spriteUploads;
+	for (int i = 2; i < 8; ++i) draw(i);
+	CHECK_EQ(uploads, SpriteGpu::GetCounters().spriteUploads);
+	f.surface.BltSpritePalEffect(&origin, &small, palette);
+	CHECK_EQ(uploads + 1, SpriteGpu::GetCounters().spriteUploads);
+	CSpriteSurface::s_pMemcpyPalEffectFunction = previousEffect;
 	for (auto sprite : big) spritectl_destroy_sprite(sprite);
 }
 
