@@ -38,7 +38,7 @@ struct spritectl_surface_s {
 	int locked;                 /* Lock count */
 	int ref_count;              /* Reference count */
 	int cpu_borrowed;           /* Raw pixels exposed until CSpriteSurface::Unlock */
-	int transient;              /* Fully redrawn each frame; no reset checkpoint needed */
+	int transient;              /* Redrawn before use after a reset; no checkpoint needed */
 };
 
 /* ============================================================================

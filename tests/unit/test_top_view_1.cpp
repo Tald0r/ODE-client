@@ -24,6 +24,7 @@
 #include "DXLib/CDirectDraw.h"
 #include "SpriteLib/CSpriteSurface.h"
 #include "SpriteLib/SpriteLibBackend.h"
+#include "SpriteLib/SpriteLibBackendSDL.h"
 #include "SpriteLib/CIndexSprite.h"
 #include "SpriteLib/CSprite565.h"
 #include "MCreatureWear.h"
@@ -846,6 +847,8 @@ TEST(TopView1Init, SurfacesMakeANewTileSurfaceAndDropTheRenderer)
 		{
 			CHECK_EQ(24, v.m_pTileSurface->GetWidth());
 			CHECK_EQ(16, v.m_pTileSurface->GetHeight());
+			// A reset redraws the tile cache, so a scroll costs no readback.
+			CHECK_EQ(1, v.m_pTileSurface->GetBackendSurface()->transient);
 		}
 		CHECK_EQ(1, s_titleLoadings);
 		// Again, with no renderer: the surface is replaced once more.
