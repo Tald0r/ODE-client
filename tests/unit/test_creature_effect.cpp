@@ -32,9 +32,10 @@
 // then, gameview's since). Each test draws through the moved code onto
 // one surface and lays the blits it should make, with the colour sets
 // named, onto another; the two pictures must match. SpriteLib's SDL
-// backend draws a darkened, brightened or colour-set index sprite as a
-// plain one, so a picture shows where each part went and in which
-// colours, not how dark.
+// backend darkens a darkened index sprite but draws a brightened or
+// colour-set one as a plain one, so a picture shows where each part
+// went, in which colours and how dark, not a brightening or an effect
+// colour.
 namespace {
 
 const char* kSpritePath = "creature_effect_sprite.bin";
@@ -95,11 +96,13 @@ struct Canvas
 		return pixels;
 	}
 	bool Blank() { for (WORD pixel : Picture()) if (pixel != 0) return false; return true; }
-	void Blit(int x, int y, CIndexSprite& sprite)
+	// A plain blit, or one darkened by `darkBits`.
+	void Blit(int x, int y, CIndexSprite& sprite, int darkBits = 0)
 	{
 		POINT point = { x, y };
 		surface.Lock();
-		surface.BltIndexSprite(&point, &sprite);
+		if (darkBits == 0) surface.BltIndexSprite(&point, &sprite);
+		else surface.BltIndexSpriteDarkness(&point, &sprite, BYTE(darkBits));
 		surface.Unlock();
 	}
 };
@@ -266,11 +269,22 @@ struct Scene
 		draw(packs, &point, &creature, action, direction, frame);
 		drawn.surface.Unlock();
 	}
-	// A blit at (dx, dy) from where the creature stands, in its colours.
-	void Blit(int dx, int dy, CIndexSprite& sprite, int colorSet1, int colorSet2)
+	// A blit at (dx, dy) from where the creature stands, in its colours,
+	// darkened by `darkBits`.
+	void Blit(int dx, int dy, CIndexSprite& sprite, int colorSet1, int colorSet2, int darkBits = 0)
 	{
 		CIndexSprite::SetUsingColorSet(colorSet1, colorSet2);
-		expected.Blit(at.x + dx, at.y + dy, sprite);
+		expected.Blit(at.x + dx, at.y + dy, sprite, darkBits);
+	}
+	// The wipe at `count` of a blit at (dx, dy), in the colours last set.
+	void Wipe(int dx, int dy, CIndexSprite& sprite, int count)
+	{
+		POINT point = { at.x + dx, at.y + dy };
+		CSpriteSurface::s_Value1 = count;
+		CIndexSprite::SetEffect(CIndexSprite::EFFECT_WIPE_OUT);
+		expected.surface.Lock();
+		expected.surface.BltIndexSpriteEffect(&point, &sprite);
+		expected.surface.Unlock();
 	}
 };
 
@@ -305,11 +319,14 @@ bool SameRect(const RECT& a, int left, int top, int right, int bottom)
 }
 
 // Where an effect lays a part drawn at (x, y) for a creature that moved
-// (cx, cy) at once.
-struct Lay { int dx, dy; };
-std::vector<Lay> FadeOutLays(int, int) { return { { -25, 0 }, { 25, 0 } }; }
-std::vector<Lay> FastMoveLays(int cx, int cy) { return { { -cx, -cy }, { -(cx >> 1), -(cy >> 1) }, { 0, 0 } }; }
-std::vector<Lay> InPlaceLays(int, int) { return { { 0, 0 } }; }
+// (cx, cy) at once, and how dark (0 plain).
+struct Lay { int dx, dy, darkBits; };
+std::vector<Lay> FadeOutLays(int, int) { return { { -25, 0, 2 }, { 25, 0, 2 } }; }
+std::vector<Lay> FastMoveLays(int cx, int cy) { return { { -cx, -cy, 2 }, { -(cx >> 1), -(cy >> 1), 1 }, { 0, 0, 0 } }; }
+std::vector<Lay> InPlaceLays(int, int) { return { { 0, 0, 0 } }; }
+
+// A weapon's afterimage f frames back is darkened by this.
+const int kAfterimageDarkBits[6] = { 0, 1, 1, 2, 2, 3 };
 
 struct Kind
 {
@@ -348,8 +365,8 @@ TEST(CreatureEffect, EachLaysASlayersPartsWhereItShouldInTheirColours)
 		scene.Draw(kind.plain, slayer, ACTION_MOVE, 2, 2);
 		for (const Lay& lay : kind.lays(8, 4))
 		{
-			scene.Blit(2 + lay.dx, 3 + lay.dy, scene.addonSPK[1], 30, 60);
-			scene.Blit(14 + lay.dx, 30 + lay.dy, scene.addonSPK[2], 40, 50);
+			scene.Blit(2 + lay.dx, 3 + lay.dy, scene.addonSPK[1], 30, 60, lay.darkBits);
+			scene.Blit(14 + lay.dx, 30 + lay.dy, scene.addonSPK[2], 40, 50, lay.darkBits);
 		}
 		const bool same = scene.Same();
 		if (!same) std::printf("      %s\n", kind.name);
@@ -375,8 +392,8 @@ TEST(CreatureEffect, AUniqueItemsColourTakesBothSetsButACoatsKeepsItsFirst)
 			scene.Draw(kind.plain, slayer, ACTION_MOVE, 2, 2);
 			for (const Lay& lay : kind.lays(0, 0))
 			{
-				scene.Blit(2 + lay.dx, 3 + lay.dy, scene.addonSPK[1], 30, Special(special));
-				scene.Blit(14 + lay.dx, 30 + lay.dy, scene.addonSPK[2], Special(special), Special(special));
+				scene.Blit(2 + lay.dx, 3 + lay.dy, scene.addonSPK[1], 30, Special(special), lay.darkBits);
+				scene.Blit(14 + lay.dx, 30 + lay.dy, scene.addonSPK[2], Special(special), Special(special), lay.darkBits);
 			}
 			const bool same = scene.Same();
 			if (!same) std::printf("      %s\n", kind.name);
@@ -406,8 +423,9 @@ TEST(CreatureEffect, NothingForAFrameTheActionHasNotGotOrForWhatIsNotWorn)
 
 TEST(CreatureEffect, APetMovingFastIsDrawnToo)
 {
-	// A pet that brightens and one that darkens draw where a creature does
-	// (the SDL backend draws both as it is).
+	// A pet that brightens and one that darkens draw where a creature does;
+	// where it stands the second is a bit darker (the SDL backend draws a
+	// brightened blit as it is).
 	for (MFakeCreature::FAKE_CREATURE_TYPE type : {MFakeCreature::FAKE_CREATURE_BRIGHTNESS, MFakeCreature::FAKE_CREATURE_STAND})
 	{
 		Scene scene;
@@ -420,16 +438,19 @@ TEST(CreatureEffect, APetMovingFastIsDrawnToo)
 		pet.Wear(ADDON_COAT, 1, ITEM_CLASS_COAT, 30, 60);
 		Place(scene.addonFPK, 1, ACTION_MOVE, 2, 2, 1, 2, 3);
 		scene.Draw(DrawFastMove, pet, ACTION_MOVE, 2, 2);
-		for (const Lay& lay : FastMoveLays(6, 2)) scene.Blit(2 + lay.dx, 3 + lay.dy, scene.addonSPK[1], 30, 60);
+		const int darkBits = type == MFakeCreature::FAKE_CREATURE_BRIGHTNESS ? 0 : 1;
+		for (const Lay& lay : FastMoveLays(6, 2))
+			scene.Blit(2 + lay.dx, 3 + lay.dy, scene.addonSPK[1], 30, 60, lay.dx == 0 && lay.dy == 0 ? darkBits : lay.darkBits);
 		CHECK(scene.Same());
 	}
 }
 
 TEST(CreatureEffect, AnInvisibleSlayerWipesInBetweenItsEnds)
 {
-	// Wholly there (0) it draws plainly and wholly gone (64) darkened (which
-	// SDL draws plainly); in between it sets the wipe effect to its count
-	// and draws through it.
+	// Wholly there (0) it draws plainly and wholly gone (64) darkened by the
+	// snipping shift (2), which the darkened blit leaves in s_Value1; in
+	// between it draws that, sets the wipe effect to its count and draws
+	// through it over the darkened copy.
 	for (int count : {0, 64, 32})
 	{
 		Scene scene;
@@ -443,10 +464,12 @@ TEST(CreatureEffect, AnInvisibleSlayerWipesInBetweenItsEnds)
 		CSpriteSurface::s_Value1 = 99;
 		CIndexSprite::SetEffect(CIndexSprite::EFFECT_NET);
 		scene.Draw(DrawInvisible, slayer, ACTION_MOVE, 2, 2);
-		scene.Blit(2, 3, scene.addonSPK[1], 30, 60);
-		CHECK(scene.Same());
-		CHECK_EQ(count == 32 ? 32 : 99, CSpriteSurface::s_Value1);
+		// Before the expected blits, which set both again.
+		CHECK_EQ(count == 32 ? 32 : count == 64 ? 2 : 99, CSpriteSurface::s_Value1);
 		CHECK_EQ(count == 32, CIndexSprite::IsWipeOutEffect());
+		scene.Blit(2, 3, scene.addonSPK[1], 30, 60, count == 0 ? 0 : 2);
+		if (count == 32) scene.Wipe(2, 3, scene.addonSPK[1], 32);
+		CHECK(scene.Same());
 	}
 }
 
@@ -473,12 +496,15 @@ struct Swing
 		for (int f = 0; f <= frame; ++f) frames[WORD(f)].Set(TYPE_SPRITEID(f == frame ? 1 : 2), short(10 + 4 * f), 20);
 		Place(scene.addonFPK, 1, ACTION_ATTACK, 2, frame, 0, 2, 3);
 	}
-	// The afterimages of the frames before, at most five, then the sword.
-	void Expect(int frame, int afterimages)
+	// The afterimages of the frames before, at most five, darker the older
+	// (but under Rediance, which colours them), then the sword; a fading
+	// slayer's sword and coat are darkened by a bit.
+	void Expect(int frame, int afterimages, bool rediance = false, bool fading = false)
 	{
-		for (int f = 1; f <= afterimages; ++f) scene.Blit(10 + 4 * (frame - f), 20, scene.addonSPK[2], 40, 50);
-		scene.Blit(10 + 4 * frame, 20, scene.addonSPK[1], 40, 50);
-		scene.Blit(2, 3, scene.addonSPK[0], 30, 60);
+		for (int f = 1; f <= afterimages; ++f)
+			scene.Blit(10 + 4 * (frame - f), 20, scene.addonSPK[2], 40, 50, rediance ? 0 : kAfterimageDarkBits[f]);
+		scene.Blit(10 + 4 * frame, 20, scene.addonSPK[1], 40, 50, fading ? 1 : 0);
+		scene.Blit(2, 3, scene.addonSPK[0], 30, 60, fading ? 1 : 0);
 	}
 };
 
@@ -508,15 +534,15 @@ TEST(CreatureEffect, UnderRedianceOrAnEffectColourOrFadingTheWeaponIsStillDrawn)
 		swing.slayer.m_Addon[ADDON_RIGHTHAND].bEffectColor = TRUE;
 		swing.slayer.m_Addon[ADDON_RIGHTHAND].EffectColorSet = 77;
 		swing.scene.Draw(DrawWeaponFadeOut, swing.slayer, ACTION_ATTACK, 2, 3);
-		swing.Expect(3, 3);
+		swing.Expect(3, 3, true);
 		CHECK(swing.scene.Same());
 	}
-	// A fading slayer's parts draw too (one scene at a time: each makes
-	// and frees the model's globals).
+	// A fading slayer's parts draw too, darkened (one scene at a time:
+	// each makes and frees the model's globals).
 	Swing fading(2);
 	fading.slayer.SetFade();
 	fading.scene.Draw(DrawWeaponFadeOut, fading.slayer, ACTION_ATTACK, 2, 2);
-	fading.Expect(2, 2);
+	fading.Expect(2, 2, false, true);
 	CHECK(fading.scene.Same());
 }
 
@@ -546,8 +572,8 @@ TEST(CreatureEffect, AnAdvancedSlayerLaysItsPartsFromItsGendersPack)
 			scene.Draw(kind.advanced, slayer, ACTION_MAGIC, 2, 2);
 			for (const Lay& lay : kind.lays(8, 4))
 			{
-				scene.Blit(2 + lay.dx, 3 + lay.dy, sprites[1], 30, 60);
-				scene.Blit(14 + lay.dx, 30 + lay.dy, sprites[2], Special(UNIQUE_ITEM_COLOR), Special(UNIQUE_ITEM_COLOR));
+				scene.Blit(2 + lay.dx, 3 + lay.dy, sprites[1], 30, 60, lay.darkBits);
+				scene.Blit(14 + lay.dx, 30 + lay.dy, sprites[2], Special(UNIQUE_ITEM_COLOR), Special(UNIQUE_ITEM_COLOR), lay.darkBits);
 			}
 			const bool same = scene.Same();
 			if (!same) std::printf("      %s\n", kind.name);
@@ -597,9 +623,9 @@ TEST(CreatureEffect, AnAdvancedSlayersNewItemsTakeTheirOwnFramesAndActions)
 		scene.Draw(kind.advanced, slayer, ACTION_MAGIC, 2, 2);
 		for (const Lay& lay : kind.lays(8, 4))
 		{
-			scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[0], 30, 60);
-			scene.Blit(26 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 30, 60);
-			scene.Blit(14 + lay.dx, 30 + lay.dy, scene.slayerManSPK[2], 40, 50);
+			scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[0], 30, 60, lay.darkBits);
+			scene.Blit(26 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 30, 60, lay.darkBits);
+			scene.Blit(14 + lay.dx, 30 + lay.dy, scene.slayerManSPK[2], 40, 50, lay.darkBits);
 		}
 		const bool same = scene.Same();
 		if (!same) std::printf("      %s\n", kind.name);
@@ -611,7 +637,7 @@ TEST(CreatureEffect, AnAdvancedSlayersNewItemsTakeTheirOwnFramesAndActions)
 			2, 2, 2, 7, 7);
 		scene.Clear();
 		scene.Draw(kind.advanced, slayer, ACTION_MAGIC, 2, 2);
-		for (const Lay& lay : kind.lays(8, 4)) scene.Blit(7 + lay.dx, 7 + lay.dy, scene.slayerManSPK[2], 30, 60);
+		for (const Lay& lay : kind.lays(8, 4)) scene.Blit(7 + lay.dx, 7 + lay.dy, scene.slayerManSPK[2], 30, 60, lay.darkBits);
 		CHECK(scene.Same());
 	}
 }
@@ -666,7 +692,7 @@ TEST(CreatureEffect, AnAdvancedSlayersSwungWeaponLeavesItsAfterimages)
 			scene.Draw(DrawWeaponFadeOutForACSlayer, slayer, ACTION_MAGIC, 2, c.frame);
 			const int set1 = c.colorSet2 == UNIQUE_ITEM_COLOR ? Special(UNIQUE_ITEM_COLOR) : 40;
 			const int set2 = c.colorSet2 == UNIQUE_ITEM_COLOR ? Special(UNIQUE_ITEM_COLOR) : c.colorSet2;
-			for (int f = 1; f <= (std::min)(c.frame, 5); ++f) scene.Blit(10 + 4 * (c.frame - f), 20, scene.slayerManSPK[2], set1, set2);
+			for (int f = 1; f <= (std::min)(c.frame, 5); ++f) scene.Blit(10 + 4 * (c.frame - f), 20, scene.slayerManSPK[2], set1, set2, kAfterimageDarkBits[f]);
 			scene.Blit(10 + 4 * c.frame, 20, scene.slayerManSPK[1], set1, set2);
 			scene.Blit(50 + 4 * c.frame, 60, scene.slayerManSPK[1], 30, 60);
 			const bool same = scene.Same();
@@ -678,9 +704,9 @@ TEST(CreatureEffect, AnAdvancedSlayersSwungWeaponLeavesItsAfterimages)
 TEST(CreatureEffect, AnAdvancedSlayersWeaponUnderRedianceOrAnEffectColourOrFadingIsStillDrawn)
 {
 	// Rediance's afterimages and an effect-coloured weapon go through the
-	// colour-set blit, a fading one through the darkened one (both drawn
-	// plainly by SDL, in the colours last set): all of them drawn, for the
-	// sword's part and for a new sword.
+	// colour-set blit (drawn plainly by SDL, in the colours last set); a
+	// fading one's afterimages darken as ever and the weapon by a bit: all
+	// of them drawn, for the sword's part and for a new sword.
 	for (bool newItems : {false, true})
 		for (int kind : {0, 1})
 		{
@@ -702,8 +728,8 @@ TEST(CreatureEffect, AnAdvancedSlayersWeaponUnderRedianceOrAnEffectColourOrFadin
 			frames.Init(3);
 			for (int f = 0; f <= 2; ++f) frames[WORD(f)].Set(TYPE_SPRITEID(f == 2 ? 1 : 2), short(10 + 4 * f), 20);
 			scene.Draw(DrawWeaponFadeOutForACSlayer, slayer, ACTION_MAGIC, 2, 2);
-			for (int f = 1; f <= 2; ++f) scene.Blit(10 + 4 * (2 - f), 20, scene.slayerManSPK[2], 40, 50);
-			scene.Blit(18, 20, scene.slayerManSPK[1], 40, 50);
+			for (int f = 1; f <= 2; ++f) scene.Blit(10 + 4 * (2 - f), 20, scene.slayerManSPK[2], 40, 50, kind == 0 ? 0 : kAfterimageDarkBits[f]);
+			scene.Blit(18, 20, scene.slayerManSPK[1], 40, 50, kind == 0 ? 0 : 1);
 			const bool same = scene.Same();
 			if (!same) std::printf("      %s, %s\n", newItems ? "a new sword" : "a sword's part", kind == 0 ? "Rediance" : "fading");
 			CHECK(same);
@@ -858,7 +884,7 @@ TEST(CreatureEffect, ThePartsAreLaidInTheOrderOfTheirFacing)
 					for (int part : {0, 1})
 					{
 						const bool shield = (part == 0) == shieldFirst;
-						scene.Blit(2 + lay.dx, 3 + lay.dy, sprites[shield ? 1 : 2], shield ? 30 : 40, shield ? 60 : 50);
+						scene.Blit(2 + lay.dx, 3 + lay.dy, sprites[shield ? 1 : 2], shield ? 30 : 40, shield ? 60 : 50, lay.darkBits);
 					}
 				const bool same = scene.Same();
 				if (!same) std::printf("      %s%s facing %d\n", advanced ? "advanced " : "", kind.name, direction);
@@ -888,8 +914,8 @@ TEST(CreatureEffect, AnAdvancedSlayersSpecialColoursAndScreenRect)
 			scene.Draw(kind.advanced, slayer, ACTION_MAGIC, 2, 2);
 			for (const Lay& lay : kind.lays(0, 0))
 			{
-				scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 30, Special(UNIQUE_ITEM_COLOR));
-				scene.Blit(14 + lay.dx, 30 + lay.dy, scene.slayerManSPK[2], Special(QUEST_ITEM_COLOR), Special(QUEST_ITEM_COLOR));
+				scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 30, Special(UNIQUE_ITEM_COLOR), lay.darkBits);
+				scene.Blit(14 + lay.dx, 30 + lay.dy, scene.slayerManSPK[2], Special(QUEST_ITEM_COLOR), Special(QUEST_ITEM_COLOR), lay.darkBits);
 			}
 			const bool same = scene.Same();
 			if (!same) std::printf("      %s%s\n", kind.name, newItems ? " (new items)" : "");
@@ -961,8 +987,8 @@ TEST(CreatureEffect, EachNewItemClassFromItsOwnType)
 				scene.Draw(kind.advanced, slayer, ACTION_MAGIC, 2, 0);
 				for (const Lay& lay : kind.lays(0, 0))
 				{
-					scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 40, 50);
-					if (isNew && c.slot == ADDON_COAT) scene.Blit(20 + lay.dx, 3 + lay.dy, scene.slayerManSPK[2], 40, 50);
+					scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 40, 50, lay.darkBits);
+					if (isNew && c.slot == ADDON_COAT) scene.Blit(20 + lay.dx, 3 + lay.dy, scene.slayerManSPK[2], 40, 50, lay.darkBits);
 				}
 				const bool same = scene.Same();
 				if (!same) std::printf("      %s, item class %d type %d\n", kind.name, int(c.itemClass), type);
@@ -988,10 +1014,12 @@ TEST(CreatureEffect, AnAdvancedInvisibleSlayerWipesInBetweenItsEnds)
 			CSpriteSurface::s_Value1 = 99;
 			CIndexSprite::SetEffect(CIndexSprite::EFFECT_NET);
 			scene.Draw(DrawInvisibleForACSlayer, slayer, ACTION_MAGIC, 2, 2);
-			scene.Blit(2, 3, scene.slayerManSPK[1], 40, 50);
-			CHECK(scene.Same());
-			CHECK_EQ(count == 32 ? 32 : 99, CSpriteSurface::s_Value1);
+			// As the plain slayer's: snipping-dark gone, wiped over it going.
+			CHECK_EQ(count == 32 ? 32 : count == 64 ? 2 : 99, CSpriteSurface::s_Value1);
 			CHECK_EQ(count == 32, CIndexSprite::IsWipeOutEffect());
+			scene.Blit(2, 3, scene.slayerManSPK[1], 40, 50, count == 0 ? 0 : 2);
+			if (count == 32) scene.Wipe(2, 3, scene.slayerManSPK[1], 32);
+			CHECK(scene.Same());
 		}
 }
 
@@ -1012,7 +1040,9 @@ TEST(CreatureEffect, AnAdvancedPetMovingFastIsDrawnToo)
 				: ConvAdvancementSlayerActionFromSlayerAction(ACTION_MAGIC, &pet) - ADVANCEMENT_ACTION_START;
 			Place(scene.slayerManFPK, newItems ? 8 : int(AC_HELMET), action, 2, 2, 1, 2, 3);
 			scene.Draw(DrawFastMoveForACSlayer, pet, ACTION_MAGIC, 2, 2);
-			for (const Lay& lay : FastMoveLays(6, 2)) scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 40, 50);
+			const int darkBits = type == MFakeCreature::FAKE_CREATURE_BRIGHTNESS ? 0 : 1;
+			for (const Lay& lay : FastMoveLays(6, 2))
+				scene.Blit(2 + lay.dx, 3 + lay.dy, scene.slayerManSPK[1], 40, 50, lay.dx == 0 && lay.dy == 0 ? darkBits : lay.darkBits);
 			CHECK(scene.Same());
 		}
 }
@@ -1026,7 +1056,7 @@ TEST(CreatureEffect, ASwungSpecialWeaponsAfterimagesTakeItsColours)
 	swing.slayer.Wear(ADDON_COAT, 1, ITEM_CLASS_COAT, 30, QUEST_ITEM_COLOR);
 	swing.scene.Draw(DrawWeaponFadeOut, swing.slayer, ACTION_ATTACK, 2, 2);
 	const int unique = Special(UNIQUE_ITEM_COLOR);
-	for (int f = 1; f <= 2; ++f) swing.scene.Blit(10 + 4 * (2 - f), 20, swing.scene.addonSPK[2], unique, unique);
+	for (int f = 1; f <= 2; ++f) swing.scene.Blit(10 + 4 * (2 - f), 20, swing.scene.addonSPK[2], unique, unique, kAfterimageDarkBits[f]);
 	swing.scene.Blit(18, 20, swing.scene.addonSPK[1], unique, unique);
 	swing.scene.Blit(2, 3, swing.scene.addonSPK[0], 30, Special(QUEST_ITEM_COLOR));
 	CHECK(swing.scene.Same());

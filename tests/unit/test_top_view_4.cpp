@@ -46,9 +46,10 @@
 // executable's until then). Each test draws through the view onto one
 // surface and lays the blits it should make, with the colour sets named,
 // onto another; the two pictures must match. SpriteLib's SDL backend draws
-// a darkened or colour-set index sprite as a plain one in the colour sets
-// last set (CSpriteSurface_Adapter.cpp), and the outline blits draw
-// nothing, so a picture shows which sprite went where in which colours.
+// a colour-set index sprite as a plain one in the colour sets last set
+// (CSpriteSurface_Adapter.cpp) but darkens a darkened one, and the outline
+// blits draw nothing, so a picture shows which sprite went where, in which
+// colours and how dark.
 
 bool IsEscapeDrawCreatureFunction(MCreature* pCreature);
 extern int defaultCoatColor;
@@ -206,11 +207,13 @@ struct Canvas
 		return pixels;
 	}
 	bool Blank() { for (WORD pixel : Picture()) if (pixel != background) return false; return true; }
-	void Blit(int x, int y, CIndexSprite& sprite)
+	// A plain blit, or one darkened by `darkBits`.
+	void Blit(int x, int y, CIndexSprite& sprite, int darkBits = 0)
 	{
 		POINT point = { x, y };
 		surface.Lock();
-		surface.BltIndexSprite(&point, &sprite);
+		if (darkBits == 0) surface.BltIndexSprite(&point, &sprite);
+		else surface.BltIndexSpriteDarkness(&point, &sprite, BYTE(darkBits));
 		surface.Unlock();
 	}
 	void Blit(int x, int y, CSprite& sprite)
@@ -528,10 +531,15 @@ struct Scene
 	// A blit at (dx, dy) from where the creature stands, in its colours.
 	void Blit(int dx, int dy, CIndexSprite& sprite, int c0, int c1, int c2 = kC2, int c3 = kC3)
 	{
+		Darkened(0, dx, dy, sprite, c0, c1, c2, c3);
+	}
+	// The same darkened by `darkBits` (0 plain).
+	void Darkened(int darkBits, int dx, int dy, CIndexSprite& sprite, int c0, int c1, int c2 = kC2, int c3 = kC3)
+	{
 		CIndexSprite::SetUsingColorSet(c0, c1);
 		CIndexSprite::SetUsingColorSetOnly(2, c2);
 		CIndexSprite::SetUsingColorSetOnly(3, c3);
-		expected.Blit(at.x + dx, at.y + dy, sprite);
+		expected.Blit(at.x + dx, at.y + dy, sprite, darkBits);
 	}
 	void Blit(int dx, int dy, CSprite& sprite) { expected.Blit(at.x + dx, at.y + dy, sprite); }
 	// The drawn picture is the expected one, and not blank.
@@ -1005,7 +1013,7 @@ TEST(TopView4Body, AFadingBodyAndACutOneAreStillDrawn)
 	Place(scene.view.m_CreatureFPK, kBody, ACTION_STAND, 3, 0, 1, 5, 6);
 	monster.SetFade();
 	scene.Draw(monster);
-	scene.Blit(5, 6, scene.Body(1), 30, 60);
+	scene.Darkened(1, 5, 6, scene.Body(1), 30, 60);			// a bit darker
 	CHECK(scene.Same());
 	// Cut, it sinks by its count less 24; the rect stays where it stood.
 	monster.UnSetFade();
@@ -1132,7 +1140,8 @@ TEST(TopView4Body, AnInvisibleBodyWipesOutByItsCount)
 TEST(TopView4Body, AFastMoverLeavesDarkenedCopiesBehindIt)
 {
 	// Two copies, a wild wolf six, each half its step further back, the
-	// farthest first; then the body.
+	// farthest first, the nearest darkened by one bit and the rest by two;
+	// then the body.
 	for (int type : {kMonster, CREATURETYPE_WILD_WOLF})
 	{
 		Scene scene;
@@ -1146,7 +1155,7 @@ TEST(TopView4Body, AFastMoverLeavesDarkenedCopiesBehindIt)
 		Place(scene.view.m_CreatureFPK, kBody, ACTION_STAND, 3, 0, 1, 5, 6);
 		scene.Draw(monster);
 		const int copies = type == kMonster ? 2 : 6;
-		for (int n = copies; n > 0; --n) scene.Blit(5 - 4 * n, 6 - 2 * n, scene.Body(1), 30, 60);
+		for (int n = copies; n > 0; --n) scene.Darkened((std::min)(2, n), 5 - 4 * n, 6 - 2 * n, scene.Body(1), 30, 60);
 		scene.Blit(5, 6, scene.Body(1), 30, 60);
 		CHECK(scene.Same());
 	}
@@ -1164,10 +1173,11 @@ TEST(TopView4Body, BloodyZenithRaisesItsCopiesAndItsBodyOnASine)
 	monster.m_MoveCountMax = 6;
 	Place(scene.view.m_CreatureFPK, kBody, ACTION_STAND, 3, 0, 1, 5, 60);
 	scene.Draw(monster);
-	// Copy n rises sin((3 - n) pi / 6) * 100; the body sin(3 pi / 6) * 100.
-	scene.Blit(5, 60, scene.Body(1), 30, 60);
-	scene.Blit(5, 10, scene.Body(1), 30, 60);
-	scene.Blit(5, -27, scene.Body(1), 30, 60);
+	// Copy n rises sin((3 - n) pi / 6) * 100, darkened by min(2, n) bits;
+	// the body sin(3 pi / 6) * 100.
+	scene.Darkened(2, 5, 60, scene.Body(1), 30, 60);
+	scene.Darkened(2, 5, 10, scene.Body(1), 30, 60);
+	scene.Darkened(1, 5, -27, scene.Body(1), 30, 60);
 	scene.Blit(5, -40, scene.Body(1), 30, 60);
 	CHECK(scene.Same());
 	// Each draw counts it down.
@@ -1182,7 +1192,8 @@ TEST(TopView4Body, BloodyZenithRaisesItsCopiesAndItsBodyOnASine)
 TEST(TopView4Body, AfterimagesTrailTheBodyFromItsFramesBefore)
 {
 	// Frame 1 is drawn: the afterimages are frames 0 and 3 (wrapped), the
-	// second stepped back by the move. Facing 4 or less they go first.
+	// second stepped back by the move, each darkened by a bit (the first
+	// two of 0, 1, 1, 2, 2, 3). Facing 4 or less they go first.
 	for (int direction : {3, 4, 5, 7})
 	{
 		Scene scene;
@@ -1197,8 +1208,8 @@ TEST(TopView4Body, AfterimagesTrailTheBodyFromItsFramesBefore)
 		scene.Draw(monster);
 		const bool first = direction <= 4;
 		if (!first) scene.Blit(5, 6, scene.Body(1), 30, 60);
-		scene.Blit(5, 6, scene.Body(2), 30, 60);
-		scene.Blit(30 - 4, 20 - 2, scene.Body(3), 30, 60);
+		scene.Darkened(1, 5, 6, scene.Body(2), 30, 60);
+		scene.Darkened(1, 30 - 4, 20 - 2, scene.Body(3), 30, 60);
 		if (first) scene.Blit(5, 6, scene.Body(1), 30, 60);
 		const bool same = scene.Same();
 		if (!same) std::printf("      facing %d\n", direction);
@@ -1218,9 +1229,10 @@ TEST(TopView4Body, AfterimagesOfAnyOtherActionStandStill)
 	monster.m_cY = 2;
 	Frames(scene.view.m_CreatureFPK, kBody, ACTION_ATTACK, 2, {{1, 5, 6}, {0, 70, 0}, {3, 30, 20}, {2, 12, 30}});
 	scene.Draw(monster);
-	scene.Blit(12, 30, scene.Body(2), 30, 60);
-	scene.Blit(30, 20, scene.Body(3), 30, 60);
-	scene.Blit(70, 0, scene.Body(0), 30, 60);
+	// The third afterimage darker, by two bits.
+	scene.Darkened(1, 12, 30, scene.Body(2), 30, 60);
+	scene.Darkened(1, 30, 20, scene.Body(3), 30, 60);
+	scene.Darkened(2, 70, 0, scene.Body(0), 30, 60);
 	scene.Blit(5, 6, scene.Body(1), 30, 60);
 	CHECK(scene.Same());
 }
@@ -1238,7 +1250,9 @@ TEST(TopView4Body, Types764And765DrawTheirAfterimagesFirstWhicheverWayTheyFace)
 		monster.m_ShadowCount = 1;
 		Frames(scene.view.m_CreatureFPK, kBody, ACTION_STAND, 6, {{2, 5, 6}, {1, 5, 6}});
 		scene.Call([&](POINT* p) { Access::Vampire(scene.view, p, &monster, ACTION_STAND, 6, 1, kBody, 0); });
-		scene.Blit(5, 6, scene.Body(type == kMonster ? 2 : 1), 30, 60);
+		// Facing 6 another type's afterimage, darkened, lies over its body.
+		if (type == kMonster) scene.Darkened(1, 5, 6, scene.Body(2), 30, 60);
+		else scene.Blit(5, 6, scene.Body(1), 30, 60);
 		CHECK(scene.Same());
 	}
 }
@@ -2622,13 +2636,13 @@ TEST(TopView4Slayer, AnEffectColouredPartTakesTheColoursOfThePartBefore)
 	scene.Blit(2, 3, scene.view.m_AddonSPK[1], 1, 2);
 	scene.Blit(14, 20, scene.view.m_AddonSPK[2], 40, 50);
 	CHECK(scene.Same());
-	// Fading, plainly (SDL draws the darkened blit as it is).
+	// Fading, each part a bit darker.
 	slayer.m_Addon[ADDON_COAT].bEffectColor = FALSE;
 	slayer.SetFade();
 	scene.Clear();
 	DrawSlayer(scene, slayer, ACTION_STAND, 2, 0);
-	scene.Blit(2, 3, scene.view.m_AddonSPK[1], 30, 60);
-	scene.Blit(14, 20, scene.view.m_AddonSPK[2], 40, 50);
+	scene.Darkened(1, 2, 3, scene.view.m_AddonSPK[1], 30, 60);
+	scene.Darkened(1, 14, 20, scene.view.m_AddonSPK[2], 40, 50);
 	CHECK(scene.Same());
 }
 
@@ -2937,11 +2951,12 @@ TEST(TopView4Ousters, EffectColouredPartsTakeTheColourSetBlitAndFadingIsDrawn)
 		scene.Blit(22, 3, sprites[2], 11, 60, 80, 70);
 		CHECK(scene.Same());
 		chakram.bEffectColor = FALSE;
+		// Fading, each part a bit darker.
 		ousters.SetFade();
 		scene.Clear();
 		DrawOusters(scene, ousters, ACTION_MAGIC, 2, 0, advanced);
-		scene.Blit(2, 3, sprites[1], 11, 60, 80, 70);
-		scene.Blit(22, 3, sprites[2], 44, 80, 80, 70);
+		scene.Darkened(1, 2, 3, sprites[1], 11, 60, 80, 70);
+		scene.Darkened(1, 22, 3, sprites[2], 44, 80, 80, 70);
 		CHECK(scene.Same());
 	}
 }
@@ -3123,13 +3138,13 @@ TEST(TopView4AdvancedSlayer, AnEffectColouredPartTakesTheColoursBefore)
 		scene.Blit(2, 3, scene.view.m_AdvancementSlayerManSPK[1], 30, 60);
 		scene.Blit(14, 30, scene.view.m_AdvancementSlayerManSPK[2], 30, 60);
 		CHECK(scene.Same());
-		// Fading, plainly.
+		// Fading, each part a bit darker.
 		helm.bEffectColor = FALSE;
 		slayer.SetFade();
 		scene.Clear();
 		DrawAdvancedSlayer(scene, slayer, ACTION_MAGIC, 2, 0);
-		scene.Blit(2, 3, scene.view.m_AdvancementSlayerManSPK[1], 30, 60);
-		scene.Blit(14, 30, scene.view.m_AdvancementSlayerManSPK[2], 40, 50);
+		scene.Darkened(1, 2, 3, scene.view.m_AdvancementSlayerManSPK[1], 30, 60);
+		scene.Darkened(1, 14, 30, scene.view.m_AdvancementSlayerManSPK[2], 40, 50);
 		CHECK(scene.Same());
 	}
 }
@@ -3338,7 +3353,7 @@ TEST(TopView4AdvancedVampire, ItsAfterimagesAreDrawnFromTheCreaturePack)
 	// Recorded defects: the body's afterimage blits m_CreatureSPK with the
 	// advanced pack's sprite ID (MTopViewDraw.cpp 2794), and the weapon's
 	// reads the body's frames (FA, not FAWEAPON) and m_CreatureSPK too
-	// (3027-3030). Facing 3, the afterimages go first.
+	// (3027-3030). Facing 3, the afterimages, a bit darker, go first.
 	Scene scene;
 	Wearer vampire;
 	vampire.Become(kVampire);
@@ -3347,9 +3362,9 @@ TEST(TopView4AdvancedVampire, ItsAfterimagesAreDrawnFromTheCreaturePack)
 	Frames(scene.view.m_AdvancementVampireManFPK, 0, kStop, 3, {{2, 30, 20}, {1, 5, 6}});
 	Frames(scene.view.m_AdvancementVampireManFPK, 1, kStop, 3, {{3, 60, 40}, {0, 25, 6}});
 	DrawAdvancedVampire(scene, vampire, ACTION_STAND, 3, 1);
-	scene.Blit(30, 20, scene.Body(2), 30, 60);
+	scene.Darkened(1, 30, 20, scene.Body(2), 30, 60);
 	scene.Blit(5, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
-	scene.Blit(30, 20, scene.Body(2), 30, 60);
+	scene.Darkened(1, 30, 20, scene.Body(2), 30, 60);
 	scene.Blit(25, 6, scene.view.m_AdvancementVampireManSPK[0], 30, 60);
 	CHECK(scene.Same());
 	// Facing 5, the body and the weapon each before its afterimage.
@@ -3357,7 +3372,7 @@ TEST(TopView4AdvancedVampire, ItsAfterimagesAreDrawnFromTheCreaturePack)
 	Frames(scene.view.m_AdvancementVampireManFPK, 1, kStop, 5, {{3, 60, 40}, {0, 25, 6}});
 	scene.Clear();
 	DrawAdvancedVampire(scene, vampire, ACTION_STAND, 5, 1);
-	scene.Blit(5, 6, scene.Body(2), 30, 60);
+	scene.Darkened(1, 5, 6, scene.Body(2), 30, 60);
 	scene.Blit(25, 6, scene.view.m_AdvancementVampireManSPK[0], 30, 60);
 	CHECK(scene.Same());
 }
@@ -3376,8 +3391,8 @@ TEST(TopView4AdvancedVampire, AdvancedMovingStepsItsAfterimagesBack)
 	CHECK_EQ(int(ACTION_MOVE), move);
 	Frames(scene.view.m_AdvancementVampireManFPK, 0, move, 2, {{2, 30, 20}, {0, 60, 0}, {1, 5, 6}});
 	DrawAdvancedVampire(scene, vampire, ACTION_MOVE, 2, 2);
-	scene.Blit(60, 0, scene.Body(0), 30, 60);
-	scene.Blit(30 - 4, 20 - 2, scene.Body(2), 30, 60);
+	scene.Darkened(1, 60, 0, scene.Body(0), 30, 60);
+	scene.Darkened(1, 30 - 4, 20 - 2, scene.Body(2), 30, 60);
 	scene.Blit(5, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
 	CHECK(scene.Same());
 }
@@ -3439,9 +3454,10 @@ TEST(TopView4AdvancedVampire, MovingFastBothLayersLeaveCopiesAndACutOneSinks)
 	Place(scene.view.m_AdvancementVampireManFPK, 0, kStop, 3, 0, 1, 5, 6);
 	Place(scene.view.m_AdvancementVampireManFPK, 1, kStop, 3, 0, 2, 45, 30);
 	DrawAdvancedVampire(scene, vampire, ACTION_STAND, 3, 0);
-	for (int n = 2; n > 0; --n) scene.Blit(5 - 4 * n, 6 - 2 * n, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
+	// Each layer's farther copy darkened by two bits, the nearer by one.
+	for (int n = 2; n > 0; --n) scene.Darkened(n, 5 - 4 * n, 6 - 2 * n, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
 	scene.Blit(5, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
-	for (int n = 2; n > 0; --n) scene.Blit(45 - 4 * n, 30 - 2 * n, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
+	for (int n = 2; n > 0; --n) scene.Darkened(n, 45 - 4 * n, 30 - 2 * n, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
 	scene.Blit(45, 30, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
 	CHECK(scene.Same());
 	vampire.m_bFastMove = false;
@@ -3471,9 +3487,10 @@ TEST(TopView4AdvancedVampire, BloodyZenithCountsDownOnceForEachLayer)
 	Place(scene.view.m_AdvancementVampireManFPK, 0, kStop, 3, 0, 1, 5, 6);
 	Place(scene.view.m_AdvancementVampireManFPK, 1, kStop, 3, 0, 2, 45, 30);
 	DrawAdvancedVampire(scene, vampire, ACTION_STAND, 3, 0);
-	// Move count 0: no rise.
-	for (int n = 3; n >= 0; --n) scene.Blit(5 - 2 * n, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
-	for (int n = 2; n >= 0; --n) scene.Blit(45 - 2 * n, 30, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
+	// Move count 0: no rise. Copy n is darkened by min(2, n) bits; n 0 is
+	// the layer itself.
+	for (int n = 3; n >= 0; --n) scene.Darkened((std::min)(2, n), 5 - 2 * n, 6, scene.view.m_AdvancementVampireManSPK[1], 30, 60);
+	for (int n = 2; n >= 0; --n) scene.Darkened((std::min)(2, n), 45 - 2 * n, 30, scene.view.m_AdvancementVampireManSPK[2], 30, 60);
 	CHECK(scene.Same());
 	CHECK_EQ(1, vampire.GetBloodyZenithCount());
 }
@@ -3781,8 +3798,9 @@ TEST(TopView4SelectedVampire, TheBodyGoesToTheOutlinesAndItsAfterimagesToTheSurf
 	scene.Call([&](POINT* p) { Access::SelectedVampire(scene.view, p, &monster, ACTION_MOVE, 3, 1, kBody, 0); });
 	CHECK(SameEntries(scene.view.m_SOM, {{45, 56, &scene.Body(1), 0}}));
 	CHECK(SetsAre(Special(UNIQUE_ITEM_COLOR), 60));
-	scene.Blit(30, 20, scene.Body(2), Special(UNIQUE_ITEM_COLOR), 60);
-	scene.Blit(60 - 4, 40 - 2, scene.Body(3), Special(UNIQUE_ITEM_COLOR), 60);
+	// The afterimages a bit darker.
+	scene.Darkened(1, 30, 20, scene.Body(2), Special(UNIQUE_ITEM_COLOR), 60);
+	scene.Darkened(1, 60 - 4, 40 - 2, scene.Body(3), Special(UNIQUE_ITEM_COLOR), 60);
 	CHECK(scene.Same());
 	CHECK(SameRect(monster.GetScreenRect(), 45, 56, 50, 57));
 	// Frame index 1 leaves the rect; a past frame adds nothing.
@@ -3875,9 +3893,10 @@ TEST(TopView4SelectedVampire, AnAdvancedVampiresBodyAndWeaponGoToTheOutlines)
 		scene.Call([&](POINT* p) { Access::SelectedAdvancedVampire(scene.view, p, &vampire, ACTION_STAND, 3, 1, 0, 0); });
 		CHECK(SameEntries(scene.view.m_SOM, {{45, 56, &sprites[1], 0}, {65, 59, &sprites[0], 0}}));
 		CHECK(SameRect(vampire.GetScreenRect(), 45, 56, 50, 57));
-		// The afterimages, from the advanced pack, straight to the surface.
-		scene.Blit(30, 20, sprites[2], 30, 60);
-		scene.Blit(60, 40, sprites[3], 30, 60);
+		// The afterimages, from the advanced pack, straight to the surface,
+		// a bit darker.
+		scene.Darkened(1, 30, 20, sprites[2], 30, 60);
+		scene.Darkened(1, 60, 40, sprites[3], 30, 60);
 		CHECK(scene.Same());
 		// From frame set 1 on: the weapon and set 2.
 		Frames(pack, 2, kStop, 3, {{2, 30, 20}, {2, 7, 7}});

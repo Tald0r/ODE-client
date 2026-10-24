@@ -531,9 +531,9 @@ void CSpriteSurface::BltSpriteScale(POINT* pPoint, CSprite* pSprite, int scale) 
 
 // Reuse the original RLE effect blitters, with the SDL viewport translated
 // to sprite coordinates. Their destination starts at the visible top-left.
-template <typename Draw>
+template <typename Sprite, typename Draw>
 static void BltClippedSpriteEffect(spritectl_surface_t surface, POINT* point,
-                                  CSprite* sprite, Draw draw)
+                                  Sprite* sprite, Draw draw)
 {
     if (!surface || !surface->surface || !point || !sprite || !sprite->IsInit()) return;
     SDL_Surface* target = surface->surface;
@@ -980,10 +980,23 @@ void CSpriteSurface::BltIndexSprite(POINT* pPoint, CIndexSprite* pSprite) {
 	                    backend_sprite, flags, alpha);
 }
 
+// Indexed pixels take ColorSetDarkness and fixed ones memcpyDarkness: both
+// shift each channel of what BltIndexSprite draws right by DarkBits, which
+// the shader does to the decoded sprite.
 void CSpriteSurface::BltIndexSpriteDarkness(POINT* pPoint, CIndexSprite* pSprite, BYTE DarkBits) {
-	(void)DarkBits;
-	/* TODO: Implement darkness effect */
-	BltIndexSprite(pPoint, pSprite);
+	if (!pPoint || !pSprite) {
+		return;
+	}
+	const BYTE bits = BYTE((std::min)(int(DarkBits), MAX_DARKBIT - 1));	// the table's last level
+	spritectl_sprite_t backend_sprite = get_backend_index_sprite(pSprite);
+	if (backend_sprite && SpriteGpu::DrawEffect(m_backend_surface, pPoint->x, pPoint->y,
+		backend_sprite, SpriteGpuEffects::Effect::Darkness, bits)) {
+		s_Value1 = bits;
+		return;
+	}
+	BltClippedSpriteEffect(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch, RECT* clip) {
+		pSprite->BltDarknessClipWidth(dest, pitch, clip, bits);
+	});
 }
 
 void CSpriteSurface::BltIndexSpriteAlpha(POINT* pPoint, CIndexSprite* pSprite, BYTE alpha) {

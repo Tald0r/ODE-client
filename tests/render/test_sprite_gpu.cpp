@@ -6,6 +6,8 @@
 #include "CAlphaSpritePal.h"
 #include "CSprite565.h"
 #include "CIndexSprite.h"
+#include "CIndexSprite565.h"
+#include "ColorDraw.h"
 #include "CShadowSprite.h"
 #include "FrameUpscaler.h"
 #include "CFilter.h"
@@ -957,6 +959,10 @@ WORD ColorAlpha565(WORD color, WORD under, int alpha2)
 	};
 	return WORD(channel(11, 31) << 11 | channel(5, 63) << 5 | channel(0, 31));
 }
+WORD Darken565(WORD c, int bits)
+{
+	return WORD((((c >> 11) >> bits) << 11) | ((((c >> 5) & 63) >> bits) << 5) | ((c & 31) >> bits));
+}
 }
 
 TEST(SpriteGpu, ColorAlphaBlendsEveryRgb565ColorAndClipsToSurface)
@@ -991,6 +997,52 @@ TEST(SpriteGpu, ColorAlphaBlendsEveryRgb565ColorAndClipsToSurface)
 	f.surface.BltColorAlpha(&area, 0, 0);
 	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
 		CHECK_EQ(x >= 2 && x < 5 && y >= 3 && y < 6 ? 0 : 0xffff, f.Pixel(x, y));
+}
+
+TEST(SpriteGpu, IndexSpriteDarknessShiftsEveryChannelOfWhatItDraws)
+{
+	// Fast-move afterimages and darkened creatures. BltIndexSpriteDarkness
+	// drew the sprite at full brightness.
+	Fixture f;
+	CIndexSprite::SetColorSet();
+	// A set whose gradation 2 has a green of 32 or more: ColorSetDarkness
+	// masked green to five bits and lost that top bit.
+	int set = 0;
+	while (set < MAX_COLORSET && ColorDraw::Green(CIndexSprite::ColorSet[set][2]) < 32) ++set;
+	CHECK(set < MAX_COLORSET);
+	const int saved = CIndexSprite::GetUsingColorSet(0);
+	CIndexSprite::SetUsingColorSetOnly(0, set);
+	struct Sprite : CIndexSprite565 {
+		Sprite()
+		{
+			// A hole, two indexed pixels and a fixed one.
+			m_Width = 4; m_Height = 1;
+			m_Pixels = new WORD*[1];
+			m_Pixels[0] = new WORD[7]{1, 1, 2, 0x0002, 0x0003, 1, 0xffe0};
+			m_bInit = true;
+		}
+	} sprite;
+	POINT origin{2, 3};
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSprite(&origin, &sprite);
+	WORD drawn[4];
+	for (int x = 0; x < 4; ++x) drawn[x] = f.Pixel(2 + x, 3);
+	CHECK_EQ(0x5a69, drawn[0]);
+	for (int bits : {0, 1, 2, 3, 4, 9}) {
+		f.surface.FillSurface(0x5a69);
+		const auto before = SpriteGpu::GetCounters();
+		f.surface.BltIndexSpriteDarkness(&origin, &sprite, BYTE(bits));
+		if (SpriteGpuEffects::Active()) {
+			CHECK_EQ(before.shaderDraws + 1, SpriteGpu::GetCounters().shaderDraws);
+			CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
+		}
+		const int held = (std::min)(bits, MAX_DARKBIT - 1);	// the table's last level
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+			const bool drawnHere = y == 3 && x >= 3 && x < 6;
+			CHECK_EQ(drawnHere ? Darken565(drawn[x - 2], held) : 0x5a69, f.Pixel(x, y));
+		}
+	}
+	CIndexSprite::SetUsingColorSetOnly(0, saved);
 }
 
 TEST(SpriteGpu, TransientCompositionSkipsReadbackButRetainsPersistentSurfaces)
