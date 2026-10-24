@@ -46,6 +46,12 @@ void main() {
 		c = gradation[brightness];
 	} else if (effect == 9) {
 		c = clamp(floor(c * floor(light + 0.5) / 32.0), vec3(0.0), bits - 1.0);
+	} else if (effect == 10) {
+		// value = alpha2 * 65536 + an RGB565 colour; alpha2 is the share kept.
+		float alpha2 = floor(value / 65536.0);
+		float color = value - alpha2 * 65536.0;
+		vec3 s = vec3(floor(color / 2048.0), mod(floor(color / 32.0), 64.0), mod(color, 32.0));
+		c = floor(s * (31.0 - alpha2) / 32.0) + floor(c * alpha2 / 32.0);
 	} else if (effect >= 6) {
 		float index = floor(pixel.r * 255.0 + 0.5);
 		vec3 color = texture2D(palette, vec2((index + 0.5) / 256.0, 0.5)).rgb;

@@ -535,6 +535,13 @@ bool Tint(spritectl_surface_t dest, const SDL_Rect& rect, int channel)
 	return SurfaceEffect(dest, rect, SpriteGpuEffects::Effect::Color, channel);
 }
 
+bool ColorAlpha(spritectl_surface_t dest, const SDL_Rect& rect, uint16_t color, int alpha2)
+{
+	// The shader unpacks both from one float; 31 * 65536 + 65535 is exact.
+	return alpha2 >= 0 && alpha2 <= 31
+		&& SurfaceEffect(dest, rect, SpriteGpuEffects::Effect::ColorAlpha, alpha2 * 65536 + color);
+}
+
 bool LightGrid(spritectl_surface_t dest, std::span<const SpriteGpuEffects::LightCell> cells)
 {
 	if (!SpriteGpuEffects::Active()) return false;

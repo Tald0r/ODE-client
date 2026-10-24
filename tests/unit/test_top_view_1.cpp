@@ -1769,8 +1769,7 @@ TEST(TopView1Draw, ATranslucentBoxIsBlendedAndABlackOneIsNot)
 #endif
 	expected.surface.Unlock();
 	CHECK(Same(scene.canvas, expected));
-	// BltColorAlpha is the SDL backend's stub (CSpriteSurface_SDL.cpp), so
-	// both pictures stay blank today; they keep matching once it blends.
+	// Both pictures blend through BltColorAlpha, so they match.
 }
 
 namespace {
@@ -1823,9 +1822,8 @@ TEST(TopView1Draw, AnOutlinedChatBoxGetsItsLinesAndTail)
 	ChatBoxLines(s, grey, 0x001F);
 	s.Lock();
 	s.BltColorAlpha(&r, 0x8410, 15);
-	// Recorded defect: a coloured outlined box is blended twice - once by
-	// DRAW_ALPHA_BOX_2D and once more by the branch after it (unseen while
-	// BltColorAlpha is the SDL backend's stub).
+	// As in the original, a coloured outlined box is blended twice: once by
+	// DRAW_ALPHA_BOX_2D and once more by the branch after it.
 	s.BltColorAlpha(&r, 0x8410, 15);
 	ChatBoxTail(s, grey, 0x001F);
 	s.Unlock();

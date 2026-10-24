@@ -65,8 +65,10 @@ Normal device replacement synchronizes surfaces before destroying resources.
 ## Programmable effects
 
 `SpriteGpuEffects` implements RGB565 gamma, channel tinting, darkness,
-grayscale, color-set lookup, palette screen blending, and per-pixel palette
-alpha in GLSL. The effects preserve the CPU routines' integer channel math,
+grayscale, color-set lookup, palette screen blending, per-pixel palette alpha
+and the colour blend of fades and translucent boxes (`BltColorAlpha`) in GLSL.
+Darkness also serves index sprites (`BltIndexSpriteDarkness`), on the decoded
+sprite. The effects preserve the CPU routines' integer channel math,
 including the six-bit green channel and alpha's 0..32 range. Transparent run
 coverage is separate from palette index and color, so opaque black stays
 opaque. Palette indices/alpha upload once per sprite; the 256-entry color
@@ -148,10 +150,12 @@ surfaces modified during a frame are read back at presentation for reset recover
 unchanged cached surfaces and the presented framebuffer require no checkpoint.
 Thus a scene with modified offscreen caches can still report readbacks. CPU
 fallbacks, resource work and reset recovery are distinct from GPU composition.
-The older non-Windows colored-panel helper retains its compatibility pixel path.
+Black and coloured UI panels (`DrawAlphaBox`) go through `GammaBox565` and
+`BltColorAlpha` on every platform.
 
-Existing SDL-port stubs retain their previous behavior. This migration does not
-implement missing legacy DirectDraw effects or change game protocol/asset formats.
+SDL-port stubs this migration did not reach retain their previous behavior (for
+example `BltIndexSpriteColorSet` draws plain). It does not change game protocol or
+asset formats.
 RGBA glyph blending retains the device's arithmetic; subchannel rounding can
 differ from the software RGB565 renderer, as described above.
 

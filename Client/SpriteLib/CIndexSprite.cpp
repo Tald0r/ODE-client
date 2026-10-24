@@ -234,7 +234,7 @@ CIndexSprite::SetColorSet()
 			for (k=0; k<MAX_DARKBIT; k++)
 			{	
 				r = ((color >> ColorDraw::s_bSHIFT_R) >> k) << ColorDraw::s_bSHIFT_R;
-				g = (((color >> ColorDraw::s_bSHIFT_G) & 0x1F) >> k) << ColorDraw::s_bSHIFT_G;
+				g = (ColorDraw::Green(color) >> k) << ColorDraw::s_bSHIFT_G;	// green is six bits
 				b = (color & 0x1F) >> k;
 				ColorSetDarkness[k][i][j] = r | g | b;
 			}

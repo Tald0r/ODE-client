@@ -239,7 +239,8 @@ The browser mixer uses 4,096 samples instead of the native 1,024.
 runs on the main thread, so this gives busy frames roughly
 85–93 ms of buffering at common device rates, at the cost of additional audio
 latency. It does not isolate audio from arbitrarily long main-thread stalls.
-Black translucent UI panels use the GPU gamma path on every platform.
+Translucent UI panels use the GPU path on every platform: gamma for black ones,
+the colour blend for coloured ones.
 
 Portal and safe-zone overlays load their `.mip` metadata through the same path
 normalizer as other assets; raw Windows backslashes cannot be opened in the

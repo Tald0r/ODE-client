@@ -6,6 +6,8 @@
 #include "CAlphaSpritePal.h"
 #include "CSprite565.h"
 #include "CIndexSprite.h"
+#include "CIndexSprite565.h"
+#include "ColorDraw.h"
 #include "CShadowSprite.h"
 #include "FrameUpscaler.h"
 #include "CFilter.h"
@@ -945,6 +947,131 @@ TEST(SpriteGpu, MapRegionTintMatchesChannelMasksAndClipsToSurface)
 	f.surface.ColorBox(&area, 1);
 	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
 		CHECK_EQ(x >= 2 && x < 5 && y >= 3 && y < 6 ? 0x07e0 : 0xffff, f.Pixel(x, y));
+}
+
+namespace {
+// The DirectDraw colour blend per 5:6:5 channel: alpha2 is the share of
+// what lies under, out of 32.
+WORD ColorAlpha565(WORD color, WORD under, int alpha2)
+{
+	auto channel = [&](int shift, int mask) {
+		return ((((color >> shift) & mask) * (31 - alpha2)) >> 5) + ((((under >> shift) & mask) * alpha2) >> 5);
+	};
+	return WORD(channel(11, 31) << 11 | channel(5, 63) << 5 | channel(0, 31));
+}
+WORD Darken565(WORD c, int bits)
+{
+	return WORD((((c >> 11) >> bits) << 11) | ((((c >> 5) & 63) >> bits) << 5) | ((c & 31) >> bits));
+}
+}
+
+TEST(SpriteGpu, ColorAlphaBlendsEveryRgb565ColorAndClipsToSurface)
+{
+	// Coloured fades and translucent boxes; BltColorAlpha was a stub that
+	// drew nothing.
+	Fixture f;
+	CSpriteSurface surface;
+	CHECK(surface.Init(256, 256));
+	const std::pair<WORD, int> cases[]{{0xffff, 0}, {0xffff, 31}, {0xf7be, 16}, {0x2bf1, 7}, {0, 20}, {0x07e0, 40}};
+	for (const auto& [color, alpha2] : cases) {
+		DWORD pitch = 0;
+		auto* bytes = static_cast<BYTE*>(surface.Lock(nullptr, &pitch));
+		CHECK(bytes != nullptr);
+		for (int y = 0; y < 256; ++y) for (int x = 0; x < 256; ++x)
+			reinterpret_cast<WORD*>(bytes + y * pitch)[x] = WORD(y * 256 + x);
+		surface.Unlock();
+		RECT area{-100, -100, 256, INT_MAX};
+		const auto before = SpriteGpu::GetCounters();
+		surface.BltColorAlpha(&area, color, BYTE(alpha2));
+		if (SpriteGpuEffects::Active()) {
+			CHECK_EQ(before.shaderDraws + 1, SpriteGpu::GetCounters().shaderDraws);
+			CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
+		}
+		CHECK(SpriteGpu::CpuAccess(surface.GetBackendSurface(), false));
+		const int held = (std::min)(alpha2, 31);	// the original wrapped past 31
+		for (int y = 0; y < 256; ++y) for (int x = 0; x < 256; ++x)
+			CHECK_EQ(ColorAlpha565(color, WORD(y * 256 + x), held), reinterpret_cast<WORD*>(bytes + y * pitch)[x]);
+	}
+	f.surface.FillSurface(0xffff);
+	RECT area{2, 3, 5, 6};
+	f.surface.BltColorAlpha(&area, 0, 0);
+	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
+		CHECK_EQ(x >= 2 && x < 5 && y >= 3 && y < 6 ? 0 : 0xffff, f.Pixel(x, y));
+}
+
+TEST(SpriteGpu, IndexSpriteDarknessShiftsEveryChannelOfWhatItDraws)
+{
+	// Fast-move afterimages and darkened creatures. BltIndexSpriteDarkness
+	// drew the sprite at full brightness.
+	Fixture f;
+	CIndexSprite::SetColorSet();
+	// A set whose gradation 2 has a green of 32 or more: ColorSetDarkness
+	// masked green to five bits and lost that top bit.
+	int set = 0;
+	while (set < MAX_COLORSET && ColorDraw::Green(CIndexSprite::ColorSet[set][2]) < 32) ++set;
+	CHECK(set < MAX_COLORSET);
+	const int saved = CIndexSprite::GetUsingColorSet(0);
+	CIndexSprite::SetUsingColorSetOnly(0, set);
+	struct Sprite : CIndexSprite565 {
+		Sprite()
+		{
+			// A hole, two indexed pixels and a fixed one.
+			m_Width = 4; m_Height = 1;
+			m_Pixels = new WORD*[1];
+			m_Pixels[0] = new WORD[7]{1, 1, 2, 0x0002, 0x0003, 1, 0xffe0};
+			m_bInit = true;
+		}
+	} sprite;
+	POINT origin{2, 3};
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSprite(&origin, &sprite);
+	WORD drawn[4];
+	for (int x = 0; x < 4; ++x) drawn[x] = f.Pixel(2 + x, 3);
+	CHECK_EQ(0x5a69, drawn[0]);
+	for (int bits : {0, 1, 2, 3, 4, 9}) {
+		f.surface.FillSurface(0x5a69);
+		const auto before = SpriteGpu::GetCounters();
+		f.surface.BltIndexSpriteDarkness(&origin, &sprite, BYTE(bits));
+		if (SpriteGpuEffects::Active()) {
+			CHECK_EQ(before.shaderDraws + 1, SpriteGpu::GetCounters().shaderDraws);
+			CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
+		}
+		const int held = (std::min)(bits, MAX_DARKBIT - 1);	// the table's last level
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+			const bool drawnHere = y == 3 && x >= 3 && x < 6;
+			CHECK_EQ(drawnHere ? Darken565(drawn[x - 2], held) : 0x5a69, f.Pixel(x, y));
+		}
+	}
+	// Cut by the surface's right edge, one row above its last: only what
+	// BltIndexSprite shows there darkens. CIndexSprite's clip-width blit
+	// ran its later runs past the edge, onto the next row.
+	struct Clipped : CIndexSprite565 {
+		Clipped()
+		{
+			// Two indexed pixels, a hole, then three fixed pixels.
+			m_Width = 6; m_Height = 2;
+			m_Pixels = new WORD*[2];
+			for (int y = 0; y < 2; ++y)
+				m_Pixels[y] = new WORD[12]{2, 0, 2, 0x0002, 0x0003, 0, 1, 0, 3, 0xffe0, 0x07ff, 0xf800};
+			m_bInit = true;
+		}
+	} clipped;
+	// Then cut on the left and top as well.
+	for (POINT corner : {POINT{5, 5}, POINT{-1, -1}}) {
+		CSpriteSurface plain;
+		CHECK(plain.Init(8, 8));
+		plain.FillSurface(0x5a69);
+		plain.BltIndexSprite(&corner, &clipped);
+		CHECK(SpriteGpu::CpuAccess(plain.GetBackendSurface(), false));
+		f.surface.FillSurface(0x5a69);
+		f.surface.BltIndexSpriteDarkness(&corner, &clipped, 2);
+		const auto* shown = plain.GetBackendSurface()->surface;
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+			const WORD under = reinterpret_cast<const WORD*>(static_cast<const BYTE*>(shown->pixels) + y * shown->pitch)[x];
+			CHECK_EQ(under == 0x5a69 ? WORD(0x5a69) : Darken565(under, 2), f.Pixel(x, y));
+		}
+	}
+	CIndexSprite::SetUsingColorSetOnly(0, saved);
 }
 
 TEST(SpriteGpu, TransientCompositionSkipsReadbackButRetainsPersistentSurfaces)

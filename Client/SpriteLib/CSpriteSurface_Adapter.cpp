@@ -531,9 +531,9 @@ void CSpriteSurface::BltSpriteScale(POINT* pPoint, CSprite* pSprite, int scale) 
 
 // Reuse the original RLE effect blitters, with the SDL viewport translated
 // to sprite coordinates. Their destination starts at the visible top-left.
-template <typename Draw>
+template <typename Sprite, typename Draw>
 static void BltClippedSpriteEffect(spritectl_surface_t surface, POINT* point,
-                                  CSprite* sprite, Draw draw)
+                                  Sprite* sprite, Draw draw)
 {
     if (!surface || !surface->surface || !point || !sprite || !sprite->IsInit()) return;
     SDL_Surface* target = surface->surface;
@@ -980,10 +980,37 @@ void CSpriteSurface::BltIndexSprite(POINT* pPoint, CIndexSprite* pSprite) {
 	                    backend_sprite, flags, alpha);
 }
 
+// Indexed pixels take ColorSetDarkness and fixed ones memcpyDarkness: both
+// shift each channel of what BltIndexSprite draws right by DarkBits, which
+// the shader does to the decoded sprite.
 void CSpriteSurface::BltIndexSpriteDarkness(POINT* pPoint, CIndexSprite* pSprite, BYTE DarkBits) {
-	(void)DarkBits;
-	/* TODO: Implement darkness effect */
-	BltIndexSprite(pPoint, pSprite);
+	if (!pPoint || !pSprite) {
+		return;
+	}
+	const BYTE bits = BYTE((std::min)(int(DarkBits), MAX_DARKBIT - 1));	// the table's last level
+	spritectl_sprite_t backend_sprite = get_backend_index_sprite(pSprite);
+	if (backend_sprite && SpriteGpu::DrawEffect(m_backend_surface, pPoint->x, pPoint->y,
+		backend_sprite, SpriteGpuEffects::Effect::Darkness, bits)) {
+		s_Value1 = bits;
+		return;
+	}
+	// CIndexSprite's clip-width blit lets its first visible run ignore the
+	// right edge, so the rest overrun it. Darken the whole sprite unclipped
+	// over two fills instead: a pixel it wrote is the same in both.
+	BltClippedSpriteEffect(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch, RECT* clip) {
+		const int width = pSprite->GetWidth();
+		if (width > 0x7fff) return;	// its row pitch is a WORD
+		std::vector<WORD> unset(size_t(width) * pSprite->GetHeight(), 0x0000), set(unset.size(), 0xffff);
+		pSprite->BltDarkness(unset.data(), WORD(width * 2), bits);
+		pSprite->BltDarkness(set.data(), WORD(width * 2), bits);
+		for (int y = clip->top; y < clip->bottom; ++y) {
+			WORD* row = reinterpret_cast<WORD*>(reinterpret_cast<BYTE*>(dest) + size_t(y - clip->top) * pitch);
+			for (int x = clip->left; x < clip->right; ++x) {
+				const size_t i = size_t(y) * width + x;
+				if (unset[i] == set[i]) row[x - clip->left] = unset[i];
+			}
+		}
+	});
 }
 
 void CSpriteSurface::BltIndexSpriteAlpha(POINT* pPoint, CIndexSprite* pSprite, BYTE alpha) {
