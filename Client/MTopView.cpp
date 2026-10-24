@@ -1053,6 +1053,9 @@ MTopView::InitSurfaces()
 
 	m_pTileSurface->InitOffsurface(g_TILESURFACE_WIDTH,
 									g_TILESURFACE_HEIGHT);
+	// A render reset redraws the whole cache (SetFirstDraw). Reading it back
+	// for device recovery stalled the GPU on every scroll while walking.
+	m_pTileSurface->SetTransient(true);
 
 	m_pTileSurface->SetTransparency( 0 );
 

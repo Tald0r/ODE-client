@@ -30,7 +30,9 @@ before `SDL_CreateWindowFrom`, and is exercised by a separate renderer test.
 
 Sprite textures are decoded/uploaded lazily and cached within a 128 MiB pixel
 budget. Destruction, reload and RLE row replacement invalidate their textures.
-Least recently used sprite textures are evicted at the budget. Surface render
+At the budget, one sorted pass evicts the least recently used sprite textures
+down to 7/8 of it, instead of scanning the whole cache once per evicted
+texture. Surface render
 targets and upload textures have a separate combined 128 MiB pixel budget;
 surfaces beyond that budget use software. Driver allocation overhead is
 additional. All renderer operations run on the SDL render thread.
@@ -52,9 +54,12 @@ reading back the framebuffer for every legacy lock around a sprite draw.
 
 At presentation, modified persistent offscreen surfaces are checkpointed to
 CPU memory for device-reset recovery. Unchanged surfaces need no checkpoint.
-The intermediate game framebuffer is explicitly transient, so it also skips
-this readback. Both framebuffers are redrawn after reset; the input event hook
-invalidates the world tile cache. Cached sprite textures are recreated lazily.
+The intermediate game framebuffer and the world tile cache are explicitly
+transient, so they skip this readback. The intermediate and presented
+framebuffers are redrawn after reset, and the input event hook invalidates the
+tile cache, so it is redrawn whole before use. The tile cache changes on every
+scroll while walking, and a readback after each would wait on the GPU. Cached
+sprite textures are recreated lazily.
 Normal device replacement synchronizes surfaces before destroying resources.
 
 ## Programmable effects
