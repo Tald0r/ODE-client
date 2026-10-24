@@ -27,7 +27,8 @@ Keep parsing, model mutation and UI or runtime effects distinct. A packet's byte
 only through the gates `ClientPlayer::processCommand` runs (`tests/fuzz/client_stream_reader.h`
 lists them with their line numbers; keep the two in step); a parsed packet reaches a handler; the
 handler reaches the model and, through hosts, the UI. The instruments differ by layer: the
-[fuzzers](fuzzing.md) stop at `read()`, [packet input safety](packet-input-safety.md) counts what
+[fuzzers](fuzzing.md) drive the readers and, through the receive loop, the handlers and the
+model, [packet input safety](packet-input-safety.md) counts what
 handlers do with server-supplied lengths and indices, and the model handlers have unit tests.
 
 # The server's copy

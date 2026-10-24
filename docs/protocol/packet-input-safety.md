@@ -61,8 +61,17 @@ The 128-byte stack buffers this page used to name are of that kind now. The long
 `GCNPCAskDynamic`'s subject and answers (`WORD` lengths, bounded only by the frame's 11,294-byte
 maximum), is cut to the talk box's 2048-byte row. Not followed: the text system's own wrapping,
 measuring and drawing, the descriptor renderers other than the blood bible's, and the view, which
-keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have seen none of the routes walked
-here, so a new string sink is found by the same walk.
+keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have
+seen none of the routes walked here, so a new string sink is found by the same walk.
+
+**One string could grow without bound instead.** `GCNPCAskVariable`'s parameters fill an NPC
+line's `%(Name)` markers through `ApplyParameters` (`Client/MNPCScriptTable.cpp`), which runs the
+keys in map order, so a value may hold a later key's marker. Each level multiplied the text: up to
+255 values of up to 255 bytes could grow a 1.3 KB packet's text toward gigabytes, each in-place
+`replace` moving the rest of it, until the game thread stalled and an uncaught `bad_alloc` ended
+the client. Fixed in the review of the audit: each key is one linear pass, and substitution
+stops before the text passes 65,536 bytes, what a saved script string holds
+(`NPCDialogue.CascadingParametersStopAtTheLongestTextAScriptHolds`).
 
 **Next: server values that reach UI memory as an index or a position.** `packet_indices` stops at
 `Client/Packet` and `Client/PacketHandler`. The audit met four such sites past it, recorded under
@@ -72,7 +81,8 @@ here, so a new string sink is found by the same walk.
 - each listed member's rank, used as an index into a five-entry sort table
   (`C_VS_UI_TEAM_MEMBER_LIST::AddMemberList`);
 - a blood bible's zone looked up with no `NULL` test (`C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl`).
-  It is one of 32 lines under `Client` and `VS_UI` that dereference `g_pZoneTable->Get(...)` untested;
+  It is one of 32 lines under `Client` and `VS_UI` that dereference `g_pZoneTable->Get(...)`
+  untested, three more of them on a server's zone id (listed in its row);
 - a mail date too short for the `/` that `C_VS_UI_MAILBOX::AddMail` inserts, which threw a
   `std::out_of_range` that no caller catches. Fixed: the date is zero-padded to its six digits,
   pinned by `tests/unit/test_mailbox_file.cpp`. The other three are open.
