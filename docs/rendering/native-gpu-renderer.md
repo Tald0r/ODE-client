@@ -30,7 +30,9 @@ before `SDL_CreateWindowFrom`, and is exercised by a separate renderer test.
 
 Sprite textures are decoded/uploaded lazily and cached within a 128 MiB pixel
 budget. Destruction, reload and RLE row replacement invalidate their textures.
-Least recently used sprite textures are evicted at the budget. Surface render
+At the budget, one sorted pass evicts the least recently used sprite textures
+down to 7/8 of it; evicting one at a time scanned the whole cache for each,
+which stalled the frames that cast large spell effects. Surface render
 targets and upload textures have a separate combined 128 MiB pixel budget;
 surfaces beyond that budget use software. Driver allocation overhead is
 additional. All renderer operations run on the SDL render thread.

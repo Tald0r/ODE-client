@@ -355,6 +355,39 @@ TEST(SpriteGpu, OffscreenCheckpointSurvivesTargetResetWithoutReadingLostTextures
 	CHECK_EQ(0xffff, row[3]);
 }
 
+TEST(SpriteGpu, AFullTextureCacheFreesAnEighthOldestFirst)
+{
+	// Eight 16 MiB sprites fill the 128 MiB cache. One eviction per upload
+	// scanned every cached texture each time; a full cache now frees down
+	// to 7/8 in one pass, so the upload after it evicts nothing.
+	Fixture f;
+	constexpr int side = 2048;
+	constexpr uint64_t bytes = uint64_t(side) * side * 4;
+	std::vector<uint16_t> pixels(size_t(side) * side, 0);
+	std::vector<spritectl_sprite_t> big;
+	for (int i = 0; i < 10; ++i) {
+		big.push_back(spritectl_create_sprite(side, side, SPRITECTL_FORMAT_RGB565,
+			pixels.data(), pixels.size() * sizeof(uint16_t)));
+		CHECK(big.back() != nullptr);
+	}
+	auto draw = [&](int i) {
+		CHECK_EQ(0, spritectl_blt_sprite(f.surface.GetBackendSurface(), 0, 0, big[i], 0, 255));
+	};
+	CHECK_EQ(0u, SpriteGpu::GetCounters().textureBytes);
+	for (int i = 0; i < 8; ++i) draw(i);
+	CHECK_EQ(8 * bytes, SpriteGpu::GetCounters().textureBytes);
+	draw(0);	// now the most recent; 1 and 2 are the oldest
+	draw(8);
+	CHECK_EQ(7 * bytes, SpriteGpu::GetCounters().textureBytes);
+	draw(9);
+	CHECK_EQ(8 * bytes, SpriteGpu::GetCounters().textureBytes);
+	const auto uploads = SpriteGpu::GetCounters().spriteUploads;
+	draw(0);
+	draw(3);
+	CHECK_EQ(uploads, SpriteGpu::GetCounters().spriteUploads);
+	for (auto sprite : big) spritectl_destroy_sprite(sprite);
+}
+
 TEST(SpriteGpu, SelfCopyDoesNotReadBackAndHandlesBothOverlapDirections)
 {
 	Fixture f;
