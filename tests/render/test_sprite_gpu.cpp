@@ -1056,18 +1056,20 @@ TEST(SpriteGpu, IndexSpriteDarknessShiftsEveryChannelOfWhatItDraws)
 			m_bInit = true;
 		}
 	} clipped;
-	CSpriteSurface plain;
-	CHECK(plain.Init(8, 8));
-	plain.FillSurface(0x5a69);
-	POINT corner{5, 5};
-	plain.BltIndexSprite(&corner, &clipped);
-	CHECK(SpriteGpu::CpuAccess(plain.GetBackendSurface(), false));
-	f.surface.FillSurface(0x5a69);
-	f.surface.BltIndexSpriteDarkness(&corner, &clipped, 2);
-	const auto* shown = plain.GetBackendSurface()->surface;
-	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
-		const WORD under = reinterpret_cast<const WORD*>(static_cast<const BYTE*>(shown->pixels) + y * shown->pitch)[x];
-		CHECK_EQ(under == 0x5a69 ? WORD(0x5a69) : Darken565(under, 2), f.Pixel(x, y));
+	// Then cut on the left and top as well.
+	for (POINT corner : {POINT{5, 5}, POINT{-1, -1}}) {
+		CSpriteSurface plain;
+		CHECK(plain.Init(8, 8));
+		plain.FillSurface(0x5a69);
+		plain.BltIndexSprite(&corner, &clipped);
+		CHECK(SpriteGpu::CpuAccess(plain.GetBackendSurface(), false));
+		f.surface.FillSurface(0x5a69);
+		f.surface.BltIndexSpriteDarkness(&corner, &clipped, 2);
+		const auto* shown = plain.GetBackendSurface()->surface;
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+			const WORD under = reinterpret_cast<const WORD*>(static_cast<const BYTE*>(shown->pixels) + y * shown->pitch)[x];
+			CHECK_EQ(under == 0x5a69 ? WORD(0x5a69) : Darken565(under, 2), f.Pixel(x, y));
+		}
 	}
 	CIndexSprite::SetUsingColorSetOnly(0, saved);
 }

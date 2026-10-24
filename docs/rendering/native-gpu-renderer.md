@@ -150,8 +150,8 @@ surfaces modified during a frame are read back at presentation for reset recover
 unchanged cached surfaces and the presented framebuffer require no checkpoint.
 Thus a scene with modified offscreen caches can still report readbacks. CPU
 fallbacks, resource work and reset recovery are distinct from GPU composition.
-Black and coloured translucent panels go through `GammaBox565` and `BltColorAlpha`
-on every platform.
+Black and coloured UI panels (`DrawAlphaBox`) go through `GammaBox565` and
+`BltColorAlpha` on every platform.
 
 SDL-port stubs this migration did not reach retain their previous behavior (for
 example `BltIndexSpriteColorSet` draws plain). It does not change game protocol or
