@@ -230,8 +230,8 @@ existing classic vcpkg installations need `openssl:x64-windows`. Linux needs
 The login/menu cursor renders between logic ticks, with the same 15 ms fallback
 draw interval as gameplay. The intermediate game framebuffer is marked transient:
 it is redrawn after a device reset instead of synchronously read back after every
-presentation. Persistent terrain and minimap surfaces still receive reset
-checkpoints. Sprite and glyph batches reuse unchanged render state, and WebGL
+presentation. The terrain (world tile) cache is transient too, because the reset
+hook redraws it whole; the minimap surface still receives reset checkpoints. Sprite and glyph batches reuse unchanged render state, and WebGL
 effect shaders cache uniform locations and avoid per-draw error queries.
 
 The browser mixer uses 4,096 samples instead of the native 1,024.
