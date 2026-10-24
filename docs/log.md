@@ -1,5 +1,12 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-24
+
+* **Update**: [packet input safety](protocol/packet-input-safety.md) records the audit of server
+  strings into fixed buffers. It found no site, and it names server values used as UI indices as
+  the next item. The [code-health review](reviews/code-health-review-2026-08-29.md)'s *Found by
+  reading* lists the four sites the audit met on the way, and `CLAUDE.md`'s current focus follows.
+
 ## 2026-10-23
 
 * **Update**: the review of the handler fuzz targets. [Fuzzing](protocol/fuzzing.md) says the
