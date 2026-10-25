@@ -157,9 +157,9 @@ Black and coloured UI panels (`DrawAlphaBox`) go through `GammaBox565` and
 CPU (`CIndexSprite::BltColorSet`) and draws the decode as a transient backend
 sprite, since the cached decode holds the sprite's own sets; the result is the
 original's on every path, but for a pixel decoded to black, which is a hole in
-every backend draw of an index sprite. SDL-port stubs this migration did not reach retain
-their previous behavior (for example `BltIndexSpriteColor` draws plain). It does
-not change game protocol or asset formats.
+every backend draw of an index sprite. SDL-port stubs this migration did not
+reach retain their previous behavior (for example `BltIndexSpriteColor` draws
+plain). It does not change game protocol or asset formats.
 RGBA glyph blending retains the device's arithmetic; subchannel rounding can
 differ from the software RGB565 renderer, as described above.
 
