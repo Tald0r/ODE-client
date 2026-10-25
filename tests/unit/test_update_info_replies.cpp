@@ -794,6 +794,7 @@ TEST(UpdateInfoReplies, OnlyALargeZonesMoveToALargeZoneReleasesSprites)
 	calls.clear();
 	world.Receive(update);
 	CHECK(Has("sprite types|5") && Starting("release sprites except|").empty());
+	CHECK(Has("load zone|23"));	// the zone is still asked for, and refused by the game
 }
 
 TEST(UpdateInfoReplies, FromTheGameTheZoneIsMovedToOtherwiseLoaded)
