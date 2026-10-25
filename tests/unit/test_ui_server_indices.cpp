@@ -9,6 +9,11 @@
 #include "MZoneTable.h"
 #include "MParty.h"
 #include "MItem.h"
+#include "MItemTable.h"
+#include "MItemOptionTable.h"
+#include "MTimeItemManager.h"
+#include "UserOption.h"
+#include "VS_UI_item.h"
 #include "UserInformation.h"
 #include "RaceType.h"
 #include "pi_core.h"
@@ -398,4 +403,132 @@ TEST(VampirePortalItem, AMarkTheZoneTableLacksHasNoZoneName)
 	portal.SetSilver(kKnownZone);
 	CHECK(portal.GetZoneName() == nullptr);	// no table at all
 	g_pZoneTable = zones;
+}
+
+//----------------------------------------------------------------------
+// The two item descriptions a hovered portal item gets: the tooltip
+// (_Item_Description_Calculator sizes it, _Item_Description_Show draws
+// it) and the item list's focus pane. A mark the zone table lacks is
+// described as no mark is, with the one "no location" line.
+//----------------------------------------------------------------------
+void _Item_Description_Show(Rect rect, void* void_ptr, long left, long right);
+void _Item_Description_Calculator(void (*fp_show)(Rect, void*, long, long), int x, int y, void* void_ptr, long left, long right);
+
+namespace {
+
+// What the descriptions read past the Scene: the item table (the portal's
+// row), the option table (its "no option" row), the timed-item register,
+// the user's settings, the mouse pointer's held item and the item
+// sprites (none load here).
+struct ItemScene : Scene
+{
+	ITEMCLASS_TABLE* oldItems = g_pItemTable;
+	ITEMOPTION_TABLE* oldOptions = g_pItemOptionTable;
+	MTimeItemManager* oldTimeItems = g_pTimeItemManager;
+	UserOption* oldOption = g_pUserOption;
+	C_VS_UI_MOUSE_POINTER* oldPointer = gpC_mouse_pointer;
+	C_VS_UI_ITEM* oldItemSprites = gpC_item;
+	ITEMCLASS_TABLE items;
+	ITEMOPTION_TABLE options;
+	MTimeItemManager timeItems;
+	UserOption option;
+	C_VS_UI_MOUSE_POINTER pointer;
+	C_VS_UI_ITEM itemSprites;
+	ItemScene()
+	{
+		items.Init(MAX_ITEM_CLASS);
+		items.InitClass(ITEM_CLASS_VAMPIRE_PORTAL_ITEM, 1);
+		g_pItemTable = &items;
+		options.Init(1);
+		g_pItemOptionTable = &options;
+		g_pTimeItemManager = &timeItems;
+		g_pUserOption = &option;
+		gpC_mouse_pointer = &pointer;
+		gpC_item = &itemSprites;
+		g_descriptor_manager.Unset();	// no secondary item
+	}
+	~ItemScene()
+	{
+		g_descriptor_manager.Unset();
+		gpC_item = oldItemSprites;
+		gpC_mouse_pointer = oldPointer;
+		g_pUserOption = oldOption;
+		g_pTimeItemManager = oldTimeItems;
+		g_pItemOptionTable = oldOptions;
+		g_pItemTable = oldItems;
+	}
+};
+
+// An identified portal item with `zone` as its mark (0 is none).
+MVampirePortalItem* Portal(int zone)
+{
+	MVampirePortalItem* pPortal = new MVampirePortalItem;
+	pPortal->SetIdentified();
+	pPortal->SetSilver(zone);
+	pPortal->SetCurrentDurability((10 << 8) | 20);
+	return pPortal;
+}
+
+std::vector<WORD> TooltipDrawn(ItemScene& scene, int zone)
+{
+	MVampirePortalItem* pPortal = Portal(zone);
+	scene.back.FillSurface(0);
+	_Item_Description_Show(Rect(10, 10, 300, 200), pPortal, 0, 0);
+	delete pPortal;
+	return scene.Pixels();
+}
+
+// The rect the calculator hands the descriptor manager, read back
+// through the show function it hands with it.
+Rect sized(0, 0, 0, 0);
+void Sized(Rect rect, void*, long, long) { sized = rect; }
+
+Rect TooltipSized(int zone)
+{
+	MVampirePortalItem* pPortal = Portal(zone);
+	sized = Rect(0, 0, 0, 0);
+	_Item_Description_Calculator(Sized, 100, 250, pPortal, 0, 0);
+	g_descriptor_manager.Show();
+	g_descriptor_manager.Unset();
+	delete pPortal;
+	return sized;
+}
+
+std::vector<WORD> ItemListDrawn(ItemScene& scene, int zone)
+{
+	scene.back.FillSurface(0);
+	{
+		C_VS_UI_ITEM_LIST list;
+		list.Set(0, 0, list.w, list.h);	// on the 400 by 300 surface
+		list.AddItem({Portal(zone), 0});	// the list owns it
+		list.Show();
+	}
+	return scene.Pixels();
+}
+
+} // namespace
+
+TEST(VampirePortalItem, ATooltipForAZoneTheTableLacksDrawsNoLocation)
+{
+	ItemScene scene;
+	const std::vector<WORD> unmarked = TooltipDrawn(scene, 0);
+	CHECK(TooltipDrawn(scene, kKnownZone) != unmarked);
+	CHECK(TooltipDrawn(scene, kUnknownZone) == unmarked);
+}
+
+TEST(VampirePortalItem, ATooltipForAZoneTheTableLacksIsSizedAsUnmarked)
+{
+	ItemScene scene;
+	const Rect unmarked = TooltipSized(0);
+	CHECK(unmarked.h > 0);
+	CHECK(TooltipSized(kKnownZone).h > unmarked.h);
+	CHECK_EQ(unmarked.h, TooltipSized(kUnknownZone).h);
+}
+
+TEST(VampirePortalItem, AnItemListFocusForAZoneTheTableLacksDrawsNoLocation)
+{
+	ItemScene scene;
+	const std::vector<WORD> unmarked = ItemListDrawn(scene, 0);
+	CHECK(ItemListDrawn(scene, kKnownZone) != unmarked);
+	CHECK(ItemListDrawn(scene, kUnknownZone) == unmarked);
 }
