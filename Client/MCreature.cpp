@@ -7569,6 +7569,10 @@ MCreature::Action()
 void		
 MCreature::PacketMove(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction)
 {
+	// the server's direction indexes the eight-way tables: one past them keeps the facing
+	if (direction >= DIRECTION_MAX)
+		direction = m_Direction;
+
 //	// 2004, 9, 16, sobeit add start - change turret direction, should I remove it..-_-;
 //	if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 //	{

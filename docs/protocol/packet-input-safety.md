@@ -98,6 +98,13 @@ with the item, and its two descriptions printed the marked zone unchecked. They 
 `MVampirePortalItem::GetZoneName` now, which answers `NULL` for a zone the table lacks. Following
 the other zone lookups found one more server value: `GCUpdateInfoHandler` read the new zone's
 entry unchecked when the player left a large zone; a zone the table lacks now keeps the creature
-sprites, and `tests/unit/test_update_info_replies.cpp` pins it. What remains is the walk itself: no
-pass has followed every server value into `VS_UI` the way the 2026-10-24 audit followed the
-strings.
+sprites, and `tests/unit/test_update_info_replies.cpp` pins it.
+
+**The walk (2026-10-25).** Every presentation host entry that takes a packet or an integer from a
+handler was followed into `VS_UI`, asking of each integer whether it indexes or dereferences; the
+[code-health review](../reviews/code-health-review-2026-08-29.md) holds the list under *Found by
+reading*. It found one more: a creature's direction byte, stored as it came by about ninety handler
+sites, indexed the eight-way addon-order tables at every draw. `MCreature`'s setters now keep the
+facing for a direction past the eight (`tests/unit/test_creature.cpp`). Not followed: `VS_UI`'s own
+reads of the model objects it draws beyond those the list names, the text system, and the view's
+frame packs, which `CTypeTable` range-checks.

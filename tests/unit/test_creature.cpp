@@ -865,6 +865,25 @@ TEST(Creature, ChangingItsMoveTypeFreesTheOldBlock)
 //----------------------------------------------------------------------
 // Moving
 //----------------------------------------------------------------------
+TEST(Creature, ADirectionPastTheEightKeepsTheFacing)
+{
+	// The server's direction byte, which nothing bounds, indexes the
+	// eight-way addon-order and frame tables when the creature is drawn.
+	Scene scene;
+	scene.Tribe(5, CREATURETRIBE_SLAYER);
+	MCreature creature;
+	Place(creature);
+	for (int bad : {int(DIRECTION_MAX), int(DIRECTION_NULL), 200, 255})
+	{
+		creature.SetDirection(BYTE(bad));
+		creature.SetCurrentDirection(BYTE(bad));
+		CHECK_EQ(3, creature.GetServerDirection());
+		CHECK_EQ(5, creature.GetDirection());
+	}
+	creature.SetDirection(7);
+	CHECK_EQ(7, creature.GetServerDirection());
+}
+
 TEST(Creature, AMoveGoesThroughItsZoneByItsMoveType)
 {
 	Scene scene;
