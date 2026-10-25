@@ -1830,8 +1830,9 @@ if(gbl_info_show)
 				{
 					static S_DEFAULT_HELP_STRING party_string;
 					party_string.sz_main_str = info->Name;
-					char xy[20];
-					char zonename[20];
+					// Static: the descriptor manager reads these after this block ends.
+					static char xy[20];
+					static char zonename[20];
 					SafeFormat::Format(xy, GetGameString(UI_STRING_MESSAGE_ZONEINFO_XY), info->zoneX, info->zoneY);
 					party_string.sz_sub_str = xy;
 					SafeFormat::Format(zonename, "%s", g_pZoneTable->Get(info->zoneID)->Name.GetString());

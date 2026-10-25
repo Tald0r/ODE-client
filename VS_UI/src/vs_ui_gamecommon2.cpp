@@ -697,9 +697,10 @@ void	C_VS_UI_ITEM_LIST::Show()
 			vx = g_PrintColorStr(strX, strY, (*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_ARRIVAL_LOCATION].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
 			MVampirePortalItem *tempItem = (MVampirePortalItem *)pCurrentFocusItem;
 
-			if(tempItem->IsMarked())
+			// The mark is the server's: a zone the table lacks has no location.
+			if(const char* zoneName = tempItem->GetZoneName())
 			{
-				SafeFormat::Format(sz_buf, "%s", g_pZoneTable->Get(tempItem->GetZoneID())->Name.GetString());
+				SafeFormat::Format(sz_buf, "%s", zoneName);
 				g_PrintColorStr(vx, strY, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 				strY += line_gap;
 				

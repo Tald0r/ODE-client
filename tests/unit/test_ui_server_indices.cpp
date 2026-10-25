@@ -8,6 +8,7 @@
 #include "MStringArray.h"
 #include "MZoneTable.h"
 #include "MParty.h"
+#include "MItem.h"
 #include "UserInformation.h"
 #include "RaceType.h"
 #include "pi_core.h"
@@ -375,4 +376,26 @@ TEST(PortalCursor, AZoneTheTableLacksLeavesTheCursorWithoutText)
 	CHECK(Same("Known Zone", pointer.*Get(TextOf())));
 	pointer.SetCursorPortal(kUnknownZone, 10, 20, owner);
 	CHECK(Same("", pointer.*Get(TextOf())));
+}
+
+TEST(VampirePortalItem, AMarkTheZoneTableLacksHasNoZoneName)
+{
+	// The mark is the item's silver, which the server sends with the item
+	// (inventory, trade, shop and storage lists). The item descriptions
+	// printed the marked zone's name with no test, so hovering one marked
+	// for a zone the table lacks dereferenced NULL. They print it through
+	// GetZoneName now, which answers NULL for no name to print.
+	Scene scene;
+	MVampirePortalItem portal;
+	CHECK(portal.GetZoneName() == nullptr);	// not marked
+	portal.SetSilver(kKnownZone);
+	const char* name = portal.GetZoneName();
+	CHECK(name != nullptr && std::string(name) == "Known Zone");
+	portal.SetSilver(kUnknownZone);
+	CHECK(portal.GetZoneName() == nullptr);
+	CZoneTable* zones = g_pZoneTable;
+	g_pZoneTable = nullptr;
+	portal.SetSilver(kKnownZone);
+	CHECK(portal.GetZoneName() == nullptr);	// no table at all
+	g_pZoneTable = zones;
 }

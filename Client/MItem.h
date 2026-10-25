@@ -1762,6 +1762,8 @@ class MVampirePortalItem : public MItem {
 		bool				IsMarked() const;
 		void				SetZone(int zoneID, TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
 		int					GetZoneID() const	{ return m_ZoneID; }
+		// The marked zone's name; NULL when unmarked or the table lacks it.
+		const char*			GetZoneName() const;
 		TYPE_SECTORPOSITION	GetZoneX() const	{ return m_ZoneX; }
 		TYPE_SECTORPOSITION	GetZoneY() const	{ return m_ZoneY; }
 

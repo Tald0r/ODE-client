@@ -91,7 +91,11 @@ four such sites, recorded under *Found by reading* in the
   `std::out_of_range` that no caller catches. The date is zero-padded to its six digits.
 
 `tests/unit/test_mailbox_file.cpp` and `tests/unit/test_ui_server_indices.cpp` pin each of them
-but the party arrow, which only the whole game UI draws. Following the other zone lookups found one
-more server value, open in the review: `GCUpdateInfoHandler` reads the new zone's entry unchecked
-when the player leaves a large zone. What remains is the walk itself: no pass has followed every
+but the party arrow, which only the whole game UI draws; its description strings are static now,
+since the descriptor manager read them after the block that owned them had ended. The review of
+those fixes found one more: a vampire portal item's mark is its silver, which the server sends
+with the item, and its two descriptions printed the marked zone unchecked. They print
+`MVampirePortalItem::GetZoneName` now, which answers `NULL` for a zone the table lacks. Following
+the other zone lookups found one more server value, open in the review: `GCUpdateInfoHandler`
+reads the new zone's entry unchecked when the player leaves a large zone. What remains is the walk itself: no pass has followed every
 server value into `VS_UI` the way the 2026-10-24 audit followed the strings.
