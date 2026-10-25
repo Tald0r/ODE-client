@@ -1092,29 +1092,31 @@ TEST(SpriteGpu, IndexSpriteColorSetDrawsEveryPixelFromTheSet)
 		|| CIndexSprite::ColorSet[set][2] == 0 || CIndexSprite::ColorSet[set][28] == 0)) ++set;
 	CHECK(set < MAX_COLORSET);
 	// What the original draws: an indexed pixel from its own gradation, a
-	// fixed one from the gradation its channel sum maps to (five bits each;
-	// white sums to 93, the table's last entry).
+	// fixed one from the gradation its channel sum maps to (the SDL
+	// memcpyEffectGradation takes green's top five bits; white sums to 93,
+	// the table's last entry).
 	auto indexed = [&](int gradation) { return CIndexSprite::ColorSet[set][gradation]; };
 	auto fixed = [&](WORD color) {
-		const int sum = (color >> 11) + ((color >> 5) & 0x1f) + (color & 0x1f);
+		const int sum = (color >> 11) + ((color >> 6) & 0x1f) + (color & 0x1f);
 		return CIndexSprite::ColorSet[set][CIndexSprite::ColorToGradation[sum]];
 	};
 	struct Sprite : CIndexSprite565 {
 		Sprite()
 		{
-			// A hole; indexed pixels at gradation 0 (white in every set),
-			// 2 on channel 3 and 28; fixed white, cyan and yellow.
-			m_Width = 7; m_Height = 1;
+			// A hole; indexed pixels at gradation 0, 2 on channel 3 and 28;
+			// fixed white, cyan, yellow and a green of 32.
+			m_Width = 8; m_Height = 1;
 			m_Pixels = new WORD*[1];
-			m_Pixels[0] = new WORD[10]{1, 1, 3, 0x0000, 0x0302, 0x001c, 3, 0xffff, 0x07ff, 0xffe0};
+			m_Pixels[0] = new WORD[11]{1, 1, 3, 0x0000, 0x0302, 0x001c, 4, 0xffff, 0x07ff, 0xffe0, 0x0400};
 			m_bInit = true;
 		}
 	} sprite;
-	const WORD expected[7] = {0x5a69, indexed(0), indexed(2), indexed(28), fixed(0xffff), fixed(0x07ff), fixed(0xffe0)};
-	POINT origin{1, 3};
+	const WORD expected[8] = {0x5a69, indexed(0), indexed(2), indexed(28), fixed(0xffff), fixed(0x07ff), fixed(0xffe0), fixed(0x0400)};
+	for (int x = 1; x < 8; ++x) CHECK(expected[x] != 0x5a69 && expected[x] != 0);
+	POINT origin{0, 3};
 	f.surface.FillSurface(0x5a69);
 	f.surface.BltIndexSprite(&origin, &sprite);
-	CHECK(f.Pixel(3, 3) != expected[2] && f.Pixel(4, 3) != expected[3]);	// its own set differs
+	CHECK(f.Pixel(2, 3) != expected[2] && f.Pixel(3, 3) != expected[3]);	// its own set differs
 	f.surface.FillSurface(0x5a69);
 	CSpriteSurface::s_Value1 = 99;
 	const auto before = SpriteGpu::GetCounters();
@@ -1122,12 +1124,12 @@ TEST(SpriteGpu, IndexSpriteColorSetDrawsEveryPixelFromTheSet)
 	CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
 	CHECK_EQ(set, CSpriteSurface::s_Value1);
 	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
-		CHECK_EQ(y == 3 && x >= 1 ? expected[x - 1] : WORD(0x5a69), f.Pixel(x, y));
+		CHECK_EQ(y == 3 ? expected[x] : WORD(0x5a69), f.Pixel(x, y));
 	// A set past the table draws the sprite as it is; off the clip nothing is
 	// drawn and s_Value1 is left as it was.
 	f.surface.FillSurface(0x5a69);
 	f.surface.BltIndexSpriteColorSet(&origin, &sprite, MAX_COLORSET);
-	CHECK(f.Pixel(3, 3) != expected[2] && f.Pixel(3, 3) != 0x5a69);
+	CHECK(f.Pixel(2, 3) != expected[2] && f.Pixel(2, 3) != 0x5a69);
 	CSpriteSurface::s_Value1 = 99;
 	POINT away{8, 0};
 	f.surface.BltIndexSpriteColorSet(&away, &sprite, WORD(set));
