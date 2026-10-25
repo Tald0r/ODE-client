@@ -77,12 +77,13 @@ stops before the text passes 65,536 bytes, what a saved script string holds
 `Client/Packet` and `Client/PacketHandler`. The audit met four such sites past it, recorded under
 *Found by reading* in the [code-health review](../reviews/code-health-review-2026-08-29.md):
 - a guild member's rank, a `BYTE`, used as an index into the four grade names
-  (`C_VS_UI_TEAM_MEMBER_INFO::Show`);
+  (`C_VS_UI_TEAM_MEMBER_INFO::Show`). Fixed: a rank past them has no name, as in the member list;
 - each listed member's rank, used as an index into a five-entry sort table
-  (`C_VS_UI_TEAM_MEMBER_LIST::AddMemberList`);
+  (`C_VS_UI_TEAM_MEMBER_LIST::AddMemberList`). Fixed: a rank past it sorts last. Both are pinned
+  by `tests/unit/test_ui_server_indices.cpp`;
 - a blood bible's zone looked up with no `NULL` test (`C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl`).
   It is one of 32 lines under `Client` and `VS_UI` that dereference `g_pZoneTable->Get(...)`
   untested, three more of them on a server's zone id (listed in its row);
 - a mail date too short for the `/` that `C_VS_UI_MAILBOX::AddMail` inserts, which threw a
   `std::out_of_range` that no caller catches. Fixed: the date is zero-padded to its six digits,
-  pinned by `tests/unit/test_mailbox_file.cpp`. The other three are open.
+  pinned by `tests/unit/test_mailbox_file.cpp`. The blood bible's zone is open.

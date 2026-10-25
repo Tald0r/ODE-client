@@ -24767,7 +24767,9 @@ bool	C_VS_UI_TEAM_MEMBER_LIST::IsPixel(int _x, int _y)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_TEAM_MEMBER_LIST::AddMemberList(const TEAM_MEMBER_LIST &member_list, BYTE bType)
 {
-	int convert_table[5] = { 2, 0, 1, 3, 4 }; // 우선순위
+	int convert_table[5] = { 2, 0, 1, 3, 4 }; // sort priority by rank
+	// The rank is the server's, unbounded: one the table lacks sorts last.
+	auto priority = [&convert_table](int grade) { return (grade >= 0 && grade < 5) ? convert_table[grade] : 5; };
 	
 	if(m_v_member_list.empty())
 		m_v_member_list.push_back(member_list);
@@ -24776,7 +24778,7 @@ void	C_VS_UI_TEAM_MEMBER_LIST::AddMemberList(const TEAM_MEMBER_LIST &member_list
 		int i;
 		for(i = 0; static_cast<size_t>(i) < m_v_member_list.size(); i++)
 		{
-			if(convert_table[member_list.member_grade] < convert_table[m_v_member_list[i].member_grade])
+			if(priority(member_list.member_grade) < priority(m_v_member_list[i].member_grade))
 			{
 				m_v_member_list.insert(m_v_member_list.begin() + i, member_list);
 				break;
@@ -27206,7 +27208,8 @@ void C_VS_UI_TEAM_MEMBER_INFO::Show()
 			(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_GRADE_SUB_MASTER].GetString(),
 			(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_GRADE_WAIT].GetString(),
 		};
-		SafeFormat::Format(sz_string, GetGameString(UI_STRING_MESSAGE_TEAM_INFO_GRADE), grade_string[m_member_info.GRADE]);
+		// The rank is the server's, unbounded: one past the four has no name, as in the member list.
+		SafeFormat::Format(sz_string, GetGameString(UI_STRING_MESSAGE_TEAM_INFO_GRADE), m_member_info.GRADE < 4 ? grade_string[m_member_info.GRADE] : "");
 		g_PrintColorStr(print_x, py, sz_string, gpC_base->m_chatting_pi, RGB_BLACK);
 		gpC_base->m_p_DDSurface_back->HLine(print_x, py+line_gap, w - (print_x - x) -30, 0);
 		py += print_gap;

@@ -1,5 +1,10 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-25
+
+* **Update**: the two guild-rank rows of the [code-health review](reviews/code-health-review-2026-08-29.md)
+  are fixed, and [packet input safety](protocol/packet-input-safety.md) says so.
+
 ## 2026-10-24
 
 * **Update**: the mail-date row of the [code-health review](reviews/code-health-review-2026-08-29.md)
