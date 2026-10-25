@@ -97,5 +97,6 @@ those fixes found one more: a vampire portal item's mark is its silver, which th
 with the item, and its two descriptions printed the marked zone unchecked. They print
 `MVampirePortalItem::GetZoneName` now, which answers `NULL` for a zone the table lacks. Following
 the other zone lookups found one more server value, open in the review: `GCUpdateInfoHandler`
-reads the new zone's entry unchecked when the player leaves a large zone. What remains is the walk itself: no pass has followed every
-server value into `VS_UI` the way the 2026-10-24 audit followed the strings.
+reads the new zone's entry unchecked when the player leaves a large zone. What remains is the walk
+itself: no pass has followed every server value into `VS_UI` the way the 2026-10-24 audit followed
+the strings.

@@ -2541,7 +2541,8 @@ void _Item_Description_Calculator(void (*fp_show)(Rect, void *, long, long), int
 			}
 			if (itemClass == ITEM_CLASS_VAMPIRE_PORTAL_ITEM && p_item->IsIdentified())
 			{
-				if(((MVampirePortalItem *)p_item)->IsMarked())
+				// As drawn: a zone the table lacks prints the one "no location" line.
+				if(((MVampirePortalItem *)p_item)->GetZoneName() != NULL)
 					line_count+=2;
 				else
 					line_count++;

@@ -1829,8 +1829,11 @@ if(gbl_info_show)
 					&& g_pZoneTable->Get(info->zoneID) != NULL)
 				{
 					static S_DEFAULT_HELP_STRING party_string;
-					party_string.sz_main_str = info->Name;
-					// Static: the descriptor manager reads these after this block ends.
+					// Static copies: the descriptor manager reads these after this block
+					// ends, and after a party leave has freed the member, as the face hover's.
+					static char name[20];
+					SafeFormat::Copy(name, info->Name.GetString() ? info->Name.GetString() : "");
+					party_string.sz_main_str = name;
 					static char xy[20];
 					static char zonename[20];
 					SafeFormat::Format(xy, GetGameString(UI_STRING_MESSAGE_ZONEINFO_XY), info->zoneX, info->zoneY);
