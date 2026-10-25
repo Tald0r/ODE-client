@@ -111,11 +111,11 @@ static default); the war list by fixed fives on both sides; the mail tab by a co
 caller; notices, lottery steps and gift ids searched by value; the minigame, notice, elemental and
 sheet selectors by `switch`; the created item's grid by `MGridItemManager::AddItem`, which refuses
 a cell off the grid before the UI is told; `SetHotKey` is a no-op. Found unguarded: a creature's
-direction byte, which 79 handler lines store as it came through four `MCreature` setters and which
+direction byte, which 79 handler lines store as it came through three `MCreature` setters and two packet methods, and which
 indexes the eight-way addon-order tables at 17 draw lines, and the direction the skill handlers
 hand to `MEffectGeneratorTable::Generate`, which the homing attack's angle table takes unchecked.
 The setters now keep the facing for a direction past the eight and the generator table faces such
-an effect left (`tests/unit/test_creature.cpp`, `tests/unit/test_effect_generator_table.cpp`; the
+an effect left, where the zone-around generator refused it and drew nothing (`tests/unit/test_creature.cpp`, `tests/unit/test_effect_generator_table.cpp`; the
 [code-health review](../reviews/code-health-review-2026-08-29.md) has the row). Not followed:
 `VS_UI`'s own reads of the model objects it draws (inventory grids, skill trees, party slots) beyond
 those named, the text system, and the view's frame packs, which `CTypeTable` range-checks.
