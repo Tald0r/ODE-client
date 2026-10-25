@@ -2618,7 +2618,7 @@ TEST(TopView4Slayer, EveryWornPartIsDrawnInItsColoursAndAddsToTheRect)
 	CHECK(Cleared(slayer.GetScreenRect()));
 }
 
-TEST(TopView4Slayer, AnEffectColouredPartTakesTheColoursOfThePartBefore)
+TEST(TopView4Slayer, AnEffectColouredPartTakesItsEffectColourSet)
 {
 	// An effect-coloured part is drawn in its effect colour set, the helm
 	// after the coat or the coat first; the other part in its own colours.
@@ -3126,7 +3126,7 @@ TEST(TopView4AdvancedSlayer, ANewItemPastThePackOrItsActionsIsSkipped)
 	CHECK(scene.drawn.Blank());
 }
 
-TEST(TopView4AdvancedSlayer, AnEffectColouredPartTakesTheColoursBefore)
+TEST(TopView4AdvancedSlayer, AnEffectColouredPartTakesItsEffectColourSet)
 {
 	for (bool newItems : {false, true})
 	{
