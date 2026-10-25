@@ -1,5 +1,14 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-25
+
+* **Update**: the blood bible row of the [code-health review](reviews/code-health-review-2026-08-29.md)
+  is fixed with the three other server zone lookups it names, and a new open row records
+  `GCUpdateInfoHandler`'s. [Packet input safety](protocol/packet-input-safety.md) says the four sites
+  the audit met are fixed and the walk is next, and `CLAUDE.md`'s current focus follows.
+* **Update**: the two guild-rank rows of the [code-health review](reviews/code-health-review-2026-08-29.md)
+  are fixed, and [packet input safety](protocol/packet-input-safety.md) says so.
+
 ## 2026-10-24
 
 * **Update**: the mail-date row of the [code-health review](reviews/code-health-review-2026-08-29.md)

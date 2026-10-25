@@ -768,9 +768,10 @@ void	_Item_Description_Show(Rect rect, void * void_ptr, long left, long right)
 			vx = g_PrintColorStr(px, py, (*g_pGameStringTable)[UI_STRING_MESSAGE_DESC_ARRIVAL_LOCATION].GetString(), gpC_base->m_item_desc_pi, ITEM_DESC_RGB);
 			MVampirePortalItem *temp_item = (MVampirePortalItem *)p_item;
 
-			if(temp_item->IsMarked())
+			// The mark is the server's: a zone the table lacks has no location.
+			if(const char* zoneName = temp_item->GetZoneName())
 			{
-				SafeFormat::Format(sz_buf, "%s", g_pZoneTable->Get(temp_item->GetZoneID())->Name.GetString());
+				SafeFormat::Format(sz_buf, "%s", zoneName);
 				g_PrintColorStr(vx, py, sz_buf, gpC_base->m_item_desc_pi, RGB_WHITE);
 				py += SMALL_FONT_Y_GAP;
 				
@@ -2540,7 +2541,8 @@ void _Item_Description_Calculator(void (*fp_show)(Rect, void *, long, long), int
 			}
 			if (itemClass == ITEM_CLASS_VAMPIRE_PORTAL_ITEM && p_item->IsIdentified())
 			{
-				if(((MVampirePortalItem *)p_item)->IsMarked())
+				// As drawn: a zone the table lacks prints the one "no location" line.
+				if(((MVampirePortalItem *)p_item)->GetZoneName() != NULL)
 					line_count+=2;
 				else
 					line_count++;

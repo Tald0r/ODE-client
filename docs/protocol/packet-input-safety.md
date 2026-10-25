@@ -74,15 +74,29 @@ stops before the text passes 65,536 bytes, what a saved script string holds
 (`NPCDialogue.CascadingParametersStopAtTheLongestTextAScriptHolds`).
 
 **Next: server values that reach UI memory as an index or a position.** `packet_indices` stops at
-`Client/Packet` and `Client/PacketHandler`. The audit met four such sites past it, recorded under
-*Found by reading* in the [code-health review](../reviews/code-health-review-2026-08-29.md):
+`Client/Packet` and `Client/PacketHandler`, and nothing past them is instrumented. The audit met
+four such sites, recorded under *Found by reading* in the
+[code-health review](../reviews/code-health-review-2026-08-29.md), and all four are fixed:
 - a guild member's rank, a `BYTE`, used as an index into the four grade names
-  (`C_VS_UI_TEAM_MEMBER_INFO::Show`);
+  (`C_VS_UI_TEAM_MEMBER_INFO::Show`). A rank past them has no name, as in the member list;
 - each listed member's rank, used as an index into a five-entry sort table
-  (`C_VS_UI_TEAM_MEMBER_LIST::AddMemberList`);
-- a blood bible's zone looked up with no `NULL` test (`C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl`).
-  It is one of 32 lines under `Client` and `VS_UI` that dereference `g_pZoneTable->Get(...)`
-  untested, three more of them on a server's zone id (listed in its row);
+  (`C_VS_UI_TEAM_MEMBER_LIST::AddMemberList`). A rank past it sorts last;
+- a blood bible's zone looked up with no `NULL` test (`C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl`),
+  one of 32 lines under `Client` and `VS_UI` that dereference `g_pZoneTable->Get(...)` untested.
+  Three more took a server's zone: the party window's face hover and the party arrow's
+  (`GCPartyPosition`, and `RCPositionInfo` from other clients) and the vampire portal cursor's
+  (`GCAddVampirePortal`). Each now tests its lookup, and a zone the table lacks is described as no
+  place, or not at all;
 - a mail date too short for the `/` that `C_VS_UI_MAILBOX::AddMail` inserts, which threw a
-  `std::out_of_range` that no caller catches. Fixed: the date is zero-padded to its six digits,
-  pinned by `tests/unit/test_mailbox_file.cpp`. The other three are open.
+  `std::out_of_range` that no caller catches. The date is zero-padded to its six digits.
+
+`tests/unit/test_mailbox_file.cpp` and `tests/unit/test_ui_server_indices.cpp` pin each of them
+but the party arrow, which only the whole game UI draws; its description strings are static now,
+since the descriptor manager read them after the block that owned them had ended. The review of
+those fixes found one more: a vampire portal item's mark is its silver, which the server sends
+with the item, and its two descriptions printed the marked zone unchecked. They print
+`MVampirePortalItem::GetZoneName` now, which answers `NULL` for a zone the table lacks. Following
+the other zone lookups found one more server value, open in the review: `GCUpdateInfoHandler`
+reads the new zone's entry unchecked when the player leaves a large zone. What remains is the walk
+itself: no pass has followed every server value into `VS_UI` the way the 2026-10-24 audit followed
+the strings.

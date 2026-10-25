@@ -11533,7 +11533,8 @@ bool	C_VS_UI_PARTY_MANAGER::MouseControl(UINT message, int _x, int _y)
 				if(m_away_focused > 0 && m_away_focused < g_pParty->GetSize()+1)
 				{
 					PARTY_INFO *info = g_pParty->GetMemberInfo(m_away_focused-1);
-					if(info != NULL)
+					// The zone is the server's (GCPartyPosition, RCPositionInfo): one the table lacks is not described.
+					if(info != NULL && g_pZoneTable->Get(info->zoneID) != NULL)
 					{
 						static char zonename[64];
 						// "X:%d Y:%d" against two BYTEs needs 12 bytes, and
@@ -24767,7 +24768,9 @@ bool	C_VS_UI_TEAM_MEMBER_LIST::IsPixel(int _x, int _y)
 //-----------------------------------------------------------------------------
 void	C_VS_UI_TEAM_MEMBER_LIST::AddMemberList(const TEAM_MEMBER_LIST &member_list, BYTE bType)
 {
-	int convert_table[5] = { 2, 0, 1, 3, 4 }; // 우선순위
+	int convert_table[5] = { 2, 0, 1, 3, 4 }; // sort priority by rank
+	// The rank is the server's, unbounded: one the table lacks sorts last.
+	auto priority = [&convert_table](int grade) { return (grade >= 0 && grade < 5) ? convert_table[grade] : 5; };
 	
 	if(m_v_member_list.empty())
 		m_v_member_list.push_back(member_list);
@@ -24776,7 +24779,7 @@ void	C_VS_UI_TEAM_MEMBER_LIST::AddMemberList(const TEAM_MEMBER_LIST &member_list
 		int i;
 		for(i = 0; static_cast<size_t>(i) < m_v_member_list.size(); i++)
 		{
-			if(convert_table[member_list.member_grade] < convert_table[m_v_member_list[i].member_grade])
+			if(priority(member_list.member_grade) < priority(m_v_member_list[i].member_grade))
 			{
 				m_v_member_list.insert(m_v_member_list.begin() + i, member_list);
 				break;
@@ -27206,7 +27209,8 @@ void C_VS_UI_TEAM_MEMBER_INFO::Show()
 			(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_GRADE_SUB_MASTER].GetString(),
 			(*g_pGameStringTable)[UI_STRING_MESSAGE_TEAM_GRADE_WAIT].GetString(),
 		};
-		SafeFormat::Format(sz_string, GetGameString(UI_STRING_MESSAGE_TEAM_INFO_GRADE), grade_string[m_member_info.GRADE]);
+		// The rank is the server's, unbounded: one past the four has no name, as in the member list.
+		SafeFormat::Format(sz_string, GetGameString(UI_STRING_MESSAGE_TEAM_INFO_GRADE), m_member_info.GRADE < 4 ? grade_string[m_member_info.GRADE] : "");
 		g_PrintColorStr(print_x, py, sz_string, gpC_base->m_chatting_pi, RGB_BLACK);
 		gpC_base->m_p_DDSurface_back->HLine(print_x, py+line_gap, w - (print_x - x) -30, 0);
 		py += print_gap;
@@ -31505,7 +31509,8 @@ bool	C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl(UINT message, int _x, int _y)
 			};
 			
 			SafeFormat::Format(temp_str[0],"%s (%s)",(*g_pGameStringTable)[UI_STRING_MESSAGE_BLOOD_BIBLE_ARMEGA+count].GetString(),(*g_pGameStringTable)[UI_STRING_MESSAGE_BLOOD_BIBLE_ARMEGA_ENG+count].GetString());
-			if(m_BloodBibleStatus[count].zone_id == -1)
+			// The zone is the server's: one the table lacks is shown as no place, as -1 is.
+			if(m_BloodBibleStatus[count].zone_id == -1 || g_pZoneTable->Get(m_BloodBibleStatus[count].zone_id) == NULL)
 			{
 				SafeFormat::Format(temp_str[1],"%s",(*g_pGameStringTable)[UI_STRING_MESSAGE_BLOOD_BIBLE_STATUS_NONE].GetString());
 				g_descriptor_manager.Set(DID_STRINGS,x+_x,y+_y,(void*)str,2);

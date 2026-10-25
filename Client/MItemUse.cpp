@@ -434,6 +434,22 @@ MVampirePortalItem::IsMarked() const
 }
 
 //----------------------------------------------------------------------
+// Get ZoneName - the mark is the server's (the item's silver)
+//----------------------------------------------------------------------
+const char*
+MVampirePortalItem::GetZoneName() const
+{
+	if (!IsMarked() || g_pZoneTable==NULL)
+	{
+		return NULL;
+	}
+
+	const ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( m_ZoneID );
+
+	return pZoneInfo!=NULL? pZoneInfo->Name.GetString() : NULL;
+}
+
+//----------------------------------------------------------------------
 // Get MaxNumber - the charges
 //----------------------------------------------------------------------
 TYPE_ITEM_NUMBER

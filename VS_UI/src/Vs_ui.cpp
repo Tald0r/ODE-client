@@ -1824,12 +1824,18 @@ if(gbl_info_show)
 				_y += point_table[direct/10].y;
 				cursor.Blt(_x, _y, direct+frame);
 //				gpC_global_resource->m_pC_assemble_box_button_spk->Blt(_x, _y, C_GLOBAL_RESOURCE::AB_SLAYER_SCROLL_TAG);
-				if(gpC_mouse_pointer->GetX() > _x && gpC_mouse_pointer->GetX() < _x+20 && gpC_mouse_pointer->GetY() > _y && gpC_mouse_pointer->GetY() < _y +20)
+				// The zone is the server's (GCPartyPosition, RCPositionInfo): one the table lacks is not described.
+				if(gpC_mouse_pointer->GetX() > _x && gpC_mouse_pointer->GetX() < _x+20 && gpC_mouse_pointer->GetY() > _y && gpC_mouse_pointer->GetY() < _y +20
+					&& g_pZoneTable->Get(info->zoneID) != NULL)
 				{
 					static S_DEFAULT_HELP_STRING party_string;
-					party_string.sz_main_str = info->Name;
-					char xy[20];
-					char zonename[20];
+					// Static copies: the descriptor manager reads these after this block
+					// ends, and after a party leave has freed the member, as the face hover's.
+					static char name[20];
+					SafeFormat::Copy(name, info->Name.GetString() ? info->Name.GetString() : "");
+					party_string.sz_main_str = name;
+					static char xy[20];
+					static char zonename[20];
 					SafeFormat::Format(xy, GetGameString(UI_STRING_MESSAGE_ZONEINFO_XY), info->zoneX, info->zoneY);
 					party_string.sz_sub_str = xy;
 					SafeFormat::Format(zonename, "%s", g_pZoneTable->Get(info->zoneID)->Name.GetString());

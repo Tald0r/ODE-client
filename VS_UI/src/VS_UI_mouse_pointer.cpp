@@ -480,7 +480,9 @@ void	C_VS_UI_MOUSE_POINTER::SetCursorPortal(int zone_id, int x, int y, char *own
 	}
 	else
 	{
-		m_string = g_pZoneTable->Get(zone_id)->Name;
+		// A vampire portal's zone is the server's: one the table lacks leaves no text, so no box is drawn.
+		const ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get(zone_id);
+		m_string = pZoneInfo != NULL ? pZoneInfo->Name.GetString() : "";
 		m_portal_x = x; m_portal_y = y;
 	}
 	if(owner_name)
