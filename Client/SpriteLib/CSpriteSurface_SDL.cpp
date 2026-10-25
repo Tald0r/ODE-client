@@ -965,7 +965,7 @@ void CSpriteSurface::memcpyEffectGradation(WORD* dest, WORD* src, WORD pixels)
     for (int i = 0; i < pixels; ++i) {
         const WORD c = src[i];
         const int brightness = (c >> 11) + ((c >> 6) & 31) + (c & 31);
-        // Pure white sums to 93; the legacy lookup has entries 0 through 92.
+        // Pure white sums to 93, the table's last entry.
         const int gradation = CIndexSprite::ColorToGradation[SDL_min(brightness, MAX_COLOR_TO_GRADATION - 1)];
         dest[i] = CIndexSprite::ColorSet[s_Value1][SDL_min(gradation, MAX_COLORGRADATION - 1)];
     }

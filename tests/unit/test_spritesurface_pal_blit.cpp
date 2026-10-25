@@ -945,7 +945,7 @@ TEST(SpriteSurfaceEffects, SkillAndRankStatesRespectTransparencyAndViewport)
         {0, 0x001f, 0, 0, 0, 0x001f, 0x0010, 0}, // blue channel
         {0, 0x7bef, 0x7800, 0x03e0, 0, 0x000f, 0x4208, 0}, // unavailable rank choice
         {0, 0xffff, 0x528a, 0x528a, 0, 0x528a, 0x8430, 0}, // locked skill
-        {0, CIndexSprite::ColorSet[59][CIndexSprite::ColorToGradation[92]],
+        {0, CIndexSprite::ColorSet[59][CIndexSprite::ColorToGradation[93]],
             CIndexSprite::ColorSet[59][CIndexSprite::ColorToGradation[31]],
             CIndexSprite::ColorSet[59][CIndexSprite::ColorToGradation[31]], 0,
             CIndexSprite::ColorSet[59][CIndexSprite::ColorToGradation[31]],

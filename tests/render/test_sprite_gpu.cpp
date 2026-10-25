@@ -1074,6 +1074,93 @@ TEST(SpriteGpu, IndexSpriteDarknessShiftsEveryChannelOfWhatItDraws)
 	CIndexSprite::SetUsingColorSetOnly(0, saved);
 }
 
+TEST(SpriteGpu, IndexSpriteColorSetDrawsEveryPixelFromTheSet)
+{
+	// Fake-die vampires, coloured bats and coloured weapon addons.
+	// BltIndexSpriteColorSet drew the sprite in its own colours.
+	Fixture f;
+	CIndexSprite::SetColorSet();
+	const int saved = CIndexSprite::GetUsingColorSet(0);
+	const int previousValue = CSpriteSurface::s_Value1;
+	CIndexSprite::SetUsingColorSetOnly(0, 0);
+	CIndexSprite::SetUsingColorSetOnly(3, 0);
+	// A set that differs from the sprite's own at both of its coloured
+	// gradations, and is not black there (black is the backend's hole).
+	int set = 1;
+	while (set < MAX_COLORSET && (CIndexSprite::ColorSet[set][2] == CIndexSprite::ColorSet[0][2]
+		|| CIndexSprite::ColorSet[set][28] == CIndexSprite::ColorSet[0][28]
+		|| CIndexSprite::ColorSet[set][2] == 0 || CIndexSprite::ColorSet[set][28] == 0)) ++set;
+	CHECK(set < MAX_COLORSET);
+	// What the original draws: an indexed pixel from its own gradation, a
+	// fixed one from the gradation its channel sum maps to (the SDL
+	// memcpyEffectGradation takes green's top five bits; white sums to 93,
+	// the table's last entry).
+	auto indexed = [&](int gradation) { return CIndexSprite::ColorSet[set][gradation]; };
+	auto fixed = [&](WORD color) {
+		const int sum = (color >> 11) + ((color >> 6) & 0x1f) + (color & 0x1f);
+		return CIndexSprite::ColorSet[set][CIndexSprite::ColorToGradation[sum]];
+	};
+	struct Sprite : CIndexSprite565 {
+		Sprite()
+		{
+			// A hole; indexed pixels at gradation 0, 2 on channel 3 and 28;
+			// fixed white, cyan, yellow and a green of 32.
+			m_Width = 8; m_Height = 1;
+			m_Pixels = new WORD*[1];
+			m_Pixels[0] = new WORD[11]{1, 1, 3, 0x0000, 0x0302, 0x001c, 4, 0xffff, 0x07ff, 0xffe0, 0x0400};
+			m_bInit = true;
+		}
+	} sprite;
+	const WORD expected[8] = {0x5a69, indexed(0), indexed(2), indexed(28), fixed(0xffff), fixed(0x07ff), fixed(0xffe0), fixed(0x0400)};
+	for (int x = 1; x < 8; ++x) CHECK(expected[x] != 0x5a69 && expected[x] != 0);
+	POINT origin{0, 3};
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSprite(&origin, &sprite);
+	CHECK(f.Pixel(2, 3) != expected[2] && f.Pixel(3, 3) != expected[3]);	// its own set differs
+	f.surface.FillSurface(0x5a69);
+	CSpriteSurface::s_Value1 = 99;
+	const auto before = SpriteGpu::GetCounters();
+	f.surface.BltIndexSpriteColorSet(&origin, &sprite, WORD(set));
+	CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
+	CHECK_EQ(set, CSpriteSurface::s_Value1);
+	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
+		CHECK_EQ(y == 3 ? expected[x] : WORD(0x5a69), f.Pixel(x, y));
+	// A set past the table draws the sprite as it is; off the clip nothing is
+	// drawn and s_Value1 is left as it was.
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSpriteColorSet(&origin, &sprite, MAX_COLORSET);
+	CHECK(f.Pixel(2, 3) != expected[2] && f.Pixel(2, 3) != 0x5a69);
+	CSpriteSurface::s_Value1 = 99;
+	POINT away{8, 0};
+	f.surface.BltIndexSpriteColorSet(&away, &sprite, WORD(set));
+	CHECK_EQ(99, CSpriteSurface::s_Value1);
+	// Cut by the surface's right edge, one row above its last, then on the
+	// left and top as well: what lies inside is the set's, the rest untouched.
+	struct Clipped : CIndexSprite565 {
+		Clipped()
+		{
+			// Two indexed pixels, a hole, then three fixed pixels.
+			m_Width = 6; m_Height = 2;
+			m_Pixels = new WORD*[2];
+			for (int y = 0; y < 2; ++y)
+				m_Pixels[y] = new WORD[12]{2, 0, 2, 0x0002, 0x0003, 0, 1, 0, 3, 0xffe0, 0x07ff, 0xf800};
+			m_bInit = true;
+		}
+	} clipped;
+	const WORD row[6] = {indexed(2), indexed(3), 0x5a69, fixed(0xffe0), fixed(0x07ff), fixed(0xf800)};
+	for (POINT corner : {POINT{5, 5}, POINT{-1, -1}}) {
+		f.surface.FillSurface(0x5a69);
+		f.surface.BltIndexSpriteColorSet(&corner, &clipped, WORD(set));
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+			const int sx = x - corner.x, sy = y - corner.y;
+			const bool inside = sx >= 0 && sx < 6 && sy >= 0 && sy < 2;
+			CHECK_EQ(inside ? row[sx] : WORD(0x5a69), f.Pixel(x, y));
+		}
+	}
+	CSpriteSurface::s_Value1 = previousValue;
+	CIndexSprite::SetUsingColorSetOnly(0, saved);
+}
+
 TEST(SpriteGpu, TransientCompositionSkipsReadbackButRetainsPersistentSurfaces)
 {
 	Fixture f;

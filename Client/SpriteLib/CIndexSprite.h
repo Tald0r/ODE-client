@@ -74,7 +74,7 @@
 // Maximum values
 #include "../../basic/ColorSetDef.h"	// MAX_COLORSET_SEED, MAX_COLORSET_SEED_MODIFY, MAX_COLORSET
 #define	MAX_COLORGRADATION			30
-#define	MAX_COLOR_TO_GRADATION		93	// R+G+B
+#define	MAX_COLOR_TO_GRADATION		94	// R+G+B, 0 to 93 (five bits each)
 #define	MAX_COLORGRADATION_HALF		15	// == MAX_COLORSET_SEED_MODIFY
 #define	MAX_DARKBIT					5
 

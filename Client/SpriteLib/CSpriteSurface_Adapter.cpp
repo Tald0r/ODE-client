@@ -28,6 +28,7 @@
 #include <climits>
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include "DebugLog.h"
 
 /* ============================================================================
@@ -1036,10 +1037,38 @@ void CSpriteSurface::BltIndexSpriteColor(POINT* pPoint, CIndexSprite* pSprite, B
 	BltIndexSprite(pPoint, pSprite);
 }
 
+// Every pixel is drawn from the one colour set: an indexed pixel from its own
+// gradation and a fixed one from the gradation its colour maps to, which is
+// CIndexSprite::BltColorSet. The decoded backend sprite holds the sprite's own
+// sets, so the set's decode is drawn as a transient sprite, the set being the
+// draw's rather than the sprite's. A pixel decoded to 0x0000 is a hole, as in
+// every backend draw of an index sprite. A set past the table draws the sprite
+// as it is: the original read past ColorSet there, and the addon call sites
+// pass EffectColorSet unchecked.
 void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite, WORD colorSet) {
-	(void)colorSet;
-	/* TODO: Implement color set */
-	BltIndexSprite(pPoint, pSprite);
+	if (!pPoint || !pSprite || !pSprite->IsInit() || !m_backend_surface || !m_backend_surface->surface) {
+		return;
+	}
+	if (colorSet >= MAX_COLORSET) {
+		BltIndexSprite(pPoint, pSprite);
+		return;
+	}
+	const int width = pSprite->GetWidth(), height = pSprite->GetHeight();
+	const SDL_Rect& clip = m_backend_surface->surface->clip_rect;
+	if (width > 0x7fff || height > 0x7fff	// its row pitch is a WORD; a height past it is no sprite
+		|| int64_t(pPoint->x) + width <= clip.x || int64_t(pPoint->y) + height <= clip.y
+		|| pPoint->x >= int64_t(clip.x) + clip.w || pPoint->y >= int64_t(clip.y) + clip.h) {
+		return;	// off the clip the original drew nothing and left s_Value1
+	}
+	std::vector<WORD> pixels(size_t(width) * height, 0x0000);
+	pSprite->BltColorSet(pixels.data(), WORD(width * 2), colorSet);
+	spritectl_sprite_t decoded = spritectl_create_sprite(width, height, SPRITECTL_FORMAT_RGB565,
+		pixels.data(), pixels.size() * sizeof(WORD));
+	if (!decoded) {
+		return;
+	}
+	spritectl_blt_sprite(m_backend_surface, pPoint->x, pPoint->y, decoded, 0, 255);
+	spritectl_destroy_sprite(decoded);
 }
 
 void CSpriteSurface::BltIndexSpriteEffect(POINT* pPoint, CIndexSprite* pSprite) {
