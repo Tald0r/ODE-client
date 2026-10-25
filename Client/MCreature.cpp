@@ -7569,6 +7569,10 @@ MCreature::Action()
 void		
 MCreature::PacketMove(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y, BYTE direction)
 {
+	// the server's direction indexes the eight-way tables: one past them keeps the facing
+	if (direction >= DIRECTION_MAX)
+		direction = m_Direction;
+
 //	// 2004, 9, 16, sobeit add start - change turret direction, should I remove it..-_-;
 //	if(HasEffectStatus(EFFECTSTATUS_INSTALL_TURRET))
 //	{
@@ -8607,8 +8611,9 @@ MCreature::PacketAttackNormal(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BY
 			DEBUG_ADD_FORMAT("[ Move To Attack ] : (%d, %d) --> (%d, %d),  Player=(%d, %d)", m_X, m_Y, sX, sY, PlayerX(), PlayerY());
 		}	
 
-		// set the info sent from the Server..
-		m_Direction = direction;
+		// set the info sent from the Server.. one past the eight-way tables keeps the facing
+		if (direction < DIRECTION_MAX)
+			m_Direction = direction;
 	}		
 
 	m_ActionCount = 0; 

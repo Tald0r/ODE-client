@@ -371,7 +371,8 @@ MEffectGeneratorTable::Generate(
 		egInfo.y1					= targetY;
 		egInfo.z1					= targetZ;
 		egInfo.creatureID			= targetID;
-		egInfo.direction			= direction;
+		// the generators index eight-way tables with it; a server direction past them faces left
+		egInfo.direction			= direction < DIRECTION_MAX ? direction : BYTE(DIRECTION_LEFT);
 		egInfo.step					= static_cast<BYTE>(info.Step);
 		egInfo.count				= static_cast<WORD>(count);
 		egInfo.linkCount			= info.LinkCount;

@@ -98,6 +98,25 @@ with the item, and its two descriptions printed the marked zone unchecked. They 
 `MVampirePortalItem::GetZoneName` now, which answers `NULL` for a zone the table lacks. Following
 the other zone lookups found one more server value: `GCUpdateInfoHandler` read the new zone's
 entry unchecked when the player left a large zone; a zone the table lacks now keeps the creature
-sprites, and `tests/unit/test_update_info_replies.cpp` pins it. What remains is the walk itself: no
-pass has followed every server value into `VS_UI` the way the 2026-10-24 audit followed the
-strings.
+sprites, and `tests/unit/test_update_info_replies.cpp` pins it.
+
+**The walk (2026-10-25).** Every presentation host entry that takes a packet or an integer from a
+handler (`Client/*PresentationHost.h`, `VsUiPresentationHost.h`, `ZoneLoadingHost.h`; their
+installers in `GameInit.cpp` and `GameUI.cpp`) was followed into `VS_UI`, asking of each integer
+whether it indexes or dereferences. Guarded already: effect statuses by the table's size; character
+slots by the array; game string ids by `MAX_GAME_STRING`; the lair message's zone by a `NULL` test;
+quest ids by `GetInfo`'s `NULL`; the blood bible id by its window (0 to 11); shop goods by
+`MItem::NewItem` and `CTypeTable` (every creature, item and skill table range-checks and answers a
+static default); the war list by fixed fives on both sides; the mail tab by a constant at every
+caller; notices, lottery steps and gift ids searched by value; the minigame, notice, elemental and
+sheet selectors by `switch`; the created item's grid by `MGridItemManager::AddItem`, which refuses
+a cell off the grid before the UI is told; `SetHotKey` is a no-op. Found unguarded: a creature's
+direction byte, which 79 handler lines store as it came through three `MCreature` setters and two packet methods, and which
+indexes the eight-way addon-order tables at 17 draw lines, and the direction the skill handlers
+hand to `MEffectGeneratorTable::Generate`, which the homing attack's angle table takes unchecked.
+The setters now keep the facing for a direction past the eight and the generator table faces such
+an effect left, where the zone-around generator refused it and drew nothing (`tests/unit/test_creature.cpp`, `tests/unit/test_effect_generator_table.cpp`; the
+[code-health review](../reviews/code-health-review-2026-08-29.md) has the row). Not followed:
+`VS_UI`'s own reads of the model objects it draws (inventory grids, skill trees, party slots) beyond
+those named, the text system, and the view's frame packs, which `CTypeTable` range-checks.
+
