@@ -554,18 +554,24 @@ static void BltClippedSpriteEffect(spritectl_surface_t surface, POINT* point,
     if (SDL_MUSTLOCK(target)) SDL_UnlockSurface(target);
 }
 
+// The Gradation shader's colours: the colour set's entry for each channel sum.
+static bool GradationColors(int colorSet, Uint16 gradation[94])
+{
+	if (colorSet < 0 || colorSet >= MAX_COLORSET) return false;
+	for (int i = 0; i < 94; ++i) {
+		const int index = CIndexSprite::ColorToGradation[SDL_min(i, MAX_COLOR_TO_GRADATION - 1)];
+		gradation[i] = CIndexSprite::ColorSet[colorSet][SDL_min(index, MAX_COLORGRADATION - 1)];
+	}
+	return true;
+}
+
 static bool BltGpuSpriteEffect(spritectl_surface_t surface, POINT* point, CSprite* sprite,
 	SpriteGpuEffects::Effect effect, int value = 0)
 {
 	if (!SpriteGpuEffects::Active() || !point || !sprite || !sprite->IsInit()) return false;
 	Uint16 gradation[94]{};
-	if (effect == SpriteGpuEffects::Effect::Gradation) {
-		if (value < 0 || value >= MAX_COLORSET) effect = SpriteGpuEffects::Effect::Copy;
-		else for (int i = 0; i < 94; ++i) {
-			const int index = CIndexSprite::ColorToGradation[SDL_min(i, MAX_COLOR_TO_GRADATION - 1)];
-			gradation[i] = CIndexSprite::ColorSet[value][SDL_min(index, MAX_COLORGRADATION - 1)];
-		}
-	}
+	if (effect == SpriteGpuEffects::Effect::Gradation && !GradationColors(value, gradation))
+		effect = SpriteGpuEffects::Effect::Copy;
 	return SpriteGpu::DrawEffect(surface, point->x, point->y, get_backend_sprite(sprite), effect, value, gradation);
 }
 
@@ -980,6 +986,29 @@ void CSpriteSurface::BltIndexSprite(POINT* pPoint, CIndexSprite* pSprite) {
 	                    backend_sprite, flags, alpha);
 }
 
+// CIndexSprite's clip-width effect blits let their first visible run ignore
+// the right edge, so the rest overrun it. Blit the whole sprite unclipped
+// over two fills instead: a pixel it wrote is the same in both.
+template <typename Blit>
+static void BltIndexSpriteUnclippedTwice(spritectl_surface_t surface, POINT* point,
+                                         CIndexSprite* sprite, Blit blit)
+{
+	BltClippedSpriteEffect(surface, point, sprite, [=](WORD* dest, WORD pitch, RECT* clip) {
+		const int width = sprite->GetWidth();
+		if (width > 0x7fff) return;	// its row pitch is a WORD
+		std::vector<WORD> unset(size_t(width) * sprite->GetHeight(), 0x0000), set(unset.size(), 0xffff);
+		blit(unset.data(), WORD(width * 2));
+		blit(set.data(), WORD(width * 2));
+		for (int y = clip->top; y < clip->bottom; ++y) {
+			WORD* row = reinterpret_cast<WORD*>(reinterpret_cast<BYTE*>(dest) + size_t(y - clip->top) * pitch);
+			for (int x = clip->left; x < clip->right; ++x) {
+				const size_t i = size_t(y) * width + x;
+				if (unset[i] == set[i]) row[x - clip->left] = unset[i];
+			}
+		}
+	});
+}
+
 // Indexed pixels take ColorSetDarkness and fixed ones memcpyDarkness: both
 // shift each channel of what BltIndexSprite draws right by DarkBits, which
 // the shader does to the decoded sprite.
@@ -994,22 +1023,8 @@ void CSpriteSurface::BltIndexSpriteDarkness(POINT* pPoint, CIndexSprite* pSprite
 		s_Value1 = bits;
 		return;
 	}
-	// CIndexSprite's clip-width blit lets its first visible run ignore the
-	// right edge, so the rest overrun it. Darken the whole sprite unclipped
-	// over two fills instead: a pixel it wrote is the same in both.
-	BltClippedSpriteEffect(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch, RECT* clip) {
-		const int width = pSprite->GetWidth();
-		if (width > 0x7fff) return;	// its row pitch is a WORD
-		std::vector<WORD> unset(size_t(width) * pSprite->GetHeight(), 0x0000), set(unset.size(), 0xffff);
-		pSprite->BltDarkness(unset.data(), WORD(width * 2), bits);
-		pSprite->BltDarkness(set.data(), WORD(width * 2), bits);
-		for (int y = clip->top; y < clip->bottom; ++y) {
-			WORD* row = reinterpret_cast<WORD*>(reinterpret_cast<BYTE*>(dest) + size_t(y - clip->top) * pitch);
-			for (int x = clip->left; x < clip->right; ++x) {
-				const size_t i = size_t(y) * width + x;
-				if (unset[i] == set[i]) row[x - clip->left] = unset[i];
-			}
-		}
+	BltIndexSpriteUnclippedTwice(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch) {
+		pSprite->BltDarkness(dest, pitch, bits);
 	});
 }
 
@@ -1036,10 +1051,29 @@ void CSpriteSurface::BltIndexSpriteColor(POINT* pPoint, CIndexSprite* pSprite, B
 	BltIndexSprite(pPoint, pSprite);
 }
 
+// Every pixel is drawn from the one colour set: the CPU blit takes an indexed
+// pixel's own gradation and reads a fixed pixel's from its colour, as
+// memcpyEffectGradation does; the shader reads every decoded pixel's from its
+// colour. A set past the table draws the sprite as it is, as BltSpriteColorSet
+// does, where the CPU blit read past ColorSet.
 void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite, WORD colorSet) {
-	(void)colorSet;
-	/* TODO: Implement color set */
-	BltIndexSprite(pPoint, pSprite);
+	if (!pPoint || !pSprite) {
+		return;
+	}
+	Uint16 gradation[94];
+	if (!GradationColors(colorSet, gradation)) {
+		BltIndexSprite(pPoint, pSprite);
+		return;
+	}
+	spritectl_sprite_t backend_sprite = get_backend_index_sprite(pSprite);
+	if (backend_sprite && SpriteGpu::DrawEffect(m_backend_surface, pPoint->x, pPoint->y,
+		backend_sprite, SpriteGpuEffects::Effect::Gradation, colorSet, gradation)) {
+		s_Value1 = colorSet;
+		return;
+	}
+	BltIndexSpriteUnclippedTwice(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch) {
+		pSprite->BltColorSet(dest, pitch, colorSet);
+	});
 }
 
 void CSpriteSurface::BltIndexSpriteEffect(POINT* pPoint, CIndexSprite* pSprite) {

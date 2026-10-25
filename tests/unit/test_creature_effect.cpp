@@ -276,6 +276,14 @@ struct Scene
 		CIndexSprite::SetUsingColorSet(colorSet1, colorSet2);
 		expected.Blit(at.x + dx, at.y + dy, sprite, darkBits);
 	}
+	// A blit at (dx, dy) in the one colour set `colorSet`.
+	void ColorSet(int dx, int dy, CIndexSprite& sprite, int colorSet)
+	{
+		POINT point = { at.x + dx, at.y + dy };
+		expected.surface.Lock();
+		expected.surface.BltIndexSpriteColorSet(&point, &sprite, WORD(colorSet));
+		expected.surface.Unlock();
+	}
 	// The wipe at `count` of a blit at (dx, dy), in the colours last set.
 	void Wipe(int dx, int dy, CIndexSprite& sprite, int count)
 	{
@@ -327,6 +335,7 @@ std::vector<Lay> InPlaceLays(int, int) { return { { 0, 0, 0 } }; }
 
 // A weapon's afterimage f frames back is darkened by this.
 const int kAfterimageDarkBits[6] = { 0, 1, 1, 2, 2, 3 };
+const int kEffectColorSet = 77;
 
 struct Kind
 {
@@ -502,8 +511,10 @@ struct Swing
 	void Expect(int frame, int afterimages, bool rediance = false, bool fading = false)
 	{
 		for (int f = 1; f <= afterimages; ++f)
-			scene.Blit(10 + 4 * (frame - f), 20, scene.addonSPK[2], 40, 50, rediance ? 0 : kAfterimageDarkBits[f]);
-		scene.Blit(10 + 4 * frame, 20, scene.addonSPK[1], 40, 50, fading ? 1 : 0);
+			if (rediance) scene.ColorSet(10 + 4 * (frame - f), 20, scene.addonSPK[2], kEffectColorSet);
+			else scene.Blit(10 + 4 * (frame - f), 20, scene.addonSPK[2], 40, 50, kAfterimageDarkBits[f]);
+		if (rediance) scene.ColorSet(10 + 4 * frame, 20, scene.addonSPK[1], kEffectColorSet);
+		else scene.Blit(10 + 4 * frame, 20, scene.addonSPK[1], 40, 50, fading ? 1 : 0);
 		scene.Blit(2, 3, scene.addonSPK[0], 30, 60, fading ? 1 : 0);
 	}
 };
@@ -526,13 +537,12 @@ TEST(CreatureEffect, ASwungWeaponLeavesUpToFiveAfterimages)
 TEST(CreatureEffect, UnderRedianceOrAnEffectColourOrFadingTheWeaponIsStillDrawn)
 {
 	// Under Rediance the afterimages take the effect colour set, and an
-	// effect-coloured part keeps it (the SDL backend draws a colour set as
-	// the sprite as it is: in the colours last set).
+	// effect-coloured part keeps it.
 	{
 		Swing swing(3);
 		swing.slayer.Set(EFFECTSTATUS_REDIANCE);
 		swing.slayer.m_Addon[ADDON_RIGHTHAND].bEffectColor = TRUE;
-		swing.slayer.m_Addon[ADDON_RIGHTHAND].EffectColorSet = 77;
+		swing.slayer.m_Addon[ADDON_RIGHTHAND].EffectColorSet = kEffectColorSet;
 		swing.scene.Draw(DrawWeaponFadeOut, swing.slayer, ACTION_ATTACK, 2, 3);
 		swing.Expect(3, 3, true);
 		CHECK(swing.scene.Same());
@@ -703,10 +713,9 @@ TEST(CreatureEffect, AnAdvancedSlayersSwungWeaponLeavesItsAfterimages)
 
 TEST(CreatureEffect, AnAdvancedSlayersWeaponUnderRedianceOrAnEffectColourOrFadingIsStillDrawn)
 {
-	// Rediance's afterimages and an effect-coloured weapon go through the
-	// colour-set blit (drawn plainly by SDL, in the colours last set); a
-	// fading one's afterimages darken as ever and the weapon by a bit: all
-	// of them drawn, for the sword's part and for a new sword.
+	// Rediance's afterimages and an effect-coloured weapon take the effect
+	// colour set; a fading one's afterimages darken as ever and the weapon
+	// by a bit: all of them drawn, for the sword's part and for a new sword.
 	for (bool newItems : {false, true})
 		for (int kind : {0, 1})
 		{
@@ -719,7 +728,7 @@ TEST(CreatureEffect, AnAdvancedSlayersWeaponUnderRedianceOrAnEffectColourOrFadin
 			{
 				slayer.Set(EFFECTSTATUS_REDIANCE);
 				sword.bEffectColor = TRUE;
-				sword.EffectColorSet = 77;
+				sword.EffectColorSet = kEffectColorSet;
 			}
 			else slayer.SetFade();
 			const int action = newItems ? ConvNewSlayerActionFromSlayerAction(ACTION_MAGIC, &slayer)
@@ -728,8 +737,11 @@ TEST(CreatureEffect, AnAdvancedSlayersWeaponUnderRedianceOrAnEffectColourOrFadin
 			frames.Init(3);
 			for (int f = 0; f <= 2; ++f) frames[WORD(f)].Set(TYPE_SPRITEID(f == 2 ? 1 : 2), short(10 + 4 * f), 20);
 			scene.Draw(DrawWeaponFadeOutForACSlayer, slayer, ACTION_MAGIC, 2, 2);
-			for (int f = 1; f <= 2; ++f) scene.Blit(10 + 4 * (2 - f), 20, scene.slayerManSPK[2], 40, 50, kind == 0 ? 0 : kAfterimageDarkBits[f]);
-			scene.Blit(18, 20, scene.slayerManSPK[1], 40, 50, kind == 0 ? 0 : 1);
+			for (int f = 1; f <= 2; ++f)
+				if (kind == 0) scene.ColorSet(10 + 4 * (2 - f), 20, scene.slayerManSPK[2], kEffectColorSet);
+				else scene.Blit(10 + 4 * (2 - f), 20, scene.slayerManSPK[2], 40, 50, kAfterimageDarkBits[f]);
+			if (kind == 0) scene.ColorSet(18, 20, scene.slayerManSPK[1], kEffectColorSet);
+			else scene.Blit(18, 20, scene.slayerManSPK[1], 40, 50, 1);
 			const bool same = scene.Same();
 			if (!same) std::printf("      %s, %s\n", newItems ? "a new sword" : "a sword's part", kind == 0 ? "Rediance" : "fading");
 			CHECK(same);

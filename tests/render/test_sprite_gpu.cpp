@@ -1074,6 +1074,96 @@ TEST(SpriteGpu, IndexSpriteDarknessShiftsEveryChannelOfWhatItDraws)
 	CIndexSprite::SetUsingColorSetOnly(0, saved);
 }
 
+TEST(SpriteGpu, IndexSpriteColorSetDrawsEveryPixelFromTheSet)
+{
+	// Fake-die vampires, coloured bats and coloured weapon addons.
+	// BltIndexSpriteColorSet drew the sprite in its own colours.
+	Fixture f;
+	CIndexSprite::SetColorSet();
+	const int saved = CIndexSprite::GetUsingColorSet(0);
+	const int previousValue = CSpriteSurface::s_Value1;
+	CIndexSprite::SetUsingColorSetOnly(0, 0);
+	// A set that differs from the sprite's own at both of its gradations.
+	int set = 1;
+	while (set < MAX_COLORSET && (CIndexSprite::ColorSet[set][2] == CIndexSprite::ColorSet[0][2]
+		|| CIndexSprite::ColorSet[set][3] == CIndexSprite::ColorSet[0][3])) ++set;
+	CHECK(set < MAX_COLORSET);
+	struct Sprite : CIndexSprite565 {
+		Sprite()
+		{
+			// A hole, two indexed pixels and a fixed one.
+			m_Width = 4; m_Height = 1;
+			m_Pixels = new WORD*[1];
+			m_Pixels[0] = new WORD[7]{1, 1, 2, 0x0002, 0x0003, 1, 0xffe0};
+			m_bInit = true;
+		}
+	} sprite;
+	POINT origin{2, 3};
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSprite(&origin, &sprite);
+	WORD drawn[4];
+	for (int x = 0; x < 4; ++x) drawn[x] = f.Pixel(2 + x, 3);
+	CHECK_EQ(0x5a69, drawn[0]);
+	// The shader reads each decoded pixel's gradation from its colour; the
+	// CPU blit does that for the fixed pixel and keeps the indexed ones' own.
+	auto expectedOf = [&](const CIndexSprite& source, WORD under, int x, int y) {
+		CSpriteSurface::s_Value1 = set;
+		if (SpriteGpuEffects::Active()) {
+			WORD mapped;
+			CSpriteSurface::memcpyEffectGradation(&mapped, &under, 1);
+			return mapped;
+		}
+		std::vector<WORD> exact(size_t(source.GetWidth()) * source.GetHeight(), 0x5a69);
+		const_cast<CIndexSprite&>(source).BltColorSet(exact.data(), WORD(source.GetWidth() * 2), WORD(set));
+		return exact[size_t(y) * source.GetWidth() + x];
+	};
+	f.surface.FillSurface(0x5a69);
+	const auto before = SpriteGpu::GetCounters();
+	f.surface.BltIndexSpriteColorSet(&origin, &sprite, WORD(set));
+	if (SpriteGpuEffects::Active()) {
+		CHECK_EQ(before.shaderDraws + 1, SpriteGpu::GetCounters().shaderDraws);
+		CHECK_EQ(before.readbacks, SpriteGpu::GetCounters().readbacks);
+	}
+	CHECK_EQ(set, CSpriteSurface::s_Value1);
+	for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+		const bool drawnHere = y == 3 && x >= 3 && x < 6;
+		CHECK_EQ(drawnHere ? expectedOf(sprite, drawn[x - 2], x - 2, 0) : WORD(0x5a69), f.Pixel(x, y));
+	}
+	// A set past the table draws the sprite as it is.
+	f.surface.FillSurface(0x5a69);
+	f.surface.BltIndexSpriteColorSet(&origin, &sprite, MAX_COLORSET);
+	for (int x = 0; x < 4; ++x) CHECK_EQ(drawn[x], f.Pixel(2 + x, 3));
+	// Cut by the surface's right edge, one row above its last, then on the
+	// left and top as well: only what BltIndexSprite shows there is recoloured.
+	struct Clipped : CIndexSprite565 {
+		Clipped()
+		{
+			// Two indexed pixels, a hole, then three fixed pixels.
+			m_Width = 6; m_Height = 2;
+			m_Pixels = new WORD*[2];
+			for (int y = 0; y < 2; ++y)
+				m_Pixels[y] = new WORD[12]{2, 0, 2, 0x0002, 0x0003, 0, 1, 0, 3, 0xffe0, 0x07ff, 0xf800};
+			m_bInit = true;
+		}
+	} clipped;
+	for (POINT corner : {POINT{5, 5}, POINT{-1, -1}}) {
+		CSpriteSurface plain;
+		CHECK(plain.Init(8, 8));
+		plain.FillSurface(0x5a69);
+		plain.BltIndexSprite(&corner, &clipped);
+		CHECK(SpriteGpu::CpuAccess(plain.GetBackendSurface(), false));
+		f.surface.FillSurface(0x5a69);
+		f.surface.BltIndexSpriteColorSet(&corner, &clipped, WORD(set));
+		const auto* shown = plain.GetBackendSurface()->surface;
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x) {
+			const WORD under = reinterpret_cast<const WORD*>(static_cast<const BYTE*>(shown->pixels) + y * shown->pitch)[x];
+			CHECK_EQ(under == 0x5a69 ? WORD(0x5a69) : expectedOf(clipped, under, x - corner.x, y - corner.y), f.Pixel(x, y));
+		}
+	}
+	CSpriteSurface::s_Value1 = previousValue;
+	CIndexSprite::SetUsingColorSetOnly(0, saved);
+}
+
 TEST(SpriteGpu, TransientCompositionSkipsReadbackButRetainsPersistentSurfaces)
 {
 	Fixture f;

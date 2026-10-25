@@ -67,8 +67,8 @@ Normal device replacement synchronizes surfaces before destroying resources.
 `SpriteGpuEffects` implements RGB565 gamma, channel tinting, darkness,
 grayscale, color-set lookup, palette screen blending, per-pixel palette alpha
 and the colour blend of fades and translucent boxes (`BltColorAlpha`) in GLSL.
-Darkness also serves index sprites (`BltIndexSpriteDarkness`), on the decoded
-sprite. The effects preserve the CPU routines' integer channel math,
+Darkness and the color-set lookup also serve index sprites
+(`BltIndexSpriteDarkness`, `BltIndexSpriteColorSet`), on the decoded sprite. The effects preserve the CPU routines' integer channel math,
 including the six-bit green channel and alpha's 0..32 range. Transparent run
 coverage is separate from palette index and color, so opaque black stays
 opaque. Palette indices/alpha upload once per sprite; the 256-entry color
@@ -153,9 +153,12 @@ fallbacks, resource work and reset recovery are distinct from GPU composition.
 Black and coloured UI panels (`DrawAlphaBox`) go through `GammaBox565` and
 `BltColorAlpha` on every platform.
 
-SDL-port stubs this migration did not reach retain their previous behavior (for
-example `BltIndexSpriteColorSet` draws plain). It does not change game protocol or
-asset formats.
+`BltIndexSpriteColorSet` draws an index sprite in one colour set through the
+Gradation shader, which reads each decoded pixel's gradation from its colour as
+the CPU routine does for a fixed pixel; the CPU fallback keeps an indexed
+pixel's own gradation, so the two paths can differ by a gradation step on
+indexed pixels. `BltIndexSpriteColor` still draws plain. The migration does not
+change game protocol or asset formats.
 RGBA glyph blending retains the device's arithmetic; subchannel rounding can
 differ from the software RGB565 renderer, as described above.
 

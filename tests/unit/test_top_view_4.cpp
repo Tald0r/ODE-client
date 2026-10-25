@@ -542,6 +542,14 @@ struct Scene
 		expected.Blit(at.x + dx, at.y + dy, sprite, darkBits);
 	}
 	void Blit(int dx, int dy, CSprite& sprite) { expected.Blit(at.x + dx, at.y + dy, sprite); }
+	// A blit at (dx, dy) in the one colour set `colorSet`.
+	void ColorSet(int dx, int dy, CIndexSprite& sprite, int colorSet)
+	{
+		POINT point = { at.x + dx, at.y + dy };
+		expected.surface.Lock();
+		expected.surface.BltIndexSpriteColorSet(&point, &sprite, WORD(colorSet));
+		expected.surface.Unlock();
+	}
 	// The drawn picture is the expected one, and not blank.
 	bool Same()
 	{
@@ -957,8 +965,7 @@ TEST(TopView4Body, SpecialBodyColoursAreTheirItemColourSets)
 
 TEST(TopView4Body, AnEffectColourOrABatsColourTakesTheColourSetBlit)
 {
-	// SpriteLib's SDL BltIndexSpriteColorSet ignores the set
-	// (CSpriteSurface_Adapter.cpp): the body shows in the colours last set.
+	// The body shows in the one effect colour set, whatever its own.
 	Scene scene;
 	Wearer monster;
 	monster.Become(kMonster);
@@ -966,13 +973,13 @@ TEST(TopView4Body, AnEffectColourOrABatsColourTakesTheColourSetBlit)
 	Place(scene.view.m_CreatureFPK, kBody, ACTION_STAND, 3, 0, 1, 5, 6);
 	monster.m_AttachEffectColor = 5;
 	scene.Draw(monster);
-	scene.Blit(5, 6, scene.Body(1), 1, 2);
+	scene.ColorSet(5, 6, scene.Body(1), 5);
 	CHECK(scene.Same());
 	// The last effect colour set below MAX_COLORSET is still one.
 	monster.m_AttachEffectColor = MAX_COLORSET - 1;
 	scene.Clear();
 	scene.Draw(monster);
-	scene.Blit(5, 6, scene.Body(1), 1, 2);
+	scene.ColorSet(5, 6, scene.Body(1), MAX_COLORSET - 1);
 	CHECK(scene.Same());
 	monster.m_AttachEffectColor = MAX_COLORSET;
 	scene.Clear();
@@ -988,7 +995,7 @@ TEST(TopView4Body, AnEffectColourOrABatsColourTakesTheColourSetBlit)
 	Scene::ResetSets();
 	scene.Clear();
 	scene.Draw(bat);
-	scene.Blit(5, 6, scene.Body(1), 1, 2);
+	scene.ColorSet(5, 6, scene.Body(1), 5);
 	CHECK(scene.Same());
 	bat.SetBatColor(0xFFFF);
 	scene.Clear();
@@ -1046,21 +1053,22 @@ TEST(TopView4Body, AFakeDyingBodyIsDrawnThroughTheNetOnItsFirstFrame)
 	CHECK_EQ(4, CSpriteSurface::s_Value1);
 	CHECK(IndexEffect::Get() == IndexNet());
 	CHECK(CSpriteSurface::s_pMemcpyEffectFunction == SurfaceEffect(CSpriteSurface::EFFECT_NET));
-	// In an effect colour it takes the colour-set blit and leaves the net.
+	// In an effect colour it takes the colour-set blit, which leaves the set
+	// in s_Value1, and leaves the net.
 	monster.m_AttachEffectColor = 5;
 	CSpriteSurface::s_Value1 = 99;
 	CIndexSprite::SetEffect(CIndexSprite::EFFECT_WIPE_OUT);
 	Scene::ResetSets();
 	scene.Clear();
 	scene.Draw(monster);
-	scene.Blit(40, 40, scene.Body(3), 1, 2);
+	scene.ColorSet(40, 40, scene.Body(3), 5);
 	CHECK(scene.Same());
-	CHECK_EQ(99, CSpriteSurface::s_Value1);
+	CHECK_EQ(5, CSpriteSurface::s_Value1);
 	CHECK(CIndexSprite::IsWipeOutEffect());
 	// The last set is an effect colour; the count of sets is not.
 	monster.m_AttachEffectColor = MAX_COLORSET - 1;
 	scene.Draw(monster);
-	CHECK_EQ(99, CSpriteSurface::s_Value1);
+	CHECK_EQ(MAX_COLORSET - 1, CSpriteSurface::s_Value1);
 	monster.m_AttachEffectColor = MAX_COLORSET;
 	scene.Draw(monster);
 	CHECK_EQ(4, CSpriteSurface::s_Value1);
@@ -1393,7 +1401,7 @@ TEST(TopView4Creature, ACrashedBikeAndAFakeDeathShowFrame0)
 		monster.m_AttachEffectColor = 5;
 		Place(scene.view.m_CreatureFPK, kBody, ACTION_ATTACK, 3, 2, 1, 5, 6);
 		scene.Draw(monster);
-		scene.Blit(40, 40, scene.Body(3), 1, 2);
+		scene.ColorSet(40, 40, scene.Body(3), 5);
 		CHECK(scene.Same());
 	}
 }
@@ -2612,8 +2620,8 @@ TEST(TopView4Slayer, EveryWornPartIsDrawnInItsColoursAndAddsToTheRect)
 
 TEST(TopView4Slayer, AnEffectColouredPartTakesTheColoursOfThePartBefore)
 {
-	// The colour-set blit draws in the sets last set (SDL): the coat's for
-	// the helm after it; the scene's for the coat, the first.
+	// An effect-coloured part is drawn in its effect colour set, the helm
+	// after the coat or the coat first; the other part in its own colours.
 	Scene scene;
 	Wearer slayer;
 	slayer.Become(kSlayer);
@@ -2626,14 +2634,15 @@ TEST(TopView4Slayer, AnEffectColouredPartTakesTheColoursOfThePartBefore)
 	Place(scene.view.m_AddonFPK, 2, ACTION_STAND, 2, 0, 2, 14, 20);
 	DrawSlayer(scene, slayer, ACTION_STAND, 2, 0);
 	scene.Blit(2, 3, scene.view.m_AddonSPK[1], 30, 60);
-	scene.Blit(14, 20, scene.view.m_AddonSPK[2], 30, 60);
+	scene.ColorSet(14, 20, scene.view.m_AddonSPK[2], 77);
 	CHECK(scene.Same());
 	helm.bEffectColor = FALSE;
 	slayer.m_Addon[ADDON_COAT].bEffectColor = TRUE;
+	slayer.m_Addon[ADDON_COAT].EffectColorSet = 78;
 	Scene::ResetSets();
 	scene.Clear();
 	DrawSlayer(scene, slayer, ACTION_STAND, 2, 0);
-	scene.Blit(2, 3, scene.view.m_AddonSPK[1], 1, 2);
+	scene.ColorSet(2, 3, scene.view.m_AddonSPK[1], 78);
 	scene.Blit(14, 20, scene.view.m_AddonSPK[2], 40, 50);
 	CHECK(scene.Same());
 	// Fading, each part a bit darker.
@@ -2938,7 +2947,7 @@ TEST(TopView4Ousters, EffectColouredPartsTakeTheColourSetBlitAndFadingIsDrawn)
 		coat.bEffectColor = TRUE;
 		coat.EffectColorSet = 77;
 		DrawOusters(scene, ousters, ACTION_MAGIC, 2, 0, advanced);
-		scene.Blit(2, 3, sprites[1], 1, 2);
+		scene.ColorSet(2, 3, sprites[1], 77);
 		scene.Blit(22, 3, sprites[2], 44, 80);
 		CHECK(scene.Same());
 		coat.bEffectColor = FALSE;
@@ -2948,7 +2957,7 @@ TEST(TopView4Ousters, EffectColouredPartsTakeTheColourSetBlitAndFadingIsDrawn)
 		scene.Clear();
 		DrawOusters(scene, ousters, ACTION_MAGIC, 2, 0, advanced);
 		scene.Blit(2, 3, sprites[1], 11, 60, 80, 70);
-		scene.Blit(22, 3, sprites[2], 11, 60, 80, 70);
+		scene.ColorSet(22, 3, sprites[2], 78);
 		CHECK(scene.Same());
 		chakram.bEffectColor = FALSE;
 		// Fading, each part a bit darker.
@@ -3136,7 +3145,7 @@ TEST(TopView4AdvancedSlayer, AnEffectColouredPartTakesTheColoursBefore)
 		if (newItems) scene.view.m_AdvancementSlayerManFPK[6].Init(0);
 		DrawAdvancedSlayer(scene, slayer, ACTION_MAGIC, 2, 0);
 		scene.Blit(2, 3, scene.view.m_AdvancementSlayerManSPK[1], 30, 60);
-		scene.Blit(14, 30, scene.view.m_AdvancementSlayerManSPK[2], 30, 60);
+		scene.ColorSet(14, 30, scene.view.m_AdvancementSlayerManSPK[2], 77);
 		CHECK(scene.Same());
 		// Fading, each part a bit darker.
 		helm.bEffectColor = FALSE;
@@ -3420,10 +3429,10 @@ TEST(TopView4AdvancedVampire, FakeDyingBothLayersGoThroughTheNetInTheBodysColour
 	Scene::ResetSets();
 	scene.Clear();
 	DrawAdvancedVampire(scene, vampire, ACTION_STAND, 3, 0);
-	scene.Blit(5, 6, scene.view.m_AdvancementVampireManSPK[1], 1, 2);
-	scene.Blit(25, 9, scene.view.m_AdvancementVampireManSPK[2], 1, 2);
+	scene.ColorSet(5, 6, scene.view.m_AdvancementVampireManSPK[1], 5);
+	scene.ColorSet(25, 9, scene.view.m_AdvancementVampireManSPK[2], 5);
 	CHECK(scene.Same());
-	CHECK_EQ(99, CSpriteSurface::s_Value1);
+	CHECK_EQ(5, CSpriteSurface::s_Value1);
 }
 
 TEST(TopView4AdvancedVampire, InvisibleBothLayersWipeOut)
@@ -4072,9 +4081,9 @@ TEST(TopView4AdvancedSlayer, EachNewItemClassFromItsOwnType)
 				else
 				{
 					DrawAdvancedSlayer(scene, slayer, ACTION_MAGIC, 2, 0);
-					const int c0 = item.bEffectColor ? 1 : 40, c1 = item.bEffectColor ? 2 : 50;
-					scene.Blit(2, 3, sprites[1], c0, c1);
-					if (isNew && c.slot == ADDON_COAT) scene.Blit(20, 3, sprites[2], c0, c1);
+					if (item.bEffectColor) scene.ColorSet(2, 3, sprites[1], 66);
+					else scene.Blit(2, 3, sprites[1], 40, 50);
+					if (isNew && c.slot == ADDON_COAT) scene.Blit(20, 3, sprites[2], 40, 50);
 					const bool same = scene.Same();
 					if (!same) std::printf("      item class %d type %d\n", int(c.itemClass), type);
 					CHECK(same);
