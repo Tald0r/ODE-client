@@ -1055,7 +1055,7 @@ void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite
 	}
 	const int width = pSprite->GetWidth(), height = pSprite->GetHeight();
 	const SDL_Rect& clip = m_backend_surface->surface->clip_rect;
-	if (width > 0x7fff || height > 0x7fff	// its row pitch is a WORD
+	if (width > 0x7fff || height > 0x7fff	// its row pitch is a WORD; a height past it is no sprite
 		|| int64_t(pPoint->x) + width <= clip.x || int64_t(pPoint->y) + height <= clip.y
 		|| pPoint->x >= int64_t(clip.x) + clip.w || pPoint->y >= int64_t(clip.y) + clip.h) {
 		return;	// off the clip the original drew nothing and left s_Value1
