@@ -563,7 +563,8 @@ void GCUpdateInfoHandler::execute ( GCUpdateInfo * pPacket , Player * pPlayer )
 	{
 		ZONETABLE_INFO* pZoneInfo = g_pZoneTable->Get( pPacket->getZoneID() );
 
-		if (pZoneInfo->Property & FLAG_ZONESIZE_SMALL)
+		// a zone the table lacks keeps the sprites: LoadZone refuses it below
+		if (pZoneInfo == NULL || (pZoneInfo->Property & FLAG_ZONESIZE_SMALL))
 		{
 			ZoneLoading::AddMonsterSpriteTypes( listUse );
 		}

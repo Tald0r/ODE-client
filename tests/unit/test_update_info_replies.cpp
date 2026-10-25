@@ -785,6 +785,15 @@ TEST(UpdateInfoReplies, OnlyALargeZonesMoveToALargeZoneReleasesSprites)
 		world.Receive(update);
 		CHECK(Has("sprite types|5") && Starting("release sprites except|").empty());
 	}
+	// To a zone the table lacks, which the server may send: add, and no
+	// crash (the handler read the missing entry's size).
+	g_bZonePlayerInLarge = true;
+	g_nZoneLarge = 22;
+	hasLargeZone = true;
+	update.zoneID = 23;
+	calls.clear();
+	world.Receive(update);
+	CHECK(Has("sprite types|5") && Starting("release sprites except|").empty());
 }
 
 TEST(UpdateInfoReplies, FromTheGameTheZoneIsMovedToOtherwiseLoaded)
