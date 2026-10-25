@@ -8611,8 +8611,9 @@ MCreature::PacketAttackNormal(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY, BY
 			DEBUG_ADD_FORMAT("[ Move To Attack ] : (%d, %d) --> (%d, %d),  Player=(%d, %d)", m_X, m_Y, sX, sY, PlayerX(), PlayerY());
 		}	
 
-		// set the info sent from the Server..
-		m_Direction = direction;
+		// set the info sent from the Server.. one past the eight-way tables keeps the facing
+		if (direction < DIRECTION_MAX)
+			m_Direction = direction;
 	}		
 
 	m_ActionCount = 0; 

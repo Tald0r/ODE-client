@@ -2,6 +2,15 @@
 
 ## 2026-10-25
 
+* **Update**: [packet input safety](protocol/packet-input-safety.md) records the walk of server
+  values into the UI, what it found guarded and what it did not follow; the
+  [code-health review](reviews/code-health-review-2026-08-29.md) gains the creature direction row it
+  found, fixed; `CLAUDE.md`'s current focus says the walk is done.
+* **Update**: the `GCUpdateInfoHandler` row of the [code-health review](reviews/code-health-review-2026-08-29.md)
+  is fixed, and [packet input safety](protocol/packet-input-safety.md) and `CLAUDE.md`'s current
+  focus no longer call it open.
+* **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says how
+  `BltIndexSpriteColorSet` draws now that it is no stub, and what a black decode does.
 * **Update**: the blood bible row of the [code-health review](reviews/code-health-review-2026-08-29.md)
   is fixed with the three other server zone lookups it names, and a new open row records
   `GCUpdateInfoHandler`'s. [Packet input safety](protocol/packet-input-safety.md) says the four sites

@@ -271,9 +271,8 @@ class MCreature : public MObject, public MStatus {
 		bool	MovePosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);	// also moves in the Zone's Sector.
 		void	SetZone(MZone* pZone)		{ m_pZone = pZone; }
 		void	SetPosition(TYPE_SECTORPOSITION x, TYPE_SECTORPOSITION y);
-		// the server's direction byte indexes the eight-way tables: one past them keeps the facing
-		void	SetDirection(BYTE d)		{ if (d < DIRECTION_MAX) m_Direction = d; }
-		void	SetCurrentDirection(BYTE d)		{ if (d < DIRECTION_MAX) m_CurrentDirection = d; }
+		void	SetDirection(BYTE d)		{ if (d < DIRECTION_MAX) m_Direction = d; }			// one past the eight-way tables keeps the facing
+		void	SetCurrentDirection(BYTE d)		{ if (d < DIRECTION_MAX) m_CurrentDirection = d; }	// the server's byte indexes them
 		void	SetDirectionToPosition(TYPE_SECTORPOSITION sX, TYPE_SECTORPOSITION sY);		
 		virtual void	SetAction(BYTE action);
 		//void	SetFrame(BYTE f)			{ m_ActionCount = f; }

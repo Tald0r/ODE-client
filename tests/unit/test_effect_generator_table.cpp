@@ -491,3 +491,17 @@ TEST(EffectGeneratorTable, GenerateNextFailingRunsTheResult)
 	CHECK_EQ(1, executed);
 	CHECK_EQ(1, fixture.destroyed);
 }
+
+TEST(EffectGeneratorTable, ADirectionPastTheEightFacesLeft)
+{
+	// The skill handlers hand the server's direction byte to Generate, and
+	// the generators index eight-way offset and angle tables with it.
+	Fixture fixture;
+	fixture.Phase(kAction, 0, 2);
+	fixture.Phase(kAction, 1, 2);
+	Target* target = fixture.NewTarget(2);
+	target->GiveResult();
+	fixture.table.Generate(192, 64, 1, 200, 1, kAction, target, 8, 9);
+	CHECK(generated.size() == 1u);
+	if (generated.size() == 1u) CHECK_EQ(0, generated[0].direction);
+}

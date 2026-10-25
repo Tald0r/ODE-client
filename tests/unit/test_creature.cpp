@@ -882,6 +882,12 @@ TEST(Creature, ADirectionPastTheEightKeepsTheFacing)
 	}
 	creature.SetDirection(7);
 	CHECK_EQ(7, creature.GetServerDirection());
+	// An attack from the cell it stands on turns it the way the server
+	// says, unless that is past the eight.
+	creature.PacketAttackNormal(12, 34, 2);
+	CHECK_EQ(2, creature.GetServerDirection());
+	creature.PacketAttackNormal(12, 34, 200);
+	CHECK_EQ(2, creature.GetServerDirection());
 }
 
 TEST(Creature, AMoveGoesThroughItsZoneByItsMoveType)
