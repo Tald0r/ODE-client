@@ -11533,7 +11533,8 @@ bool	C_VS_UI_PARTY_MANAGER::MouseControl(UINT message, int _x, int _y)
 				if(m_away_focused > 0 && m_away_focused < g_pParty->GetSize()+1)
 				{
 					PARTY_INFO *info = g_pParty->GetMemberInfo(m_away_focused-1);
-					if(info != NULL)
+					// The zone is the server's (GCPartyPosition, RCPositionInfo): one the table lacks is not described.
+					if(info != NULL && g_pZoneTable->Get(info->zoneID) != NULL)
 					{
 						static char zonename[64];
 						// "X:%d Y:%d" against two BYTEs needs 12 bytes, and
@@ -31508,7 +31509,8 @@ bool	C_VS_UI_BLOOD_BIBLE_STATUS::MouseControl(UINT message, int _x, int _y)
 			};
 			
 			SafeFormat::Format(temp_str[0],"%s (%s)",(*g_pGameStringTable)[UI_STRING_MESSAGE_BLOOD_BIBLE_ARMEGA+count].GetString(),(*g_pGameStringTable)[UI_STRING_MESSAGE_BLOOD_BIBLE_ARMEGA_ENG+count].GetString());
-			if(m_BloodBibleStatus[count].zone_id == -1)
+			// The zone is the server's: one the table lacks is shown as no place, as -1 is.
+			if(m_BloodBibleStatus[count].zone_id == -1 || g_pZoneTable->Get(m_BloodBibleStatus[count].zone_id) == NULL)
 			{
 				SafeFormat::Format(temp_str[1],"%s",(*g_pGameStringTable)[UI_STRING_MESSAGE_BLOOD_BIBLE_STATUS_NONE].GetString());
 				g_descriptor_manager.Set(DID_STRINGS,x+_x,y+_y,(void*)str,2);
