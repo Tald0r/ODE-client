@@ -1041,9 +1041,10 @@ void CSpriteSurface::BltIndexSpriteColor(POINT* pPoint, CIndexSprite* pSprite, B
 // gradation and a fixed one from the gradation its colour maps to, which is
 // CIndexSprite::BltColorSet. The decoded backend sprite holds the sprite's own
 // sets, so the set's decode is drawn as a transient sprite, the set being the
-// draw's rather than the sprite's. A set past the table draws the sprite as it
-// is: the original read past ColorSet there, and the addon call sites pass
-// EffectColorSet unchecked.
+// draw's rather than the sprite's. A pixel decoded to 0x0000 is a hole, as in
+// every backend draw of an index sprite. A set past the table draws the sprite
+// as it is: the original read past ColorSet there, and the addon call sites
+// pass EffectColorSet unchecked.
 void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite, WORD colorSet) {
 	if (!pPoint || !pSprite || !pSprite->IsInit() || !m_backend_surface || !m_backend_surface->surface) {
 		return;
@@ -1054,12 +1055,12 @@ void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite
 	}
 	const int width = pSprite->GetWidth(), height = pSprite->GetHeight();
 	const SDL_Rect& clip = m_backend_surface->surface->clip_rect;
-	if (width > 0x7fff	// its row pitch is a WORD
-		|| pPoint->x + width <= clip.x || pPoint->y + height <= clip.y
-		|| pPoint->x >= clip.x + clip.w || pPoint->y >= clip.y + clip.h) {
+	if (width > 0x7fff || height > 0x7fff	// its row pitch is a WORD
+		|| int64_t(pPoint->x) + width <= clip.x || int64_t(pPoint->y) + height <= clip.y
+		|| pPoint->x >= int64_t(clip.x) + clip.w || pPoint->y >= int64_t(clip.y) + clip.h) {
 		return;	// off the clip the original drew nothing and left s_Value1
 	}
-	std::vector<WORD> pixels(size_t(width) * height, 0x0000);	// 0 is the hole, as get_backend_index_sprite leaves it
+	std::vector<WORD> pixels(size_t(width) * height, 0x0000);
 	pSprite->BltColorSet(pixels.data(), WORD(width * 2), colorSet);
 	spritectl_sprite_t decoded = spritectl_create_sprite(width, height, SPRITECTL_FORMAT_RGB565,
 		pixels.data(), pixels.size() * sizeof(WORD));
