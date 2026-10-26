@@ -79,8 +79,8 @@ Release, where the values are then accepted. Each guards a growing container und
 size cap, so it is not a memory error, which is why it was recorded as a class.
 
 **How:** replace each `Assert` on a wire value in those two reads with
-`throw InvalidProtocolException(...)`, the exception `CGSMSSend::write` already throws; neither
-read has another check to copy. Then sweep `grep -rn Assert Client/Packet --include='*.cpp'`
+`throw InvalidProtocolException(...)`, the exception `CGSMSSend::write` already throws; neither read has a non-`Assert`
+bound check (`GCTimeLimitItemInfo::read` only skips a duplicate id). Then sweep `grep -rn Assert Client/Packet --include='*.cpp'`
 (quoted, or zsh expands the glob) for other wire values behind an `Assert`. `CGSMSSend` is
 client-to-server and is parsed only because `PacketFactoryManager` registers its factory and
 `CPS_NORMAL` accepts every registered id; narrowing that set is a protocol-table change, so do
@@ -162,7 +162,7 @@ tint over it must still take row 384 for the indexed pixels.
 `memcpyDarkness` beside it was ported). Port it, then draw as the darkness routine does.
 
 **Tests to flip:** `TopView3Item.AMineIsDrawnPlainInstalledOrNot` in
-`tests/unit/test_top_view_3.cpp` and the two brightness tests in `tests/unit/test_creature_effect.cpp`
+`tests/unit/test_top_view_3.cpp` and `APetMovingFastIsDrawnToo` (with the file header) in `tests/unit/test_creature_effect.cpp`
 pin the stubs as recorded defects; the [native GPU renderer](../rendering/native-gpu-renderer.md)
 page says `BltIndexSpriteColor` draws plain. **Tests to add:** an oracle draw per effect in
 `tests/render/test_sprite_gpu.cpp`, next to `IndexSpriteColorSetDrawsEveryPixelFromTheSet` and
