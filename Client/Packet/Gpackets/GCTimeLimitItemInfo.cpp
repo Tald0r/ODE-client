@@ -19,7 +19,9 @@ void GCTimeLimitItemInfo::read(SocketInputStream& iStream)
 	BYTE	szInfo;
 
 	iStream.read( szInfo );
-	Assert( szInfo <= MAX_TIME_LIMIT_ITEM_INFO );
+	// A refusal, not an Assert, which compiles out where NDEBUG is defined.
+	if ( szInfo > MAX_TIME_LIMIT_ITEM_INFO )
+		throw InvalidProtocolException("too many time limit items");
 
 	m_TimeLimitItemInfos.clear();
 

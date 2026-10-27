@@ -9,12 +9,13 @@ tags: [review, plan]
 
 Written 2026-10-26, after the merges of PRs #562-#568. The
 [restructuring plan](RESTRUCTURING.md) is complete except task 4.12, and the
-[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (one
-since tasks 1 and 2), all in its *Found by fuzzing* and *Found by reading* tables. What is left is below,
-ranked by the risk it closes, with the cheap undefined-behaviour rows ahead of the long walks and
-the cosmetic stubs last. Each task names the code, the tests it must flip or add, and the rule it
-must keep, so it can be taken cold. One task per PR; the merge gate (a two-reviewer adversarial
-review of the whole diff, then the four platform workflows dispatched by hand) applies to each.
+[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (none
+since tasks 1 to 3), all in its *Found by fuzzing* and *Found by reading* tables. What is left
+is below, ranked by the risk it closes, with the cheap undefined-behaviour rows ahead of the long
+walks and the cosmetic stubs last. Each task names the code, the tests it must flip or add, and the
+rule it must keep, so it can be taken cold. One task per PR; the merge gate (a two-reviewer
+adversarial review of the whole diff, then the four platform workflows dispatched by hand) applies
+to each.
 
 ## How to take a task
 
@@ -42,25 +43,6 @@ review of the whole diff, then the four platform workflows dispatched by hand) a
 6. Do not decide an item under *Owner decisions*; they are the repository owner's calls.
 
 ## Tasks
-
-### 3. `Assert`-only bounds that hostile input reaches
-
-**What:** the open *Found by fuzzing* row: `CGSMSSend::read`'s four length and count checks and
-`GCTimeLimitItemInfo::read`'s count check are `Assert`s, which throw in Debug and vanish in
-Release, where the values are then accepted. Each guards a growing container under the frame's
-size cap, so it is not a memory error, which is why it was recorded as a class.
-
-**How:** replace each `Assert` on a wire value in those two reads with
-`throw InvalidProtocolException(...)`, the exception `CGSMSSend::write` already throws; neither read has a non-`Assert`
-bound check (`GCTimeLimitItemInfo::read` only skips a duplicate id). Then sweep `grep -rn Assert Client/Packet --include='*.cpp'`
-(quoted, or zsh expands the glob) for other wire values behind an `Assert`. `CGSMSSend` is
-client-to-server and is parsed only because `PacketFactoryManager` registers its factory and
-`CPS_NORMAL` accepts every registered id; narrowing that set is a protocol-table change, so do
-the refusals first and record the narrowing here as a follow-up.
-
-**Test:** one test per site in `test_packet_fuzz_findings.cpp` asserting the refusal, and one
-configure with `-DCMAKE_BUILD_TYPE=Release` (the Linux and macOS presets are Debug; only Windows
-has a release preset) to see the `Assert`s gone.
 
 ### 4. The handler fuzzers stop at the presentation hosts
 
@@ -240,3 +222,25 @@ recorded by restructuring tasks 4.116, 4.107 and 4.120. Owners: `PacketFuzzFindi
 255 and check ASan's allocator holds nothing more. Left: the short bodies reach no entry read of
 `GCAddItemToZone`, `GCStashList`, `GCTradeAddItem` or `GCUpdateInfo`, whose fixes are regression
 guards, and the member and SMS leaks the harness found, which are task 8.
+
+### 3. `Assert`-only bounds that hostile input reaches (PR #572)
+
+The row is fixed: `CGSMSSend::read`'s four checks and `GCTimeLimitItemInfo::read`'s count throw
+`InvalidProtocolException` at the bound each `Assert` stopped at, in every build. A sweep of every
+`Assert` under `Client/Packet`, headers included, found no other wire value behind one: the rest
+check pointers or the packet's own state, and the stash, update-info and name reads check their
+values with a throw before any `Assert` sees them. Owners: `PacketFuzzFindings`'
+`SMSSendCountsAndLengthsAtTheirBoundsAreRefused`, `SMSSendJustInsideItsBoundsStillReads` and
+`TimeLimitItemCountPastItsBoundIsRefused`; a Release tree showed the unfixed reads accepting the
+values. In the receive loop the refusal also sends the server a bug report, as every
+`InvalidProtocolException` does (`GameMain.cpp`'s `UpdateSocketInput`), which an `AssertionError`
+did not; and `GCTimeLimitItemInfo`'s frame cap (`getPacketMaxSize`, 801 bytes, exactly 100 items)
+already stopped a longer list there, so its new refusal only names the reason. Follow-ups, none of
+them a memory error: the client still parses `CGSMSSend`, a client-to-server packet, because
+`PacketFactoryManager` registers its factory and `CPS_NORMAL` accepts every registered id, and
+narrowing that set is a protocol-table change; `CGSMSSend::read`
+reads its receivers' numbers and drops them, so `m_Numbers` stays empty; and its `write` allows a
+list of `MAX_RECEVIER_NUM` numbers and numbers of `MAX_NUMBER_LENGTH` digits that its `read`
+(and, if the server's copy matches, the server) refuses, while its `getPacketMaxSize` counts the
+caller's number as `MAX_RECEVIER_NUM` bytes, not `MAX_NUMBER_LENGTH`, so `write` can emit 113
+bytes against a stated 108.

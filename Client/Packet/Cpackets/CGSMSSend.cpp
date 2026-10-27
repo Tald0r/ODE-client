@@ -16,8 +16,11 @@ void CGSMSSend::read (SocketInputStream & iStream)
 
 	BYTE size;
 
+	// Refusals, not Asserts, which compile out where NDEBUG is defined and
+	// would accept the values there. The bounds are the Asserts' own.
 	iStream.read(size);
-	Assert( size < MAX_RECEVIER_NUM );
+	if ( size >= MAX_RECEVIER_NUM )
+		throw InvalidProtocolException("too many sms receivers");
 
 	m_Numbers.clear();
 	for ( int i=0; i<size; ++i )
@@ -25,16 +28,19 @@ void CGSMSSend::read (SocketInputStream & iStream)
 		BYTE strSize;
 		string number;
 		iStream.read(strSize);
-		Assert( strSize < MAX_NUMBER_LENGTH );
+		if ( strSize >= MAX_NUMBER_LENGTH )
+			throw InvalidProtocolException("too long sms receiver number");
 		iStream.read(number, strSize);
 	}
 
 	iStream.read(size);
-	Assert( size < MAX_NUMBER_LENGTH );
+	if ( size >= MAX_NUMBER_LENGTH )
+		throw InvalidProtocolException("too long sms caller number");
 	iStream.read(m_CallerNumber, size);
 
 	iStream.read(size);
-	Assert( size < MAX_MESSAGE_LENGTH );
+	if ( size >= MAX_MESSAGE_LENGTH )
+		throw InvalidProtocolException("too long sms message");
 	iStream.read(m_Message, size);
 		
 	__END_CATCH

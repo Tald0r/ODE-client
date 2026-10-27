@@ -27,6 +27,7 @@
 #include "SocketImpl.h"
 #include "StoreInfo.h"
 #include "Gpackets/GCActiveGuildList.h"
+#include "Cpackets/CGSMSSend.h"
 #include "Gpackets/GCAddNewItemToZone.h"
 #include "Gpackets/GCAddVampire.h"
 #include "Gpackets/GCChangeWeather.h"
@@ -51,6 +52,7 @@
 #include "Gpackets/GCStashList.h"
 #include "Gpackets/GCSweeperBonusInfo.h"
 #include "Gpackets/GCSystemMessage.h"
+#include "Gpackets/GCTimeLimitItemInfo.h"
 #include "Gpackets/GCTradeAddItem.h"
 #include "Gpackets/GCUnionOfferList.h"
 #include "Gpackets/GCUpdateInfo.h"
@@ -530,7 +532,8 @@ std::vector<unsigned char>	Frame(PacketID_t id, const std::vector<unsigned char>
 {
 	std::vector<unsigned char> frame = {
 		(unsigned char)(id & 0xff), (unsigned char)(id >> 8),
-		(unsigned char)body.size(), 0x00, 0x00, 0x00,
+		(unsigned char)body.size(), (unsigned char)(body.size() >> 8),
+		(unsigned char)(body.size() >> 16), (unsigned char)(body.size() >> 24),
 		0x00,
 	};
 	frame.insert(frame.end(), body.begin(), body.end());
@@ -797,3 +800,94 @@ TEST(PacketFuzzFindings, PeerListReadsThatThrowLeakNothing)
 	CHECK_SHORT_BODIES_LEAK_NOTHING(RCRequestedFile);
 }
 
+
+//----------------------------------------------------------------------
+// Found by the game fuzz target: CGSMSSend::read and
+// GCTimeLimitItemInfo::read bounded their counts and lengths with
+// Assert, which throws AssertionError, no protocol refusal, in a build
+// without NDEBUG and compiles out in one with it, where the values were
+// then accepted. Each bound is a protocol refusal now, in every build,
+// at the value its Assert stopped at. CGSMSSend is client-to-server; the
+// client reads it only because its factory is registered.
+//----------------------------------------------------------------------
+namespace {
+
+// A CGSMSSend body: the receivers, each a length and that many digits,
+// then the caller's number and the message.
+std::vector<unsigned char>	SMSBody(std::size_t receivers, std::size_t receiverLength,
+				std::size_t callerLength, std::size_t messageLength)
+{
+	std::vector<unsigned char> body = { (unsigned char)receivers };
+	for (std::size_t i = 0; i < receivers; ++i)
+	{
+		body.push_back((unsigned char)receiverLength);
+		body.insert(body.end(), receiverLength, (unsigned char)'1');
+	}
+	body.push_back((unsigned char)callerLength);
+	body.insert(body.end(), callerLength, (unsigned char)'2');
+	body.push_back((unsigned char)messageLength);
+	body.insert(body.end(), messageLength, (unsigned char)'m');
+	return body;
+}
+
+bool	SMSSendIsRefused(const std::vector<unsigned char>& body, std::string& why)
+{
+	CGSMSSend packet;
+	return FramedReadIsRefused(packet, Frame(packet.getPacketID(), body), why);
+}
+
+// GCTimeLimitItemInfo's count, then that many object ids, each its own
+// index, and times.
+std::vector<unsigned char>	TimeLimitBody(std::size_t count)
+{
+	std::vector<unsigned char> body = { (unsigned char)count };
+	for (std::size_t i = 0; i < count; ++i)
+	{
+		const unsigned char entry[] = { (unsigned char)i, (unsigned char)(i >> 8), 0, 0, 60, 0, 0, 0 };
+		body.insert(body.end(), entry, entry + sizeof(entry));
+	}
+	return body;
+}
+
+} // namespace
+
+TEST(PacketFuzzFindings, SMSSendCountsAndLengthsAtTheirBoundsAreRefused)
+{
+	std::string why;
+	CHECK(SMSSendIsRefused(SMSBody(MAX_RECEVIER_NUM, 3, 3, 3), why));
+	CHECK(RefusedFor(why, "too many sms receivers"));
+	CHECK(SMSSendIsRefused(SMSBody(0xff, 3, 3, 3), why));
+	CHECK(RefusedFor(why, "too many sms receivers"));
+	CHECK(SMSSendIsRefused(SMSBody(1, MAX_NUMBER_LENGTH, 3, 3), why));
+	CHECK(RefusedFor(why, "too long sms receiver number"));
+	CHECK(SMSSendIsRefused(SMSBody(1, 3, MAX_NUMBER_LENGTH, 3), why));
+	CHECK(RefusedFor(why, "too long sms caller number"));
+	CHECK(SMSSendIsRefused(SMSBody(1, 3, 3, MAX_MESSAGE_LENGTH), why));
+	CHECK(RefusedFor(why, "too long sms message"));
+}
+
+TEST(PacketFuzzFindings, SMSSendJustInsideItsBoundsStillReads)
+{
+	CGSMSSend packet;
+	std::string why;
+	CHECK(!FramedReadIsRefused(packet, Frame(packet.getPacketID(),
+		SMSBody(MAX_RECEVIER_NUM - 1, MAX_NUMBER_LENGTH - 1, MAX_NUMBER_LENGTH - 1, MAX_MESSAGE_LENGTH - 1)), why));
+	CHECK_EQ((std::size_t)MAX_NUMBER_LENGTH - 1, packet.getCallerNumber().size());
+	CHECK_EQ((std::size_t)MAX_MESSAGE_LENGTH - 1, packet.getMessage().size());
+}
+
+TEST(PacketFuzzFindings, TimeLimitItemCountPastItsBoundIsRefused)
+{
+	for (std::size_t count : { (std::size_t)MAX_TIME_LIMIT_ITEM_INFO + 1, (std::size_t)0xff })
+	{
+		GCTimeLimitItemInfo packet;
+		std::string why;
+		CHECK(FramedReadIsRefused(packet, Frame(packet.getPacketID(), TimeLimitBody(count)), why));
+		CHECK(RefusedFor(why, "too many time limit items"));
+		CHECK(packet.m_TimeLimitItemInfos.empty());
+	}
+	GCTimeLimitItemInfo packet;
+	std::string why;
+	CHECK(!FramedReadIsRefused(packet, Frame(packet.getPacketID(), TimeLimitBody(MAX_TIME_LIMIT_ITEM_INFO)), why));
+	CHECK_EQ((std::size_t)MAX_TIME_LIMIT_ITEM_INFO, packet.m_TimeLimitItemInfos.size());
+}
