@@ -283,7 +283,7 @@ string PCOustersInfo2::toString () const
 		<< "ObjectID:" << m_ObjectID
 		<< ",Name:" << m_Name
 		<< ",Level:" << m_Level
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",HairColor:" << (int)m_HairColor
 		<< ",Alignment:" << (int)m_Alignment
         << ",STR[CURRENT]:" << (int)m_STR[ATTR_CURRENT]

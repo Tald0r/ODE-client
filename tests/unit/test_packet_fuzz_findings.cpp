@@ -608,3 +608,33 @@ TEST(PacketFuzzFindings, WarTypePastTheLastIsRefused)
 		CHECK(packet.isEmpty());
 	}
 }
+
+// PCOustersInfo::toString, compiled in every build, named the sex with
+// Sex2String[m_Sex], an array of two names, for any byte the read
+// stored: a read past the array. A byte that names no sex is printed as
+// its number; the golden Ousters is MALE.
+TEST(PacketFuzzFindings, OustersInfoStringPrintsASexItHasNoNameForAsItsNumber)
+{
+	std::vector<unsigned char> body = PCListGolden();
+	const std::size_t begin = OustersSlot(body) - 1 - std::strlen("GoldOusters");
+	// The slot, then the alignment, then the sex.
+	const std::size_t sexAt = OustersSlot(body) + 1 + szAlignment;
+	CHECK_EQ((int)MALE, (int)body[sexAt]);
+	const struct { unsigned char sex; const char* named; } rows[] = {
+		{ (unsigned char)FEMALE, ",Sex:FEMALE," },
+		{ (unsigned char)MALE, ",Sex:MALE," },
+		{ 2, ",Sex:2," },
+		{ 5, ",Sex:5," },
+		{ 0xff, ",Sex:255," },
+	};
+	for (const auto& row : rows)
+	{
+		body[sexAt] = row.sex;
+		FindingInFixture f(std::vector<unsigned char>(body.begin() + begin, body.end()));
+		PCOustersInfo info;
+		info.read(f.m_Stream);
+		CHECK_EQ(0u, f.m_Stream.length());
+		CHECK_EQ((int)row.sex, (int)info.getSex());
+		CHECK(info.toString().find(row.named) != std::string::npos);
+	}
+}

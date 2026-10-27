@@ -259,7 +259,7 @@ std::string PCSlayerInfo::toString () const
 		msg << "," << SkillDomain2String[i] << ":" << (int)m_DomainLevels[i];
 
 //	msg << ",ZoneID:" << m_ZoneID 
-	msg	<< ",Sex:" << Sex2String[getSex()]
+	msg	<< ",Sex:" << SexName(getSex())
 		<< ",HairStyle:" << HairStyle2String[getHairStyle()]
 		<< ",HairColor:" << (int)getHairColor()
 		<< ",SkinColor:" << (int)getSkinColor()

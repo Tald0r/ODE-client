@@ -154,7 +154,7 @@ string PCVampireInfo3::toString () const
 		<< ",X:" << (int)m_X
 		<< ",Y:" << (int)m_Y
 		<< ",Dir:" << Dir2String[m_Dir]
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",CoatType:" << (int)m_CoatType
 		<< ",BatColor:" << (int)m_Colors[VAMPIRE_COLOR_BAT]
 		<< ",SkinColor:" << (int)m_Colors[VAMPIRE_COLOR_SKIN]

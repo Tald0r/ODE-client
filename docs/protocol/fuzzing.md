@@ -106,7 +106,9 @@ aborts the replay.
 **Clang's UBSan checks enum loads and GCC's does not**: a wire byte cast to an enum before its
 range check passed the Linux job and aborted the first macOS sanitizer run, so a Clang sanitizer
 build (the `macos-asan` preset, or the Linux container with `clang++` and the `libclang-rt`
-package) is the one that sees that class.
+package) is the one that sees that class. It sees the load, not the conversion: a value cast to
+such an enum and only passed on or switched on is seen by no sanitizer, so those casts were
+found by reading and removed by hand (the review's *The same cast where UBSan does not look*).
 
 # Running the fuzzer
 

@@ -230,7 +230,7 @@ std::string PCOustersInfo::toString () const
 		<< ",Level:" << (int)m_Level
 		<< ",Slot:" << Slot2String[m_Slot]
 		<< ",Alignment:" << m_Alignment
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",CoatColor:" << (int)m_CoatColor
 		<< ",HairColor:" << (int)m_HairColor
 		<< ",ArmColor:" << (int)m_ArmColor

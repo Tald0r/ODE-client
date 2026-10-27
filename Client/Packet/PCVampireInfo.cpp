@@ -226,7 +226,7 @@ std::string PCVampireInfo::toString () const
 		<< ",Level:" << (int)m_Level
 		<< ",Slot:" << Slot2String[m_Slot]
 		<< ",Alignment:" << m_Alignment
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",BatColor:" << (int)m_BatColor
 		<< ",SkinColor:" << (int)m_SkinColor
 		<< ",CoatType:" << (int)m_CoatType

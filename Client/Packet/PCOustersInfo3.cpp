@@ -152,7 +152,7 @@ string PCOustersInfo3::toString () const
 		<< ",X:" << (int)m_X
 		<< ",Y:" << (int)m_Y
 		<< ",Dir:" << Dir2String[m_Dir]
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",CoatColor:" << (int)m_Colors[OUSTERS_COLOR_COAT]
 		<< ",HairColor:" << (int)m_Colors[OUSTERS_COLOR_HAIR]
 		<< ",ArmColor:" << (int)m_Colors[OUSTERS_COLOR_ARM]

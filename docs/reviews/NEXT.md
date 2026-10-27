@@ -9,12 +9,12 @@ tags: [review, plan]
 
 Written 2026-10-26, after the merges of PRs #562-#568. The
 [restructuring plan](RESTRUCTURING.md) is complete except task 4.12, and the
-[code-health review](code-health-review-2026-08-29.md) has four rows still marked open, all in
-its *Found by fuzzing* and *Found by reading* tables. What is left is below, ranked by the risk
-it closes, with the cheap undefined-behaviour rows ahead of the long walks and the cosmetic stubs
-last. Each task names the code, the tests it must flip or add, and the rule it must keep, so it
-can be taken cold. One task per PR; the merge gate (a two-reviewer adversarial review of the
-whole diff, then the four platform workflows dispatched by hand) applies to each.
+[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (two
+since task 1), all in its *Found by fuzzing* and *Found by reading* tables. What is left is below,
+ranked by the risk it closes, with the cheap undefined-behaviour rows ahead of the long walks and
+the cosmetic stubs last. Each task names the code, the tests it must flip or add, and the rule it
+must keep, so it can be taken cold. One task per PR; the merge gate (a two-reviewer adversarial
+review of the whole diff, then the four platform workflows dispatched by hand) applies to each.
 
 ## How to take a task
 
@@ -43,33 +43,24 @@ whole diff, then the four platform workflows dispatched by hand) applies to each
 
 ## Tasks
 
-### 1. Five enum casts UBSan does not see
-
-**What:** two open rows of the code-health review. *The same cast where UBSan does not look*:
-four wire values reach an enum without a fixed type as a prvalue, which UBSan does not check:
-`RCRequestedFileInfo::read` (`REQUEST_FILE_TYPE`, `Client/Packet/Rpackets/RCRequestedFile.cpp`;
-only `tests/unit/test_request_file_manager.cpp` loads it, the handler being declared with no
-definition), `GCShopSoldHandler` (`SHELF_TYPE` into `MShop::GetShelf`), and the `switch` on a
-cast value in `GCNPCResponseHandler` (`QuestMessage`) and `LCRegisterPlayerErrorHandler`
-(`ErrorID`). And the *Found by reading* row: `PCVampireInfo::read` and `PCOustersInfo::read`
-store the wire sex byte in `Sex`, an enum of two values, and `PCOustersInfo::toString` indexes a
-two-entry array with it. None indexes memory on the game path; each is undefined behaviour.
-
-**How:** PR #561's five fixes (`23c29210`, `60e88c27`, `c22858cc`, `815dca30`, `68295986`) show
-the shape: keep the byte as its wire type and compare or switch on the integer, or give the enum
-a fixed type and range-check before the cast. `tests/unit/test_packet_fuzz_findings.cpp` holds
-one test per finding; add one per site. Half a day; the two rows close.
-
 ### 2. The login list reads leak the entry whose read throws
 
 **What:** the other open *Found by reading* row: `LCServerList::read` and `LCWorldList::read`
 allocate a `ServerGroupInfo` or `WorldInfo` with `new`, read it, and only then `push_back` it, so
 an entry whose read throws (a name length past the frame) is leaked. The server's own copies are
-task 4 of its plan.
+task 4 of its plan. The shape is wider than the row. Measured on 2026-10-27, a local
+`Type* p = new Type;` with `p->read(` on the next line is at 25 sites in 23 files under
+`Client/Packet`, these two among them (`GCSkillInfo` has three; the skill infos, the guild, union
+and nickname lists, the stash), and that spelling misses at least two more: `RCRequestedFile::read`
+(a blank line between the `new` and the read) and `GCWarList::read` (the `new` in a `switch`, found
+taking task 1).
 
 **How:** hold the entry in a `std::unique_ptr` until the list takes it, as `LCPCList::read` does
 since `7c81f583`; a test in `test_packet_fuzz_findings.cpp` reads a truncated
-golden under ASan and asserts the refusal leaks nothing. The row closes.
+golden under ASan and asserts the refusal leaks nothing. The row closes. Sweep the other sites for
+the value, not the spelling: every `new` in a `read` under `Client/Packet`
+(`grep -rn 'new ' Client/Packet --include='*.cpp'`) whose object is read before an owner takes
+it, fixing each or saying here why it is left.
 
 ### 3. `Assert`-only bounds that hostile input reaches
 
@@ -212,4 +203,17 @@ Recorded so the next agent does not decide them unasked. Each stays open until t
 
 ## Done
 
-Nothing yet; tasks move here with their PR number.
+### 1. Five enum casts UBSan does not see (PR #570)
+
+Both review rows are fixed, with eight more sites two sweeps found: `GCWarList::read`, the login
+host adapter's `ErrorID` cast, and a pet's attribute cast to `ITEMOPTION_PART` in
+`SetPetInfo` and five readers of the pet item's enchant level. `REQUEST_FILE_TYPE` has the fixed
+type `BYTE`; the other values are switched on, compared or passed as integers; the eleven
+`toString()`s print a sex through `SexName`. Owners: `PacketFuzzFindings`'
+`RequestedFileTypePastTheEnumReadsBackAsSent`, `WarTypePastTheLastIsRefused` and
+`OustersInfoStringPrintsASexItHasNoNameForAsItsNumber`;
+`ShopSoldHandler.AShelfTypePastTheShelvesChangesNothing`; `PacketHelpers.EachLoginErrorHasItsMessageBox`;
+`PacketPlayerItems.PetInfoAttributePastTheOptionPartsTakesItsRowsColour`; the two `PetOptionPart`
+tests; and `Player.APetsAttributeAddsToTheStatItNamesAndAnyOtherNumberToNone`. Left, and named in the
+rows: `CLRegisterPlayer::read`'s `Nation` cast, in a packet the client registers no factory for,
+and the name-table indexes of stored values in `toString()`s compiled only with `__DEBUG_OUTPUT__`.

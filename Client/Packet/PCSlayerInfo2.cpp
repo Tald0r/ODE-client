@@ -256,7 +256,7 @@ string PCSlayerInfo2::toString () const
 	msg << "PCSlayerInfo2("
 		<< "ObjectID:" << m_ObjectID
 		<< ",Name:" << m_Name
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",HairStyle:" << HairStyle2String[m_HairStyle]
 		<< ",HairColor:" << (int)m_HairColor
 		<< ",SkinColor:" << (int)m_SkinColor
