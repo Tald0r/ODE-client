@@ -12,6 +12,7 @@
 //////////////////////////////////////////////////////////////////////
 #include "Client_PCH.h"
 #include "GCNicknameList.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // constructor
@@ -28,6 +29,9 @@ GCNicknameList::GCNicknameList ()
 //////////////////////////////////////////////////////////////////////
 GCNicknameList::~GCNicknameList ()
 {
+	// The entries are the packet's: the nickname window copies what it shows.
+	for ( NicknameInfo* pInfo : m_Nicknames )
+		delete pInfo;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -44,9 +48,11 @@ void GCNicknameList::read ( SocketInputStream & iStream )
 
 	for ( int i=0; i<Num; ++i )
 	{
-		NicknameInfo* pUnit = new NicknameInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<NicknameInfo> pUnit( new NicknameInfo );
 		pUnit->read(iStream);
-		m_Nicknames.push_back( pUnit );
+		m_Nicknames.push_back( pUnit.get() );
+		pUnit.release();
 	}
 		
 	__END_CATCH

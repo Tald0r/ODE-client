@@ -28,6 +28,9 @@ class GCNicknameList : public Packet
 public:
 	GCNicknameList();
 	~GCNicknameList();
+	// It owns its entries, so a copy would free them twice.
+	GCNicknameList( const GCNicknameList& ) = delete;
+	GCNicknameList& operator = ( const GCNicknameList& ) = delete;
 	
 public:
 	void read(SocketInputStream & iStream);

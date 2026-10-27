@@ -7,6 +7,7 @@
 #include "Client_PCH.h"
 #include "GCMonsterKillQuestInfo.h"
 #include "PacketAssert.h"
+#include <memory>
 
 const int GCMonsterKillQuestInfo::szQuestInfo = szQuestID + szSpriteType + szWORD + szDWORD;
 
@@ -44,13 +45,15 @@ void GCMonsterKillQuestInfo::read ( SocketInputStream & iStream )
 
 	for ( int i=0; i<num; ++i )
 	{
-		QuestInfo* pQI = new QuestInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<QuestInfo> pQI( new QuestInfo );
 		iStream.read( pQI->questID );
 		iStream.read( pQI->sType );
 		iStream.read( pQI->goal );
 		iStream.read( pQI->timeLimit );
 
-		addQuestInfo( pQI );
+		addQuestInfo( pQI.get() );
+		pQI.release();
 	}
 
 	__END_CATCH

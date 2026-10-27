@@ -7,6 +7,7 @@
 #include "Client_PCH.h"
 #include "GCStashList.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////////
 // constructor
@@ -107,9 +108,11 @@ void GCStashList::read ( SocketInputStream & iStream )
 		iStream.read( m_SubItemsCount[rack][index] );
 		for (int s=0; s < m_SubItemsCount[rack][index]; s++)
 		{
-			SubItemInfo* pSubItemInfo = new SubItemInfo();
+			// Owned until the list takes it, so a read that throws frees it.
+			std::unique_ptr<SubItemInfo> pSubItemInfo( new SubItemInfo() );
 			pSubItemInfo->read(iStream);
-			m_pSubItems[rack][index].push_back(pSubItemInfo);
+			m_pSubItems[rack][index].push_back(pSubItemInfo.get());
+			pSubItemInfo.release();
 		}
 		
 		m_bExist[rack][index] = true;

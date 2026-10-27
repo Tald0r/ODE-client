@@ -33,8 +33,12 @@ public:
 
 	GCGQuestStatusModify();
 	~GCGQuestStatusModify();
+	// It owns its info, so a copy would free it twice.
+	GCGQuestStatusModify( const GCGQuestStatusModify& ) = delete;
+	GCGQuestStatusModify& operator = ( const GCGQuestStatusModify& ) = delete;
 	
 public:
+    // The info is the packet's, a half-read one too: the destructor frees it.
     void read(SocketInputStream & iStream) { iStream.read(m_Type); m_pInfo = new QuestStatusInfo(); m_pInfo->read(iStream); }
     void write(SocketOutputStream & oStream) const { oStream.write(m_Type); m_pInfo->write(oStream); }
 	PacketID_t getPacketID() const noexcept { return PACKET_GC_GQUEST_STATUS_MODIFY; }
@@ -48,7 +52,7 @@ public:
 	void	setType(BYTE type) { m_Type = type; }
 
 	QuestStatusInfo* getInfo() const { return m_pInfo; }
-	void setInfo(QuestStatusInfo* pInfo) { m_pInfo = pInfo; }
+	void setInfo(QuestStatusInfo* pInfo) { m_pInfo = pInfo; }	// the packet frees it
 
 private:
 	BYTE				m_Type;

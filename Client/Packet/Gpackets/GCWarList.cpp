@@ -10,6 +10,7 @@
 #include "LevelWarInfo.h"
 #include "GuildWarInfo.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////////
 // constructor
@@ -70,22 +71,23 @@ void GCWarList::read (SocketInputStream & iStream)
 	WarType_t warType;
 	for( int i=0; i<count; i++ )
 	{
-		WarInfo* pWarInfo = NULL;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<WarInfo> pWarInfo;
 		iStream.read( warType );
 
 		// The wire byte, not a WarType: the default refuses what it does not name.
 		switch (warType)
 		{
 			case WAR_GUILD :
-				pWarInfo = new GuildWarInfo;
+				pWarInfo.reset( new GuildWarInfo );
 			break;
 
 			case WAR_RACE :
-				pWarInfo = new RaceWarInfo;
+				pWarInfo.reset( new RaceWarInfo );
 			break;
 
 			case WAR_LEVEL :
-				pWarInfo = new LevelWarInfo;
+				pWarInfo.reset( new LevelWarInfo );
 			break;
 
 			default :
@@ -94,7 +96,8 @@ void GCWarList::read (SocketInputStream & iStream)
 
 		pWarInfo->read( iStream );
 
-		addWarInfo( pWarInfo );
+		addWarInfo( pWarInfo.get() );
+		pWarInfo.release();
 	}
 
 	__END_CATCH

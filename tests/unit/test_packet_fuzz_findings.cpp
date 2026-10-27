@@ -26,23 +26,67 @@
 #include "SocketEncryptInputStream.h"
 #include "SocketImpl.h"
 #include "StoreInfo.h"
+#include "Gpackets/GCActiveGuildList.h"
+#include "Gpackets/GCAddNewItemToZone.h"
 #include "Gpackets/GCAddVampire.h"
 #include "Gpackets/GCChangeWeather.h"
+#include "Gpackets/GCGoodsList.h"
+#include "Gpackets/GCGQuestStatusInfo.h"
+#include "Gpackets/GCGQuestStatusModify.h"
+#include "Gpackets/GCGuildMemberList.h"
+#include "Gpackets/GCHolyLandBonusInfo.h"
 #include "Gpackets/GCKickMessage.h"
 #include "Gpackets/GCModifyNickname.h"
+#include "Gpackets/GCMonsterKillQuestInfo.h"
 #include "Gpackets/GCMyStoreInfo.h"
+#include "Gpackets/GCNicknameList.h"
+#include "Gpackets/GCNPCAskVariable.h"
+#include "Gpackets/GCNPCInfo.h"
 #include "Gpackets/GCOtherStoreInfo.h"
+#include "Gpackets/GCPartyJoined.h"
+#include "Gpackets/GCPetStashList.h"
+#include "Gpackets/GCShowUnionInfo.h"
+#include "Gpackets/GCSkillInfo.h"
+#include "Gpackets/GCSMSAddressList.h"
+#include "Gpackets/GCStashList.h"
+#include "Gpackets/GCSweeperBonusInfo.h"
 #include "Gpackets/GCSystemMessage.h"
+#include "Gpackets/GCTradeAddItem.h"
+#include "Gpackets/GCUnionOfferList.h"
+#include "Gpackets/GCUpdateInfo.h"
+#include "Gpackets/GCWaitGuildList.h"
 #include "Gpackets/GCWarList.h"
+#include "Gpackets/GCWarScheduleList.h"
 #include "Lpackets/LCPCList.h"
+#include "Lpackets/LCServerList.h"
+#include "Lpackets/LCWorldList.h"
+#include "Rpackets/CRWhisper.h"
 #include "Rpackets/RCRequestedFile.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
+
+// ASan's allocator says how many bytes it holds, which is how a leak shows
+// in a suite that runs with leak detection off (the game's static tables
+// are never freed). MSVC's runtime is not asked.
+#if defined(__has_feature) && !defined(_MSC_VER)
+#if __has_feature(address_sanitizer)
+#define FINDINGS_HEAP_BYTES 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) && !defined(_MSC_VER) && !defined(FINDINGS_HEAP_BYTES)
+#define FINDINGS_HEAP_BYTES 1
+#endif
+#ifdef FINDINGS_HEAP_BYTES
+// The sanitizer runtime's own (sanitizer/allocator_interface.h, which GCC's
+// install does not ship), as test_game_ui_1.cpp declares it.
+extern "C" size_t __sanitizer_get_current_allocated_bytes(void);
+#endif
 
 namespace {
 
@@ -638,3 +682,118 @@ TEST(PacketFuzzFindings, OustersInfoStringPrintsASexItHasNoNameForAsItsNumber)
 		CHECK(info.toString().find(row.named) != std::string::npos);
 	}
 }
+
+//----------------------------------------------------------------------
+// Found by reading: a list read allocated an entry, read it, and only
+// then handed it to the list, so an entry whose read threw (its bytes
+// past the frame, a bad value) was leaked. LCServerList and LCWorldList
+// were the review's row; the sweep for a `new` in a read found the same
+// shape in the packets below. Each is read from frames whose bodies
+// are every length up to 255 of one byte, so some read stops inside an
+// entry; the refusals must leave ASan's allocator holding nothing more.
+// Without ASan only the refusals run: nothing else can see a leak.
+//----------------------------------------------------------------------
+namespace {
+
+// The bytes the allocator holds now; 0 where nothing can say.
+long long	HeldHeapBytes()
+{
+#ifdef FINDINGS_HEAP_BYTES
+	return (long long)__sanitizer_get_current_allocated_bytes();
+#else
+	return 0;
+#endif
+}
+
+// What the packet does not own: the SMS list's address units are the
+// handler's to hand to the executable's SMS list, which keeps them, and
+// the packet frees none, refused or read whole (a follow-up in
+// docs/reviews/NEXT.md). The test frees what it still holds, so what it
+// measures there is the unit whose read throws.
+void	FreeWhatThePacketDoesNotOwn(Packet&) {}
+void	FreeWhatThePacketDoesNotOwn(GCSMSAddressList& packet)
+{
+	for (AddressUnit* pUnit : packet.getAddresses())
+		delete pUnit;
+	packet.getAddresses().clear();
+}
+
+// One pass of reads of PacketT, a fresh packet per frame; any refusal is
+// caught, as the receive loop catches it.
+template <class PacketT>
+void	ReadShortBodies(unsigned char fill)
+{
+	for (std::size_t n = 0; n <= 255; ++n)
+	{
+		PacketT packet;
+		FindingInFixture f(Frame(packet.getPacketID(), std::vector<unsigned char>(n, fill)));
+		try {
+			f.m_Stream.read(&packet);
+		} catch (Throwable&) {
+		}
+		FreeWhatThePacketDoesNotOwn(packet);
+	}
+}
+
+// What a second pass leaves held: the first warms whatever the reads
+// allocate once and keep.
+template <class PacketT>
+long long	HeapHeldByShortBodies()
+{
+	for (unsigned char fill : { (unsigned char)1, (unsigned char)2 })
+		ReadShortBodies<PacketT>(fill);
+	const long long before = HeldHeapBytes();
+	for (unsigned char fill : { (unsigned char)1, (unsigned char)2 })
+		ReadShortBodies<PacketT>(fill);
+	return HeldHeapBytes() - before;
+}
+
+} // namespace
+
+#define CHECK_SHORT_BODIES_LEAK_NOTHING(PacketT) \
+	do { \
+		const long long held = HeapHeldByShortBodies<PacketT>(); \
+		if (held != 0) std::printf("      %s holds %lld bytes more\n", #PacketT, held); \
+		CHECK_EQ(0LL, held); \
+	} while (0)
+
+TEST(PacketFuzzFindings, LoginListReadsThatThrowLeakNothing)
+{
+	CHECK_SHORT_BODIES_LEAK_NOTHING(LCServerList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(LCWorldList);
+}
+
+TEST(PacketFuzzFindings, GameListReadsThatThrowLeakNothing)
+{
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCActiveGuildList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddNewItemToZone);	// GCAddItemToZone::read, for the three that share it
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCGoodsList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCGQuestStatusInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCGQuestStatusModify);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCGuildMemberList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCHolyLandBonusInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCMonsterKillQuestInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCNicknameList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCNPCAskVariable);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCNPCInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCPartyJoined);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCPetStashList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCShowUnionInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCSkillInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCSMSAddressList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCStashList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCSweeperBonusInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCTradeAddItem);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCUnionOfferList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCUpdateInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCWaitGuildList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCWarList);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCWarScheduleList);
+}
+
+TEST(PacketFuzzFindings, PeerListReadsThatThrowLeakNothing)
+{
+	CHECK_SHORT_BODIES_LEAK_NOTHING(CRWhisper);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(RCRequestedFile);
+}
+

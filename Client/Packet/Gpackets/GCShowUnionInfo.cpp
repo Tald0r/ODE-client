@@ -8,6 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "GCShowUnionInfo.h"
+#include <memory>
 
 #define SAFE_DELETE(p) { if(p) { delete (p); (p) = NULL; }}
 //////////////////////////////////////////////////////////////////////
@@ -55,9 +56,11 @@ void GCShowUnionInfo::read ( SocketInputStream & iStream )
 	iStream.read(szNum);
 	for ( int i=0; i<szNum; ++i )
 	{
-		SingleGuildInfo* pInfo = new SingleGuildInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SingleGuildInfo> pInfo( new SingleGuildInfo );
 		pInfo->read(iStream);
-		m_GuildList.push_back(pInfo);
+		m_GuildList.push_back(pInfo.get());
+		pInfo.release();
 	}
 
 	__END_CATCH

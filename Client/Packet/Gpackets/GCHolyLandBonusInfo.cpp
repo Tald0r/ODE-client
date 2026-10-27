@@ -7,6 +7,7 @@
 #include "Client_PCH.h"
 // include files
 #include "GCHolyLandBonusInfo.h"
+#include <memory>
 
 
 //////////////////////////////////////////////////////////////////////
@@ -39,9 +40,11 @@ void GCHolyLandBonusInfo::read ( SocketInputStream & iStream )
 	iStream.read( ListNum );
 	for ( int i = 0; i < ListNum; i++ )
 	{
-		BloodBibleBonusInfo* pBloodBibleBonusInfo = new BloodBibleBonusInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<BloodBibleBonusInfo> pBloodBibleBonusInfo( new BloodBibleBonusInfo() );
 		pBloodBibleBonusInfo->read( iStream );
-		m_BloodBibleBonusInfoList.push_back( pBloodBibleBonusInfo );
+		m_BloodBibleBonusInfoList.push_back( pBloodBibleBonusInfo.get() );
+		pBloodBibleBonusInfo.release();
 	}
 
 	__END_CATCH

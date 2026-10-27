@@ -16,6 +16,7 @@
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // constructor
@@ -57,9 +58,11 @@ void VampireSkillInfo::read ( SocketInputStream & iStream )
 	iStream.read( m_ListNum );
 
 	for( int i = 0; i < m_ListNum; i++ ) {
-		SubVampireSkillInfo * pSubVampireSkillInfo = new SubVampireSkillInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SubVampireSkillInfo> pSubVampireSkillInfo( new SubVampireSkillInfo() );
 		pSubVampireSkillInfo->read( iStream );
-		m_SubVampireSkillInfoList.push_back( pSubVampireSkillInfo );
+		m_SubVampireSkillInfoList.push_back( pSubVampireSkillInfo.get() );
+		pSubVampireSkillInfo.release();
 
 	}
 

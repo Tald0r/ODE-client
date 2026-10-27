@@ -9,8 +9,8 @@ tags: [review, plan]
 
 Written 2026-10-26, after the merges of PRs #562-#568. The
 [restructuring plan](RESTRUCTURING.md) is complete except task 4.12, and the
-[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (two
-since task 1), all in its *Found by fuzzing* and *Found by reading* tables. What is left is below,
+[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (one
+since tasks 1 and 2), all in its *Found by fuzzing* and *Found by reading* tables. What is left is below,
 ranked by the risk it closes, with the cheap undefined-behaviour rows ahead of the long walks and
 the cosmetic stubs last. Each task names the code, the tests it must flip or add, and the rule it
 must keep, so it can be taken cold. One task per PR; the merge gate (a two-reviewer adversarial
@@ -42,25 +42,6 @@ review of the whole diff, then the four platform workflows dispatched by hand) a
 6. Do not decide an item under *Owner decisions*; they are the repository owner's calls.
 
 ## Tasks
-
-### 2. The login list reads leak the entry whose read throws
-
-**What:** the other open *Found by reading* row: `LCServerList::read` and `LCWorldList::read`
-allocate a `ServerGroupInfo` or `WorldInfo` with `new`, read it, and only then `push_back` it, so
-an entry whose read throws (a name length past the frame) is leaked. The server's own copies are
-task 4 of its plan. The shape is wider than the row. Measured on 2026-10-27, a local
-`Type* p = new Type;` with `p->read(` on the next line is at 25 sites in 23 files under
-`Client/Packet`, these two among them (`GCSkillInfo` has three; the skill infos, the guild, union
-and nickname lists, the stash), and that spelling misses at least two more: `RCRequestedFile::read`
-(a blank line between the `new` and the read) and `GCWarList::read` (the `new` in a `switch`, found
-taking task 1).
-
-**How:** hold the entry in a `std::unique_ptr` until the list takes it, as `LCPCList::read` does
-since `7c81f583`; a test in `test_packet_fuzz_findings.cpp` reads a truncated
-golden under ASan and asserts the refusal leaks nothing. The row closes. Sweep the other sites for
-the value, not the spelling: every `new` in a `read` under `Client/Packet`
-(`grep -rn 'new ' Client/Packet --include='*.cpp'`) whose object is read before an owner takes
-it, fixing each or saying here why it is left.
 
 ### 3. `Assert`-only bounds that hostile input reaches
 
@@ -178,7 +159,33 @@ ignore the hits in `CSpriteSurface.cpp` (not compiled) and decide `CSprite::memc
 **Test:** a pixel whose green is 32 (`0x0400`): the bug sums it to 0 and the fix to 16; a pure
 green of 63 agrees under both. `tests/render/test_sprite_gpu.cpp` already uses that pixel.
 
-### 8. Kept in view, no task
+### 8. Packets that never free what their read allocates
+
+**What:** measured while taking task 2, with its harness (`ReadShortBodies` in
+`tests/unit/test_packet_fuzz_findings.cpp`): seven packets allocate a member in `read` that their
+destructor never frees, so each one received leaks it, refused or read whole. `GCAddSlayer`,
+`GCAddVampire` and `GCAddOusters` free their `EffectInfo` but not their `PetInfo` or
+`NicknameInfo`; `GCPetInfo` frees no `PetInfo`, `GCBloodBibleSignInfo` no `BloodBibleSignInfo`,
+and `GCMyStoreInfo` and `GCOtherStoreInfo` no `StoreInfo` (about a megabyte held after 512 short
+frames each). Beside them, `GCSMSAddressList` frees none of its `AddressUnit`s by design: its
+handler hands them to the executable's SMS list, and that list leaks every one in the end. It keeps
+them only while its window exists (`C_VS_UI_GAME::SetSMSAddressList` returns early otherwise), and
+`C_VS_UI_SMS_LIST::SetSMSList` clears the previous list without freeing it, while its destructor
+frees none; a frame refused after its read (trailing bytes) leaks them too. Its `DeleteList` also
+deletes the last unit when no id matches, while that unit is still in the list: a use after free
+(`VS_UI/src/vs_ui_gamecommon2.cpp`; read it with `grep -a`).
+
+**How:** trace each member's owner first: a handler or a presentation host may keep the pointer
+(`GCPetInfo`'s pet, the sign info, the store info), and freeing it then is a use after free. Where
+the reply copies, free it in the destructor and delete the copy operations, as `GCPetStashList`
+and `GCNicknameList` do since task 2; where something keeps it, make the hand-off explicit. The
+SMS units want the SMS list to copy what it shows, as the nickname window does, which is a
+`VS_UI` change.
+
+**Test:** add each packet to a `CHECK_SHORT_BODIES_LEAK_NOTHING` list once its owner is settled,
+and drop `GCSMSAddressList` from `FreeWhatThePacketDoesNotOwn` when its units are the packet's.
+
+### 9. Kept in view, no task
 
 - The 5:5:5 sprite decoders are latent ([client traps](../architecture/client-traps.md)) and
   tested; nothing in the shipped data uses them.
@@ -217,3 +224,19 @@ type `BYTE`; the other values are switched on, compared or passed as integers; t
 tests; and `Player.APetsAttributeAddsToTheStatItNamesAndAnyOtherNumberToNone`. Left, and named in the
 rows: `CLRegisterPlayer::read`'s `Nation` cast, in a packet the client registers no factory for,
 and the name-table indexes of stored values in `toString()`s compiled only with `__DEBUG_OUTPUT__`.
+
+### 2. The login list reads leak the entry whose read throws (PR #571)
+
+The row is fixed with every site of its shape the sweep found: 31 reads under `Client/Packet` hold
+the entry they allocate in a `std::unique_ptr` until the list takes it, the two login lists, the
+skill infos, the guild, union, nickname, quest, war, goods, stash, party, SMS and peer lists among
+them, `GCWarList::read`'s `switch` and `RCRequestedFile::read` included; `GCNPCAskVariable` also
+frees a parameter its map refuses as a duplicate. `GCPetStashList`, `GCNicknameList` and
+`GCGQuestStatusModify` (whose read is inline in its header, which the first sweep missed) free
+their entries in their destructors now, their replies copying what they show: the follow-ups
+recorded by restructuring tasks 4.116, 4.107 and 4.120. Owners: `PacketFuzzFindings`'
+`LoginListReadsThatThrowLeakNothing`, `GameListReadsThatThrowLeakNothing` and
+`PeerListReadsThatThrowLeakNothing`, which read each packet from frames of every body length up to
+255 and check ASan's allocator holds nothing more. Left: the short bodies reach no entry read of
+`GCAddItemToZone`, `GCStashList`, `GCTradeAddItem` or `GCUpdateInfo`, whose fixes are regression
+guards, and the member and SMS leaks the harness found, which are task 8.

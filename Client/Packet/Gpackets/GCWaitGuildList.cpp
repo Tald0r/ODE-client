@@ -8,6 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "GCWaitGuildList.h"
+#include <memory>
 
 
 //////////////////////////////////////////////////////////////////////
@@ -40,9 +41,11 @@ void GCWaitGuildList::read ( SocketInputStream & iStream )
 	iStream.read( ListNum );
 	for ( int i = 0; i < ListNum; i++ )
 	{
-		GuildInfo* pGuildInfo = new GuildInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<GuildInfo> pGuildInfo( new GuildInfo() );
 		pGuildInfo->read( iStream );
-		m_GuildInfoList.push_front( pGuildInfo );
+		m_GuildInfoList.push_front( pGuildInfo.get() );
+		pGuildInfo.release();
 	}
 
 	__END_CATCH

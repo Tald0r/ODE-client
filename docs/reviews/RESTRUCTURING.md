@@ -3103,7 +3103,8 @@ rounds settled* for the host rules). Test fixtures share
     - `GCRemoveStoreItem` drops the item `MStorage::RemoveItem` hands
       back without freeing it; the store view may still point at it, so
       freeing it needs that view's ownership read first.
-    - `GCNicknameList` never frees the entries its `read` allocates.
+    - `GCNicknameList` never frees the entries its `read` allocates. Fixed
+      2026-10-27 (PR #571): its destructor frees them.
     - `MStorage` leaves its open-store id uninitialised until a store
       opens (`GCMyStoreInfo` sets it only for a non-zero player), and
       both store replies compare against it.
@@ -3297,7 +3298,8 @@ rounds settled* for the host rules). Test fixtures share
     replaces the storage; a factory that makes no pet item skips the
     slot; missing services still build the stash).
   - Follow-ups, as before the move: `GCPetStashList` never frees the pet
-    details its `read` allocates, and a stashed `PET_NONE` leaves its
+    details its `read` allocates (fixed 2026-10-27, PR #571: its destructor
+    frees them), and a stashed `PET_NONE` leaves its
     attribute level and food type uninitialised, which the reply reads.
 
 - [x] **4.117 The system-message reply:** move `GCSystemMessageHandler`
@@ -3378,7 +3380,8 @@ rounds settled* for the host rules). Test fixtures share
     window with the kind less two; a refused record, or one with no
     window, is freed, which ASan watches).
   - Follow-up: `GCGQuestStatusModify` never frees the status its `read`
-    allocates, and its constructor leaves that pointer uninitialised.
+    allocates, and its constructor leaves that pointer uninitialised. Fixed
+    2026-10-27 (PR #571): the constructor nulls it and the destructor frees it.
   - Follow-up: the quest window's `SetQuestManagerInfo` answers true for a
     quest with no XML element without keeping the record, which then
     leaks; the reply cannot tell.

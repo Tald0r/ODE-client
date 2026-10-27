@@ -120,7 +120,7 @@ struct Stashed
 // The stash's 20 slots as the server sends them. PetInfo::write writes a
 // zero item ID (the client never sends one), so each pet's ID is put in
 // its place.
-GCPetStashList Decoded(std::vector<Stashed>& pets)
+void Decode(GCPetStashList& packet, std::vector<Stashed>& pets)
 {
 	std::vector<unsigned char> bytes;
 	for (int slot = 0; slot < MAX_PET_STASH; slot++)
@@ -143,24 +143,11 @@ GCPetStashList Decoded(std::vector<Stashed>& pets)
 		const std::vector<unsigned char> days = Wire(pet->keepDays);
 		bytes.insert(bytes.end(), days.begin(), days.end());
 	}
-	GCPetStashList packet;
 	Socket in((EnsureSocketsInitialised(), new SocketImpl()));
 	SocketInputStream stream(&in, 4096);
 	SocketInputStreamTestAccess::Preload(stream, bytes.data(), static_cast<unsigned int>(bytes.size()));
 	packet.read(stream);
 	CHECK(stream.isEmpty());
-	return packet;
-}
-
-// The packet never frees what its read allocates (a follow-up in the doc).
-void Free(GCPetStashList& packet)
-{
-	for (PetStashItemInfo*& stashed : packet.getPetStashItemInfos())
-	{
-		if (stashed != nullptr) delete stashed->pPetInfo;
-		delete stashed;
-		stashed = nullptr;
-	}
 }
 
 // Each ability on its own, so a swapped one shows.
@@ -184,9 +171,9 @@ PetInfo Info(PetType_t type, PetLevel_t level, PetExp_t exp, OptionType_t option
 
 void Receive(std::vector<Stashed> pets)
 {
-	GCPetStashList packet = Decoded(pets);
+	GCPetStashList packet;
+	Decode(packet, pets);
 	GCPetStashListHandler::execute(&packet, nullptr);
-	Free(packet);
 }
 
 } // namespace

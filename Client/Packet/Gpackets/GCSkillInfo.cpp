@@ -12,6 +12,7 @@
 #include "VampireSkillInfo.h"
 #include "OustersSkillInfo.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //--------------------------------------------------------------------------------
 // constructor
@@ -51,9 +52,11 @@ void GCSkillInfo::read ( SocketInputStream & iStream )
 		case PC_SLAYER :
 		{
 			for( int i = 0; i < m_ListNum; i++ ) {
-				SlayerSkillInfo * pSlayerSkillInfo = new SlayerSkillInfo();
+				// Owned until the list takes it, so a read that throws frees it.
+				std::unique_ptr<SlayerSkillInfo> pSlayerSkillInfo( new SlayerSkillInfo() );
 				pSlayerSkillInfo->read( iStream ); 
-				m_pPCSkillInfoList.push_back( pSlayerSkillInfo );
+				m_pPCSkillInfoList.push_back( pSlayerSkillInfo.get() );
+				pSlayerSkillInfo.release();
 			}
 		}
 		break;
@@ -61,9 +64,11 @@ void GCSkillInfo::read ( SocketInputStream & iStream )
 		case PC_VAMPIRE :
 		{
 			for( int i = 0; i < m_ListNum; i++ ) {
-				VampireSkillInfo * pVampireSkillInfo = new VampireSkillInfo();
+				// Owned until the list takes it, so a read that throws frees it.
+				std::unique_ptr<VampireSkillInfo> pVampireSkillInfo( new VampireSkillInfo() );
 				pVampireSkillInfo->read( iStream ); 
-				m_pPCSkillInfoList.push_back( pVampireSkillInfo );
+				m_pPCSkillInfoList.push_back( pVampireSkillInfo.get() );
+				pVampireSkillInfo.release();
 			}
 		}
 		break;
@@ -71,9 +76,11 @@ void GCSkillInfo::read ( SocketInputStream & iStream )
 		case PC_OUSTERS :
 			{
 				for( int i = 0; i < m_ListNum; i++ ) {
-					OustersSkillInfo * pOustersSkillInfo = new OustersSkillInfo();
+					// Owned until the list takes it, so a read that throws frees it.
+					std::unique_ptr<OustersSkillInfo> pOustersSkillInfo( new OustersSkillInfo() );
 					pOustersSkillInfo->read( iStream ); 
-					m_pPCSkillInfoList.push_back( pOustersSkillInfo );
+					m_pPCSkillInfoList.push_back( pOustersSkillInfo.get() );
+					pOustersSkillInfo.release();
 				}
 			}
 			break;

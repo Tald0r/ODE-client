@@ -11,6 +11,7 @@
 #include "SocketEncryptInputStream.h"
 #include "SocketEncryptOutputStream.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //--------------------------------------------------------------------
 // Constructor
@@ -86,9 +87,11 @@ void GCAddItemToZone::read ( SocketInputStream & iStream )
 	// Sub 아이템 정보를 읽어 들인다.
     iStream.read( m_ListNum );
 	for( int i = 0; i < m_ListNum; i++ ) {
-		SubItemInfo * pSubItemInfo = new SubItemInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SubItemInfo> pSubItemInfo( new SubItemInfo() );
 		pSubItemInfo->read( iStream );
-		m_SubItemInfoList.push_back( pSubItemInfo );
+		m_SubItemInfoList.push_back( pSubItemInfo.get() );
+		pSubItemInfo.release();
 	}
 
 

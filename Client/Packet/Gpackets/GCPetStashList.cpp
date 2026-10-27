@@ -29,7 +29,12 @@ GCPetStashList::GCPetStashList()
 //////////////////////////////////////////////////////////////////////////////
 GCPetStashList::~GCPetStashList()
 {
-
+	// The entries are the packet's: the reply copies what it shows.
+	for ( PetStashItemInfo* pInfo : m_PetStashItemInfos )
+	{
+		if ( pInfo != NULL ) delete pInfo->pPetInfo;
+		delete pInfo;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -45,7 +50,8 @@ void GCPetStashList::read ( SocketInputStream & iStream )
 		iStream.read(isAvailable);
 		if ( isAvailable == 0 ) continue;
 
-		m_PetStashItemInfos[i] = new PetStashItemInfo;
+		// Value-initialised, so the destructor finds no stray pet if the next new throws.
+		m_PetStashItemInfos[i] = new PetStashItemInfo();
 		m_PetStashItemInfos[i]->pPetInfo = new PetInfo;
 		m_PetStashItemInfos[i]->pPetInfo->read( iStream );
 

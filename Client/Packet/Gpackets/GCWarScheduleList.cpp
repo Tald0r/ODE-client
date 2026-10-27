@@ -7,6 +7,7 @@
 #include "Client_PCH.h"
 #include "GCWarScheduleList.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////////
 // constructor
@@ -52,8 +53,8 @@ void GCWarScheduleList::read (SocketInputStream & iStream)
 
 	for( int i=0; i<count; i++ )
 	{
-		WarScheduleInfo* newWarScheduleInfo;
-		newWarScheduleInfo = new WarScheduleInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<WarScheduleInfo> newWarScheduleInfo( new WarScheduleInfo );
 
 		iStream.read( newWarScheduleInfo->warType );
 		iStream.read( newWarScheduleInfo->year );
@@ -76,7 +77,8 @@ void GCWarScheduleList::read (SocketInputStream & iStream)
 			if ( szGuildName != 0 ) iStream.read( newWarScheduleInfo->reinforceGuildName, szGuildName );
 		}
 
-		addWarScheduleInfo( newWarScheduleInfo );
+		addWarScheduleInfo( newWarScheduleInfo.get() );
+		newWarScheduleInfo.release();
 	}
 
 	__END_CATCH

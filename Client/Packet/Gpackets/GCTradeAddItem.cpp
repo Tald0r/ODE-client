@@ -8,6 +8,7 @@
 #include "Client_PCH.h"
 #include "GCTradeAddItem.h"
 #include "PacketAssert.h"
+#include <memory>
 
 ////////////////////////////////////////////////////////////////////////////////
 // constructor
@@ -68,9 +69,11 @@ void GCTradeAddItem::read ( SocketInputStream & iStream )
 	iStream.read( m_ListNum );
 	for (int i = 0; i < m_ListNum; i++) 
 	{
-		SubItemInfo* pInfo = new SubItemInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SubItemInfo> pInfo( new SubItemInfo() );
 		pInfo->read( iStream );
-		m_InfoList.push_back( pInfo );
+		m_InfoList.push_back( pInfo.get() );
+		pInfo.release();
 	}
 		
 	__END_CATCH

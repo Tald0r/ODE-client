@@ -2,6 +2,11 @@
 
 ## 2026-10-27
 
+* **Update**: the login-list leak row of the [code-health review](reviews/code-health-review-2026-08-29.md)
+  is fixed with every site of its shape; the [next work plan](reviews/NEXT.md) moves its task 2 to
+  *Done* and adds task 8 for the packets that never free a member their read allocates; the
+  [restructuring plan](reviews/RESTRUCTURING.md)'s follow-ups for `GCPetStashList`,
+  `GCNicknameList` and `GCGQuestStatusModify` say they are fixed.
 * **Update**: the two enum rows of the [code-health review](reviews/code-health-review-2026-08-29.md),
   *The same cast where UBSan does not look* and the PC infos' sex, are fixed, with the eight sites
   two sweeps found; the [next work plan](reviews/NEXT.md) moves its task 1 to *Done* and widens task

@@ -12,6 +12,7 @@
 #include "PCSlayerInfo.h"
 #include "PCVampireInfo.h"
 #include "PCOustersInfo.h"
+#include <memory>
 
 //----------------------------------------------------------------------
 // constructor
@@ -57,9 +58,11 @@ void LCServerList::read ( SocketInputStream & iStream )
     // 최적화 작업시 실제 크기를 명시하도록 한다.
 	iStream.read( ListNum );
 	for( int i = 0; i < ListNum; i++ ) {
-		ServerGroupInfo * pServerGroupInfo = new ServerGroupInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<ServerGroupInfo> pServerGroupInfo( new ServerGroupInfo() );
 		pServerGroupInfo->read( iStream );
-		m_ServerGroupInfoList.push_back( pServerGroupInfo );
+		m_ServerGroupInfoList.push_back( pServerGroupInfo.get() );
+		pServerGroupInfo.release();
 	}
 	
 	__END_CATCH

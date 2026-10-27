@@ -19,6 +19,7 @@
 GCGQuestStatusModify::GCGQuestStatusModify ()
 {
 	__BEGIN_TRY
+	m_pInfo = NULL;
 	__END_CATCH
 }
 	
@@ -27,6 +28,7 @@ GCGQuestStatusModify::GCGQuestStatusModify ()
 //////////////////////////////////////////////////////////////////////
 GCGQuestStatusModify::~GCGQuestStatusModify ()
 {
+	delete m_pInfo;
 }
 
 
