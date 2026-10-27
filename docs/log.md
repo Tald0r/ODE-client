@@ -2,6 +2,9 @@
 
 ## 2026-10-27
 
+* **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says the gradation
+  table sums three five-bit channels, as the original did; the [next work plan](reviews/NEXT.md)
+  moves its task 9 to *Done*.
 * **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says how
   `BltIndexSpriteColor` and `BltIndexSpriteBrightness` draw now that they are no stubs, and that a
   black pixel of the three decoded effect draws is opaque; the [next work plan](reviews/NEXT.md)
