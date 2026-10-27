@@ -86,27 +86,6 @@ review row.
 **Keep:** a value a library function could check is checked in the library; the exemption is for
 the rendering alone.
 
-### 9. The gradation table is built on one green scale and read on another
-
-**What:** found in the review of task 7. `CIndexSprite::SetColorSet` builds `GradationValue[j]`
-from `ColorDraw::Red + Green + Blue` of the blue ramp, and `ColorDraw::Green` decodes six bits, so
-set 0's white sums to 125, and `GetColorToGradation` fills `ColorToGradation[0..93]` against those
-thresholds. The table's three readers, `memcpyEffectGradation`, the GPU gradation table in
-`CSpriteSurface_Adapter.cpp` and `memcpyPalEffectGradation`, index it with three five-bit channels
-instead (white is 93), so a white pixel lands about five steps down the ramp and never on
-gradation 0. It is live: the gradation draws read the table, and `test_spritesurface_pal_blit.cpp`
-pins skill-state icons drawn with set 59. One caller agrees with the thresholds:
-`GetIndexColor(WORD)`, which converts a 5:6:5 sprite to an index sprite, passes
-`GetColorToGradation` a six-bit sum directly. `GetColorToGradation` also measures its second
-distance from `GradationValue[g-1]` where it means `GradationValue[g]`.
-
-**How:** make the two scales agree, and fix the distance. The original build read green as five
-bits: its `ColorDraw::Green` was `(c >> 6) & 0x1F`, with `s_bSHIFT_G` 6 on 5:6:5 (`fa74958e`,
-`Client/DirectXLib/CDirectDraw.h` and `.cpp`), so its `GradationValue` and `GetIndexColor` summed
-three five-bit channels, as the readers do; the port's six-bit `Green` split the scales. Summing
-`Green(color) >> 1` in both restores the original. It changes colours on screen, so pin the new
-colours in the tests that pin the current ones and say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
-
 ### 10. Kept in view, no task
 
 - The 5:5:5 sprite decoders are latent ([client traps](../architecture/client-traps.md)) and
@@ -226,3 +205,13 @@ destructor; so `GCSMSAddressList` frees its units too. Owners: `PacketFuzzFindin
 `MemberReadsLeakNothing` and `GameListReadsThatThrowLeakNothing`, which measures the SMS list's
 packet whole now that the test frees nothing for it. The `VS_UI` change has no test of its own: a
 window cannot be built in the unit suite.
+
+### 9. The gradation table is built on one green scale and read on another (PR #576)
+
+Fixed: `GradationValue` and `GetIndexColor(WORD)` sum green's top five bits, as the original
+build did (its `ColorDraw::Green` was `(c >> 6) & 0x1F`, `fa74958e`), so the table, its three
+readers and `GetIndexColor` share one scale and white takes the ramp's first gradation. The
+distance `GetColorToGradation` measures from `GradationValue[g-1]` is left: the original measures
+it the same way, so the gradations it drew depend on it. Owner:
+`SpriteGpu.TheGradationTableTakesWhiteToTheRampsFirstGradation`; no other test pinned a colour of
+the old scale, since they read their expectations from the table.

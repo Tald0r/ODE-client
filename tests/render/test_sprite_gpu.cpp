@@ -1433,3 +1433,22 @@ TEST(SpriteGpu, IndexSpriteBrightnessAddsToTheFixedPixelsAndWraps)
 	CHECK(bright(0xffff, 1) != 0xffff);
 	CSpriteSurface::s_Value1 = previousValue;
 }
+
+// ColorToGradation is read with three five-bit channels (white sums to 93),
+// and the original built it the same way: its ColorDraw::Green read green's
+// top five bits. The port's six-bit Green built GradationValue on another
+// scale (white 125), so white never reached the ramp's first gradation,
+// and GetIndexColor, which sums a colour onto the same thresholds, turned
+// a white pixel into a darker one than the table's readers did.
+TEST(SpriteGpu, TheGradationTableTakesWhiteToTheRampsFirstGradation)
+{
+	CIndexSprite::SetColorSet();
+	CHECK_EQ(0, int(CIndexSprite::ColorToGradation[93]));
+	CHECK_EQ(0, int(CIndexSprite::GetIndexColor(WORD(0xffff))));
+	// A colour and the table agree: the colour's five-bit sum indexes it.
+	for (WORD color : {WORD(0x0400), WORD(0x8410), WORD(0x07e0), WORD(0xf81f)})
+	{
+		const int sum = (color >> 11) + ((color >> 6) & 31) + (color & 31);
+		CHECK_EQ(int(CIndexSprite::ColorToGradation[sum]), int(CIndexSprite::GetIndexColor(color)));
+	}
+}

@@ -220,7 +220,8 @@ CIndexSprite::SetColorSet()
 	for (j=0; j<MAX_COLORGRADATION; j++)
 	{
 		color = ColorSet[0][j];
-		GradationValue[j] = ColorDraw::Red(color) + ColorDraw::Green(color) + ColorDraw::Blue(color);
+		// Three five-bit channels, as the original's Green read green and the table's readers sum it.
+		GradationValue[j] = ColorDraw::Red(color) + (ColorDraw::Green(color) >> 1) + ColorDraw::Blue(color);
 	}
 
 	//----------------------------------------------------------------------
@@ -661,7 +662,7 @@ CIndexSprite::GetIndexColor(WORD color)
 	// Gradition값
 	//-------------------------------------------------------
 	WORD spriteGradation = ColorDraw::Red(color) 
-						+ ColorDraw::Green(color) 
+						+ (ColorDraw::Green(color) >> 1)	// green's top five bits, as GradationValue sums it
 						+ ColorDraw::Blue(color);
 			
 	return GetColorToGradation( static_cast<BYTE>(spriteGradation) );
