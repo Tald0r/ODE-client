@@ -175,8 +175,10 @@ finding nor a clean bill: a leak in a reader is found by reading (the review's
 # Triage and platform notes
 
 Run it from a scratch directory: a failed `Assert` appends to `assertion_failed.log` in the
-working directory. Hostile input to the game target fails about a thousand in fifteen minutes; the
-login target failed none in 25 minutes. The datagram target failed none in 16 minutes run with
+working directory. Hostile input to the game target failed about a thousand in fifteen minutes, all
+at five bounds of `CGSMSSend::read` and `GCTimeLimitItemInfo::read` that are protocol refusals
+since task 3 of the [next work plan](../reviews/NEXT.md) (2026-10-27), so the read-path `Assert`s
+left check pointers; the login target failed none in 25 minutes. The datagram target failed none in 16 minutes run with
 `DE_FUZZ_ABORT_ON_ASSERT=1` (the `RC` readers hold no `Assert`; `Datagram::read` holds two).
 `DE_FUZZ_ABORT_ON_ASSERT=1` turns a failed `Assert` (an `AssertionError`, normally a rejected
 input) into a crash, to see which ones hostile input reaches. `-close_fd_mask=3` hides the

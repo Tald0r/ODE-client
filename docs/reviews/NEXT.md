@@ -9,12 +9,13 @@ tags: [review, plan]
 
 Written 2026-10-26, after the merges of PRs #562-#568. The
 [restructuring plan](RESTRUCTURING.md) is complete except task 4.12, and the
-[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (one
-since tasks 1 and 2), all in its *Found by fuzzing* and *Found by reading* tables. What is left is below,
-ranked by the risk it closes, with the cheap undefined-behaviour rows ahead of the long walks and
-the cosmetic stubs last. Each task names the code, the tests it must flip or add, and the rule it
-must keep, so it can be taken cold. One task per PR; the merge gate (a two-reviewer adversarial
-review of the whole diff, then the four platform workflows dispatched by hand) applies to each.
+[code-health review](code-health-review-2026-08-29.md) had four rows still marked open (none
+since tasks 1 to 3), all in its *Found by fuzzing* and *Found by reading* tables. What is left
+is below, ranked by the risk it closes, with the cheap undefined-behaviour rows ahead of the long
+walks and the cosmetic stubs last. Each task names the code, the tests it must flip or add, and the
+rule it must keep, so it can be taken cold. One task per PR; the merge gate (a two-reviewer
+adversarial review of the whole diff, then the four platform workflows dispatched by hand) applies
+to each.
 
 ## How to take a task
 
@@ -231,9 +232,15 @@ check pointers or the packet's own state, and the stash, update-info and name re
 values with a throw before any `Assert` sees them. Owners: `PacketFuzzFindings`'
 `SMSSendCountsAndLengthsAtTheirBoundsAreRefused`, `SMSSendJustInsideItsBoundsStillReads` and
 `TimeLimitItemCountPastItsBoundIsRefused`; a Release tree showed the unfixed reads accepting the
-values. Follow-ups, none of them a memory error: the client still parses `CGSMSSend`, a
-client-to-server packet, because `PacketFactoryManager` registers its factory and `CPS_NORMAL`
-accepts every registered id, and narrowing that set is a protocol-table change; `CGSMSSend::read`
+values. In the receive loop the refusal also sends the server a bug report, as every
+`InvalidProtocolException` does (`GameMain.cpp`'s `UpdateSocketInput`), which an `AssertionError`
+did not; and `GCTimeLimitItemInfo`'s frame cap (`getPacketMaxSize`, 801 bytes, exactly 100 items)
+already stopped a longer list there, so its new refusal only names the reason. Follow-ups, none of
+them a memory error: the client still parses `CGSMSSend`, a client-to-server packet, because
+`PacketFactoryManager` registers its factory and `CPS_NORMAL` accepts every registered id, and
+narrowing that set is a protocol-table change; `CGSMSSend::read`
 reads its receivers' numbers and drops them, so `m_Numbers` stays empty; and its `write` allows a
 list of `MAX_RECEVIER_NUM` numbers and numbers of `MAX_NUMBER_LENGTH` digits that its `read`
-(and, if the server's copy matches, the server) refuses.
+(and, if the server's copy matches, the server) refuses, while its `getPacketMaxSize` counts the
+caller's number as `MAX_RECEVIER_NUM` bytes, not `MAX_NUMBER_LENGTH`, so `write` can emit 113
+bytes against a stated 108.
