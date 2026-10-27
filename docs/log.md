@@ -1,5 +1,11 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-26
+
+* **Creation**: [next work plan](reviews/NEXT.md), the ranked tasks left in the client after
+  the 2026-10-25 merges, each self-contained enough for an agent without this history to take it;
+  `CLAUDE.md`'s current focus links it.
+
 ## 2026-10-25
 
 * **Update**: [packet input safety](protocol/packet-input-safety.md) records the walk of server

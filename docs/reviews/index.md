@@ -8,3 +8,4 @@
 # Records
 
 * [Client restructuring plan](RESTRUCTURING.md) - The extraction plan that split the executable into testable libraries, complete as of 2026-09-09, with every task's owner, the ratchet table and what the review rounds settled.
+* [Next work plan](NEXT.md) - The ranked, self-contained tasks left after the 2026-10-25 merges, each written so an agent with no other context can take it, plus the owner decisions no agent may make.

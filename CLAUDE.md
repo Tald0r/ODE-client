@@ -102,3 +102,4 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 - [Format strings](docs/protocol/format-strings.md) - C19 is closed; read its review entry before trusting a ratchet at zero.
 - [Code-health reconciliation](docs/reviews/code-health-reconciliation-2026-09-23.md) - the current disposition of the [review](docs/reviews/code-health-review-2026-08-29.md)'s 197 findings.
 - [The restructuring plan](docs/reviews/RESTRUCTURING.md) - original plan complete as of 2026-09-09 (task 4.12 is still open); its *What the review rounds settled* section is the standing rulebook for library work.
+- [The next work plan](docs/reviews/NEXT.md) - the ranked tasks left after the 2026-10-25 merges and the owner decisions no agent may make; take one per PR.
