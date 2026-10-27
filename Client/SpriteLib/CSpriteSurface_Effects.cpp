@@ -316,8 +316,11 @@ CSpriteSurface::memcpyPalEffectGradation(WORD* pDest, BYTE* pSource, WORD pixels
 	{
 		s = pal[*pSource];
 
+		// Three five-bit channels, as memcpyEffectGradation sums them: green
+		// is six bits on 5:6:5, so its top five, and white sums to 93, the
+		// table's last entry.
 		r = s >> s_bSHIFT_R;		
-		g = (s >> s_bSHIFT_G) & 0x1F;
+		g = Green(s) >> 1;
 		b = s & 0x1F;
 
 		gradation = CIndexSprite::ColorToGradation[ r + g + b ];

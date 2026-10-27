@@ -1287,3 +1287,71 @@ TEST(SpriteGpu, CompleteMixedFramesMatchCpuWithoutCompositionReadbacks)
 		CHECK_EQ(before.surfaceUploads, SpriteGpu::GetCounters().surfaceUploads);
 	}
 }
+
+// memcpyPalEffectGradation (unregistered on this backend) maps a palette
+// colour to its set's gradation through ColorToGradation, indexed by
+// three five-bit channels as memcpyEffectGradation indexes it. It took
+// green's low five bits of the six, so a green of 32 summed to 0; green's
+// top five bits sum it to 16, and a green of 63 to 31 either way.
+TEST(SpriteGpu, PaletteGradationTakesGreensTopFiveBits)
+{
+	CIndexSprite::SetColorSet();
+	const int previousValue = CSpriteSurface::s_Value1;
+	const int set = 1;
+	CSpriteSurface::s_Value1 = set;
+	const auto toSet = [&](int sum) { return CIndexSprite::ColorSet[set][CIndexSprite::ColorToGradation[sum]]; };
+	CHECK(toSet(16) != toSet(0));	// so the wrapped green shows
+	MPalette palette;
+	palette.Init(2);
+	palette[0] = 0x0400;	// green 32
+	palette[1] = 0x07e0;	// green 63
+	BYTE pixels[2] = {0, 1};
+	WORD drawn[2] = {0, 0};
+	CSpriteSurface::memcpyPalEffectGradation(drawn, pixels, 2, palette);
+	CHECK_EQ(toSet(16), drawn[0]);
+	CHECK_EQ(toSet(31), drawn[1]);
+	CSpriteSurface::s_Value1 = previousValue;
+}
+
+// CSprite::memcpyDarkerFilter (its blits have no caller on this backend)
+// scales each channel by the filter's value in 32nds. It took green's low
+// five bits too, so a green of 32 or more lost its top bit.
+TEST(SpriteGpu, DarkerFilterScalesTheSixBitGreen)
+{
+	const WORD source[3] = {0x0400, 0x07e0, 0xffff};
+	BYTE filter[3] = {32, 16, 32};
+	WORD drawn[3] = {0, 0, 0};
+	CSprite::memcpyDarkerFilter(drawn, const_cast<WORD*>(source), filter, 3);
+	CHECK_EQ(WORD(0x0400), drawn[0]);	// all 32 of 32: as it was
+	CHECK_EQ(WORD(31 << 5), drawn[1]);	// half of 63
+	CHECK_EQ(WORD(0xffff), drawn[2]);
+}
+
+// The 1:5:5:5 conversions (their blits have no caller on this backend)
+// took green's low five bits of 5:6:5's six too, so a green of 32 or more
+// lost its top bit; they take its top five now. A green of 63 and white
+// agree under both. CSpritePal::memcpy1555Small steps by statics a test
+// cannot set; it has the same line.
+TEST(SpriteGpu, Conversions1555TakeGreensTopFiveBits)
+{
+	const WORD source[3] = {0x0400, 0x07e0, 0xffff};
+	const WORD expected[3] = {WORD(0x8000 | (16 << 5)), WORD(0x8000 | (31 << 5)), WORD(0xffff)};
+	WORD drawn[3] = {0, 0, 0};
+	CSprite::memcpy1555(drawn, const_cast<WORD*>(source), 3);
+	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], drawn[i]);
+	const DWORD shift = CSprite::s_Value2, step = CSprite::s_Value3;
+	CSprite::s_Value2 = 0;
+	CSprite::s_Value3 = 1;
+	WORD small[3] = {0, 0, 0};
+	CSprite::memcpy1555Small(small, const_cast<WORD*>(source), 3);
+	CSprite::s_Value2 = shift;
+	CSprite::s_Value3 = step;
+	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], small[i]);
+	MPalette palette;
+	palette.Init(3);
+	for (int i = 0; i < 3; ++i) palette[BYTE(i)] = source[i];
+	BYTE pixels[3] = {0, 1, 2};
+	WORD fromPalette[3] = {0, 0, 0};
+	CSpritePal::memcpy1555(fromPalette, pixels, 3, palette);
+	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], fromPalette[i]);
+}

@@ -163,6 +163,15 @@ plain). It does not change game protocol or asset formats.
 RGBA glyph blending retains the device's arithmetic; subchannel rounding can
 differ from the software RGB565 renderer, as described above.
 
+The palette gradation effect (`CSpriteSurface::memcpyPalEffectGradation`) sums green's top five
+bits since 2026-10-27, as the registered `memcpyEffectGradation` does, so its `ColorToGradation`
+index stays in the table's 94 entries; it is still unregistered (only `EFFECT_SCREEN` is), and so
+are the other palette effects, which assume a five-bit green. `CSprite::memcpyDarkerFilter` scales
+the six-bit green the same way, and the four 1:5:5:5 conversions (`CSprite::memcpy1555`,
+`memcpy1555Small` and their `CSpritePal` twins) take its top five bits; no draw reaches any of
+them, the backend's `BltSpriteDarkerFilter` and `BltSprite*1555*NotTrans` being stubs with no
+caller.
+
 ## Completion checklist
 
 - [x] Native cached GPU sprites, fills, scaling, and surface copies.

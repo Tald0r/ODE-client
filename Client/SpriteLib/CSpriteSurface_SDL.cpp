@@ -68,7 +68,8 @@ FUNCTION_MEMCPYEFFECT CSpriteSurface::s_pMemcpyEffectFunctionTable[MAX_EFFECT] =
  * screen blend is ported below (its green table is 64 wide for that
  * reason) and is the only effect any call site selects - every
  * DRAW_NORMALSPRITEPAL_EFFECT in MTopView.cpp passes EFFECT_SCREEN.
- * The rest still assume a green of 0..31: ColorDodge, for one, divides
+ * The rest still assume a green of 0..31 (the gradation, fixed to take
+ * green's top five bits, is the exception): ColorDodge, for one, divides
  * by (32 - green), which is zero or negative for half the range. They
  * stay unregistered until someone ports them, so selecting one gets
  * memcpyPalEffect's plain copy rather than a wrong or crashing blend.
