@@ -12,6 +12,7 @@
 #include "PCSlayerInfo.h"
 #include "PCVampireInfo.h"
 #include "PCOustersInfo.h"
+#include <memory>
 
 //----------------------------------------------------------------------
 // constructor
@@ -57,9 +58,11 @@ void LCWorldList::read ( SocketInputStream & iStream )
     // 최적화 작업시 실제 크기를 명시하도록 한다.
 	iStream.read( ListNum );
 	for( int i = 0; i < ListNum; i++ ) {
-		WorldInfo * pWorldInfo = new WorldInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<WorldInfo> pWorldInfo( new WorldInfo() );
 		pWorldInfo->read( iStream );
-		m_WorldInfoList.push_back( pWorldInfo );
+		m_WorldInfoList.push_back( pWorldInfo.get() );
+		pWorldInfo.release();
 	}
 	
 	__END_CATCH

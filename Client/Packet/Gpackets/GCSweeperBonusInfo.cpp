@@ -8,6 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "GCSweeperBonusInfo.h"
+#include <memory>
 
 #define SAFE_DELETE(x) {if(x) delete x; x=NULL;}
 
@@ -41,9 +42,11 @@ void GCSweeperBonusInfo::read ( SocketInputStream & iStream )
 	iStream.read( ListNum );
 	for ( int i = 0; i < ListNum; i++ )
 	{
-		SweeperBonusInfo* pSweeperBonusInfo = new SweeperBonusInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SweeperBonusInfo> pSweeperBonusInfo( new SweeperBonusInfo() );
 		pSweeperBonusInfo->read( iStream );
-		m_SweeperBonusInfoList.push_back( pSweeperBonusInfo );
+		m_SweeperBonusInfoList.push_back( pSweeperBonusInfo.get() );
+		pSweeperBonusInfo.release();
 	}
 
 	__END_CATCH

@@ -88,8 +88,6 @@ void Receive(BYTE kind, DWORD questID, BYTE status, const std::vector<MissionInf
 	packet.read(stream);
 	CHECK(stream.isEmpty());
 	GCGQuestStatusModifyHandler::execute(&packet, nullptr);
-	// The packet never frees what its read allocates (a follow-up).
-	delete packet.getInfo();
 }
 
 } // namespace

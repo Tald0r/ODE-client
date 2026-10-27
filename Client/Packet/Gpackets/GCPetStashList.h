@@ -33,6 +33,9 @@ class GCPetStashList : public Packet
 public:
 	GCPetStashList();
 	virtual ~GCPetStashList();
+	// It owns its entries, so a copy would free them twice.
+	GCPetStashList( const GCPetStashList& ) = delete;
+	GCPetStashList& operator = ( const GCPetStashList& ) = delete;
 
 	void read(SocketInputStream & iStream);
 	void write(SocketOutputStream & oStream) const;

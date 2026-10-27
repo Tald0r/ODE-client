@@ -15,6 +15,7 @@
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // constructor
@@ -58,9 +59,11 @@ void SlayerSkillInfo::read ( SocketInputStream & iStream )
 	iStream.read( m_ListNum );
 
 	for( int i = 0; i < m_ListNum; i++ ) {
-		SubSlayerSkillInfo * pSubSlayerSkillInfo = new SubSlayerSkillInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SubSlayerSkillInfo> pSubSlayerSkillInfo( new SubSlayerSkillInfo() );
 		pSubSlayerSkillInfo->read( iStream );
-		m_SubSlayerSkillInfoList.push_back( pSubSlayerSkillInfo );
+		m_SubSlayerSkillInfoList.push_back( pSubSlayerSkillInfo.get() );
+		pSubSlayerSkillInfo.release();
 
 	}
 

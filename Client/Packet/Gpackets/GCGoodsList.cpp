@@ -6,6 +6,7 @@
 #include "Client_PCH.h"
 #include "GCGoodsList.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////////
 // constructor
@@ -57,7 +58,8 @@ void GCGoodsList::read ( SocketInputStream & iStream )
 
 	for ( int i=0; i < totalNum ; ++i )
 	{
-		GoodsInfo* pGI = new GoodsInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<GoodsInfo> pGI( new GoodsInfo );
 
 		iStream.read( pGI->objectID );
 		iStream.read( pGI->itemClass );
@@ -79,7 +81,8 @@ void GCGoodsList::read ( SocketInputStream & iStream )
 		iStream.read( pGI->num );
 		iStream.read( pGI->timeLimit );
 
-		addGoodsInfo( pGI );
+		addGoodsInfo( pGI.get() );
+		pGI.release();
 	}
 
 	__END_CATCH

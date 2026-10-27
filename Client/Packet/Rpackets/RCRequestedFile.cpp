@@ -9,6 +9,7 @@
 // include files
 #include "Client_PCH.h"
 #include "RCRequestedFile.h"
+#include <memory>
 
 
 RCRequestedFileInfo::RCRequestedFileInfo()
@@ -166,11 +167,13 @@ RCRequestedFile::read ( SocketInputStream & iStream )
 	int intListNum = (int)listNum;
 	for (int i=0; i<intListNum; i++)
 	{	
-		RCRequestedFileInfo* pInfo = new RCRequestedFileInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<RCRequestedFileInfo> pInfo( new RCRequestedFileInfo );
 		
 		pInfo->read( iStream );
 
-		m_FileInfos.push_back( pInfo );
+		m_FileInfos.push_back( pInfo.get() );
+		pInfo.release();
 	}
 }
 		

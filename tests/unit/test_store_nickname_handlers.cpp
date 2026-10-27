@@ -185,8 +185,6 @@ TEST(StoreNicknameHandlers, NicknamesGoToTheUIObjectsList)
 	list.getAddresses().push_back(new NicknameInfo);
 	GCNicknameListHandler::execute(&list, nullptr);
 	CHECK(calls == std::vector<std::string>({"addnick|Lantern", "setnicks|2"}));
-	// The packet does not free its entries (a follow-up in the doc).
-	for (NicknameInfo* info : list.getAddresses()) delete info;
 }
 
 TEST(StoreNicknameHandlers, AnItemAddedToTheOpenStoreFillsTheFirstFreeSlotFromThePacket)

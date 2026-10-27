@@ -14,6 +14,7 @@
 #include "GCGQuestStatusInfo.h"
 
 #include <numeric>
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // constructor
@@ -55,9 +56,11 @@ void GCGQuestStatusInfo::read ( SocketInputStream & iStream )
 
 	for ( int i=0; i<size; i++ )
 	{
-		QuestStatusInfo* pInfo = new QuestStatusInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<QuestStatusInfo> pInfo( new QuestStatusInfo );
 		pInfo->read(iStream);
-		m_Infos.push_back(pInfo);
+		m_Infos.push_back(pInfo.get());
+		pInfo.release();
 	}
 
 	

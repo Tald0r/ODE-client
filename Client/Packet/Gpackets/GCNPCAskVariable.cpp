@@ -7,6 +7,7 @@
 #include "Client_PCH.h"
 
 #include "GCNPCAskVariable.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -40,9 +41,11 @@ void GCNPCAskVariable::read ( SocketInputStream & iStream )
 	iStream.read( szParameters );
 	for ( int i = 0; i < szParameters ; i++ )
 	{
-		ScriptParameter* pParam = new ScriptParameter();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<ScriptParameter> pParam( new ScriptParameter() );
 		pParam->read( iStream );
-		addScriptParameter( pParam );
+		addScriptParameter( pParam.get() );
+		pParam.release();
 	}
 
 	__END_CATCH

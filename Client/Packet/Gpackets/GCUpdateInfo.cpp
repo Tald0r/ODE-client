@@ -12,6 +12,7 @@
 #include "PCVampireInfo2.h"
 #include "PCOustersInfo2.h"
 #include "PacketAssert.h"
+#include <memory>
 
 // for client.. by sigi
 #ifndef SAFE_DELETE
@@ -166,9 +167,11 @@ void GCUpdateInfo::read ( SocketInputStream & iStream )
 	iStream.read(NPCInfoCount);
 	for (BYTE nc=0; nc<NPCInfoCount; nc++)
 	{
-		NPCInfo* pInfo = new NPCInfo;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<NPCInfo> pInfo( new NPCInfo );
 		pInfo->read(iStream);
-		addNPCInfo(pInfo);
+		addNPCInfo(pInfo.get());
+		pInfo.release();
 	}
 		
 	// 서버 상태

@@ -12,6 +12,7 @@
 //////////////////////////////////////////////////////////////////////
 #include "Client_PCH.h"
 #include "GCSMSAddressList.h"
+#include <memory>
 
 void AddressUnit::read( SocketInputStream& iStream )
 {
@@ -84,9 +85,11 @@ void GCSMSAddressList::read ( SocketInputStream & iStream )
 
 	for ( int i=0; i<Num; ++i )
 	{
-		AddressUnit* pUnit = new AddressUnit;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<AddressUnit> pUnit( new AddressUnit );
 		pUnit->read(iStream);
-		m_Addresses.push_back( pUnit );
+		m_Addresses.push_back( pUnit.get() );
+		pUnit.release();
 	}
 		
 	__END_CATCH

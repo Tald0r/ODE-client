@@ -10,6 +10,7 @@
 
 #include "Client_PCH.h"
 #include "CRWhisper.h"
+#include <memory>
 
 CRWhisper::CRWhisper()
 {
@@ -102,11 +103,13 @@ void CRWhisper::read ( SocketInputStream & iStream )
 		if ( szMessage > 128 )
 			throw InvalidProtocolException("too large message length");
 		
-		WHISPER_MESSAGE* pStr = new WHISPER_MESSAGE;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<WHISPER_MESSAGE> pStr( new WHISPER_MESSAGE );
 		iStream.read( pStr->msg , szMessage );
 		iStream.read( pStr->color );
 
-		m_Messages.push_back( pStr );
+		m_Messages.push_back( pStr.get() );
+		pStr.release();
 	}
 
 	iStream.read( m_eRace );

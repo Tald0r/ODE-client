@@ -14,6 +14,7 @@
 #include "SocketInputStream.h"
 #include "SocketOutputStream.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////
 // constructor
@@ -56,9 +57,11 @@ void OustersSkillInfo::read ( SocketInputStream & iStream )
 	iStream.read( m_ListNum );
 
 	for( int i = 0; i < m_ListNum; i++ ) {
-		SubOustersSkillInfo * pSubOustersSkillInfo = new SubOustersSkillInfo();
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SubOustersSkillInfo> pSubOustersSkillInfo( new SubOustersSkillInfo() );
 		pSubOustersSkillInfo->read( iStream );
-		m_SubOustersSkillInfoList.push_back( pSubOustersSkillInfo );
+		m_SubOustersSkillInfoList.push_back( pSubOustersSkillInfo.get() );
+		pSubOustersSkillInfo.release();
 
 	}
 

@@ -8,6 +8,7 @@
 // include files
 #include "Client_PCH.h"
 #include "GCUnionOfferList.h"
+#include <memory>
 
 #define SAFE_DELETE(x)		{ if(x!=NULL) delete x; x=NULL; }
 //////////////////////////////////////////////////////////////////////
@@ -53,9 +54,11 @@ void GCUnionOfferList::read ( SocketInputStream & iStream )
 	iStream.read(szNum);
 	for ( int i=0; i<szNum; i++ )
 	{
-		SingleGuildUnionOffer* pInfo = new SingleGuildUnionOffer;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<SingleGuildUnionOffer> pInfo( new SingleGuildUnionOffer );
 		pInfo->read(iStream);
-		m_UnionOfferList.push_back(pInfo);
+		m_UnionOfferList.push_back(pInfo.get());
+		pInfo.release();
 	}
 
 	__END_CATCH

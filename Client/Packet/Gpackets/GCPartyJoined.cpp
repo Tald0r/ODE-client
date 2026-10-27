@@ -7,6 +7,7 @@
 #include "Client_PCH.h"
 #include "GCPartyJoined.h"
 #include "PacketAssert.h"
+#include <memory>
 
 //////////////////////////////////////////////////////////////////////////////
 // class GCPartyJoined member methods
@@ -109,7 +110,8 @@ void GCPartyJoined::read (SocketInputStream & iStream)
 
 	for (uint i=0; i<m_MemberCount; i++)
 	{
-		PARTY_MEMBER_INFO* pInfo = new PARTY_MEMBER_INFO;
+		// Owned until the list takes it, so a read that throws frees it.
+		std::unique_ptr<PARTY_MEMBER_INFO> pInfo( new PARTY_MEMBER_INFO );
 
 		BYTE name_length = 0;
 		iStream.read(name_length);
@@ -123,7 +125,8 @@ void GCPartyJoined::read (SocketInputStream & iStream)
 		iStream.read(pInfo->hair_style);
 		iStream.read(pInfo->ip);
 
-		m_MemberInfoList.push_back(pInfo);
+		m_MemberInfoList.push_back(pInfo.get());
+		pInfo.release();
 	}
 
 	__END_CATCH
