@@ -152,19 +152,21 @@ and drop `GCSMSAddressList` from `FreeWhatThePacketDoesNotOwn` when its units ar
 
 **What:** found in the review of task 7. `CIndexSprite::SetColorSet` builds `GradationValue[j]`
 from `ColorDraw::Red + Green + Blue` of the blue ramp, and `ColorDraw::Green` decodes six bits, so
-set 0's white sums to 125; `GetColorToGradation` fills `ColorToGradation[0..93]` against those
-thresholds, and `GetIndexColor` sums a six-bit green into the same lookup. The table's three
-readers, `memcpyEffectGradation`, the GPU gradation table in `CSpriteSurface_Adapter.cpp` and
-`memcpyPalEffectGradation`, index it with three five-bit channels instead (white is 93), so a
-white pixel lands about five steps down the ramp and never on gradation 0. It is live: the
-colour-set and gradation draws use it, and `test_spritesurface_pal_blit.cpp` pins skill-state
-icons drawn with set 59. `GetColorToGradation` also measures its second distance from
-`GradationValue[g-1]` where it means `GradationValue[g]`.
+set 0's white sums to 125, and `GetColorToGradation` fills `ColorToGradation[0..93]` against those
+thresholds. The table's three readers, `memcpyEffectGradation`, the GPU gradation table in
+`CSpriteSurface_Adapter.cpp` and `memcpyPalEffectGradation`, index it with three five-bit channels
+instead (white is 93), so a white pixel lands about five steps down the ramp and never on
+gradation 0. It is live: the gradation draws read the table, and `test_spritesurface_pal_blit.cpp`
+pins skill-state icons drawn with set 59. One caller agrees with the thresholds:
+`GetIndexColor(WORD)`, which converts a 5:6:5 sprite to an index sprite, passes
+`GetColorToGradation` a six-bit sum directly. `GetColorToGradation` also measures its second
+distance from `GradationValue[g-1]` where it means `GradationValue[g]`.
 
-**How:** make the two scales agree, and fix the distance. Either way changes colours on screen, so
-work out first what the original drew (the DirectDraw build's `ColorDraw::Green` and the table
-that came with its data), then pin the new colours in the tests that pin the current ones and
-say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
+**How:** make the two scales agree, and fix the distance. Rescaling `GradationValue` to five
+bits moves `GetIndexColor`'s conversions; a table of 126 entries read with six-bit sums moves the
+three readers instead. Either way changes colours on screen, so work out first what the original
+drew (the DirectDraw build's `ColorDraw::Green` and the table that came with its data), then pin
+the new colours in the tests that pin the current ones and say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
 
 ### 10. Kept in view, no task
 
