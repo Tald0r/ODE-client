@@ -210,7 +210,10 @@ window cannot be built in the unit suite.
 
 Fixed: `GradationValue` and `GetIndexColor(WORD)` sum green's top five bits, as the original
 build did (its `ColorDraw::Green` was `(c >> 6) & 0x1F`, `fa74958e`), so the table, its three
-readers and `GetIndexColor` share one scale and white takes the ramp's first gradation. The
+readers and `GetIndexColor` share one scale and white takes the ramp's first gradation. It is the
+original's scale to within one: the port builds the ramp itself from a six-bit green, so five of the
+table's 94 entries (sums 48, 66, 70, 84 and 88) come out one gradation brighter than the
+original's, which an exact match would need the ramp's five-bit interpolation for. The
 distance `GetColorToGradation` measures from `GradationValue[g-1]` is left: the original measures
 it the same way, so the gradations it drew depend on it. Owner:
 `SpriteGpu.TheGradationTableTakesWhiteToTheRampsFirstGradation`; no other test pinned a colour of
