@@ -59,10 +59,19 @@ length, or in a fixed array through a call bounded by that array: `snprintf(dst,
 `SafeFormat`'s array overloads, or `CopyBounded` with a constant count and an explicit terminator.
 The 128-byte stack buffers this page used to name are of that kind now. The longest string,
 `GCNPCAskDynamic`'s subject and answers (`WORD` lengths, bounded only by the frame's 11,294-byte
-maximum), is cut to the talk box's 2048-byte row. Not followed: the text system's own wrapping,
-measuring and drawing, the descriptor renderers other than the blood bible's, and the view, which
-keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have
+maximum), is cut to the talk box's 2048-byte row. Not followed: the descriptor renderers other than
+the blood bible's, and the view, which keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have
 seen none of the routes walked here, so a new string sink is found by the same walk.
+
+**The text system holds a server string safely** (followed 2026-10-27, task 5 (a) of the
+[next work plan](../reviews/NEXT.md)). `TextService`'s measuring, wrapping and drawing loop over
+the string's own bytes: `Utf8Decode` never reads past the count it is given and always moves on
+by at least one byte, a width of zero or below keeps the row on one line, a width narrower than any
+glyph puts one glyph on each line and ends, the normalisation, glyph and metric caches refuse an
+entry past their budget before they evict, and a glyph's blit clips to its target however far the
+pen runs. The walk stops at `TTF_RenderUTF8_Blended` and `spritectl_blt_sprite`, SDL_ttf's and the
+backend's. `tests/unit/test_text_wrap_bounds.cpp` pins a 2048-byte row of mixed and malformed
+UTF-8 wrapped, measured and drawn, and the two widths.
 
 **One string could grow without bound instead.** `GCNPCAskVariable`'s parameters fill an NPC
 line's `%(Name)` markers through `ApplyParameters` (`Client/MNPCScriptTable.cpp`), which runs the
@@ -118,5 +127,5 @@ The setters now keep the facing for a direction past the eight and the generator
 an effect left, where the zone-around generator refused it and drew nothing (`tests/unit/test_creature.cpp`, `tests/unit/test_effect_generator_table.cpp`; the
 [code-health review](../reviews/code-health-review-2026-08-29.md) has the row). Not followed:
 `VS_UI`'s own reads of the model objects it draws (inventory grids, skill trees, party slots) beyond
-those named, the text system, and the view's frame packs, which `CTypeTable` range-checks.
+those named, and the view's frame packs, which `CTypeTable` range-checks.
 

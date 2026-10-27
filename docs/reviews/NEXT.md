@@ -69,17 +69,15 @@ table).
 ### 5. The packet-safety walk's unfollowed routes
 
 **What:** [packet input safety](../protocol/packet-input-safety.md) says what each walk did not
-follow: the text system's own wrapping, measuring and drawing of a server string; the descriptor
-renderers other than the blood bible's; the view's pointers to the names it draws; `VS_UI`'s own
-reads of the model objects it draws (inventory grids, skill trees, party slots). Each is a route
-a server value takes into an index or a buffer that no test has read.
+follow: the descriptor renderers other than the blood bible's; the view's pointers to the names it
+draws; `VS_UI`'s own reads of the model objects it draws (inventory grids, skill trees, party
+slots). Each is a route a server value takes into an index or a buffer that no test has read.
 
-**How:** one PR per route, in this order: (a) the text system, since every server string ends
-there: read `Client/TextSystem` for a server-length-sized loop or buffer, pin what it does with a
-2048-byte row and a row of zero width; (b) the descriptor renderers under `VS_UI/src` that take a
-model object (`grep -an Descript VS_UI/src/*.cpp`, with `-a`: the NUL bytes in
-`VS_UI_GameCommon.cpp` stop a plain grep); (c) the view's name pointers (`MTopView`'s hover and
-name draws); (d) the `VS_UI` grid and tree reads. A route found clean is written up on the safety
+**How:** one PR per route, in this order ((a), the text system, is done: PR #577, under *Done*):
+(b) the descriptor renderers under `VS_UI/src` that take a model object
+(`grep -an Descript VS_UI/src/*.cpp`, with `-a`: the NUL bytes in `VS_UI_GameCommon.cpp` stop a
+plain grep); (c) the view's name pointers (`MTopView`'s hover and name draws); (d) the `VS_UI`
+grid and tree reads. A route found clean is written up on the safety
 page as followed, with the line it stopped at; a route found open gets a lib fix, a test and a
 review row.
 
@@ -218,3 +216,10 @@ distance `GetColorToGradation` measures from `GradationValue[g-1]` is left: the 
 it the same way, so the gradations it drew depend on it. Owner:
 `SpriteGpu.TheGradationTableTakesWhiteToTheRampsFirstGradation`; no other test pinned a colour of
 the old scale, since they read their expectations from the table.
+
+### 5 (a). The text system's handling of a server string (PR #577)
+
+Followed and found clean: [packet input safety](../protocol/packet-input-safety.md) writes it up
+and says where it stopped (SDL_ttf's rasteriser and the backend's blit). Owner:
+`tests/unit/test_text_wrap_bounds.cpp` (a 2048-byte row of mixed and malformed UTF-8 wrapped,
+measured and drawn; widths of zero and one). Routes (b) to (d) are task 5.

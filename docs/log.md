@@ -2,6 +2,9 @@
 
 ## 2026-10-27
 
+* **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the text system's
+  handling of a server string as followed and clean; the [next work plan](reviews/NEXT.md) narrows
+  task 5 to the routes left.
 * **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says the gradation
   table sums three five-bit channels, as the original did; the [next work plan](reviews/NEXT.md)
   moves its task 9 to *Done*.
