@@ -74,3 +74,31 @@ TEST(PetOptionPart, AnAttributePastTheEnumIsNamedByItsRows)
 	CHECK(pet.GetPetOptionName() == "Sharp ");
 	CHECK(pet.GetPetOptionEName() == "Sharp ");
 }
+
+// The number is the pet's level, the server's byte: names start at ten.
+// Under it the unsigned level less ten wrapped, past every row and past
+// the game string table, whose NULL a std::string cannot take.
+TEST(PetOptionPart, APetUnderLevelTenHasNoOptionName)
+{
+	PetWorld world;
+	testfw::MutableRow(*g_pItemOptionTable, 1).Part = ITEMOPTION_TABLE::PART_LUCK;
+	MPetItem pet;
+	for (int level : {0, 9})
+	{
+		GiveAttribute(pet, ITEMOPTION_TABLE::PART_LUCK, level);
+		CHECK(pet.GetPetOptionName().empty());
+		CHECK(pet.GetPetOptionEName().empty());
+	}
+}
+
+// Past the part's rows the name is a game string's; one the table lacks
+// (this world's table is empty) names nothing before the separator.
+TEST(PetOptionPart, APetPastItsPartsRowsWithNoStringIsUnnamed)
+{
+	PetWorld world;
+	testfw::MutableRow(*g_pItemOptionTable, 1).Part = ITEMOPTION_TABLE::PART_LUCK;
+	MPetItem pet;
+	GiveAttribute(pet, ITEMOPTION_TABLE::PART_LUCK, 40);
+	CHECK(pet.GetPetOptionName() == " ");
+	CHECK(pet.GetPetOptionEName() == " ");
+}

@@ -503,8 +503,10 @@ MSkillSet::SetAvailableSkills()
 
 
 
-					// Add a usable icon for each bomb or mine.
-					if (find((ACTIONINFO)skillID)==end())
+					// Add a usable icon for each bomb or mine. A type the item
+					// table lacks has no action (ACTIONINFO_NULL, past the skill
+					// table and the enum), so no icon to describe.
+					if (skillID != ACTIONINFO_NULL && find((ACTIONINFO)skillID)==end())
 					{
 						insert(SKILLID_MAP::value_type( (ACTIONINFO)skillID, SKILLID_NODE((ACTIONINFO)skillID, flag)) );
 					}

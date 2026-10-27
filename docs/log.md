@@ -2,6 +2,11 @@
 
 ## 2026-10-27
 
+* **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the descriptor
+  renderers' walk and the three server values it found reaching a `NULL` name (a bomb's unknown
+  skill, an unknown item type's names, a pet under level ten), fixed with rows in the
+  [code-health review](reviews/code-health-review-2026-08-29.md); the
+  [next work plan](reviews/NEXT.md) moves task 5 (b) to *Done*.
 * **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the text system's
   handling of a server string as followed and clean; the [next work plan](reviews/NEXT.md) narrows
   task 5 to the routes left.

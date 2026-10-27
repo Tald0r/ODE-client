@@ -407,17 +407,21 @@ void GCDeleteandPickUpOKHandler::execute ( GCDeleteandPickUpOK * pPacket, Player
 
 					//----------------------------------------------------------
 					// bombs / mines
+					// A type the item table lacks has no action (ACTIONINFO_NULL),
+					// so no skill to give.
 					//----------------------------------------------------------
 					case ITEM_CLASS_BOMB :
 						BonusSkills::RefreshAvailableSkills();
-						g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(), 
-													g_pSkillAvailable->IsEnableSkill(SKILL_THROW_BOMB));
+						if (pItem->GetUseActionInfo() != ACTIONINFO_NULL)
+							g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(),
+														g_pSkillAvailable->IsEnableSkill(SKILL_THROW_BOMB));
 					break;
 
 					case ITEM_CLASS_MINE :
 						BonusSkills::RefreshAvailableSkills();
-						g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(),
-													g_pSkillAvailable->IsEnableSkill(SKILL_INSTALL_MINE));
+						if (pItem->GetUseActionInfo() != ACTIONINFO_NULL)
+							g_pSkillAvailable->AddSkill( (ACTIONINFO)pItem->GetUseActionInfo(),
+														g_pSkillAvailable->IsEnableSkill(SKILL_INSTALL_MINE));
 					break;
 
 					default:

@@ -507,6 +507,20 @@ TEST(SkillAvailable, OnlyLayingMinesStillShowsTheBombs)
 	CHECK((scene.Rebuild() == Flags{{SKILL_INSTALL_MINE, 0}, {901, 0}}));
 }
 
+TEST(SkillAvailable, ABombOrMineOfATypeTheTableLacksShowsNoAction)
+{
+	Scene scene;
+	scene.Points(100, 100);
+	// The type is the server's. Past the table's 40 rows it reads the default
+	// row, whose action is ACTIONINFO_NULL: no skill row, so no icon to show
+	// or describe.
+	scene.Carry(ITEM_CLASS_BOMB, 40);
+	scene.Carry(ITEM_CLASS_MINE, 40);
+	scene.Learn(SKILLDOMAIN_GUN, SKILL_THROW_BOMB, 0, true);
+	scene.Learn(SKILLDOMAIN_GUN, SKILL_INSTALL_MINE, 0, true);
+	CHECK((scene.Rebuild() == Flags{{SKILL_THROW_BOMB, 1}, {SKILL_INSTALL_MINE, 1}}));
+}
+
 TEST(SkillAvailable, MaterialsEnableMaking)
 {
 	Scene scene;

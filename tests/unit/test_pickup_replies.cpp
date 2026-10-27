@@ -703,6 +703,24 @@ TEST(PickupReplies, ABombsUseFollowsThrowingAndAMinesInstalling)
 	CHECK(world.available.IsEnableSkill(UseAction(ITEM_CLASS_BOMB)) && !world.available.IsEnableSkill(UseAction(ITEM_CLASS_MINE)));
 }
 
+TEST(PickupReplies, ABombOrMineOfATypeTheTableLacksGivesNoSkill)
+{
+	World world;
+	world.available.AddSkill(SKILL_THROW_BOMB);
+	world.available.AddSkill(SKILL_INSTALL_MINE);
+	// The type is the server's. Past the table's 20 rows the item has no
+	// action (ACTIONINFO_NULL), so there is no skill to give.
+	TYPE_OBJECTID id = 2001;
+	for (ITEM_CLASS itemClass : {ITEM_CLASS_BOMB, ITEM_CLASS_MINE})
+	{
+		Picking(new Ware(itemClass, id, 20), PlayerState::ITEM_CHECK_BUFFER_PICKUP_TO_MOUSE);
+		world.Receive(id++);
+		delete mouse;
+		mouse = nullptr;
+	}
+	CHECK_EQ(2u, world.available.size());
+}
+
 TEST(PickupReplies, OnlyAVampireGetsAVampiresSkills)
 {
 	World world;

@@ -73,11 +73,11 @@ follow: the descriptor renderers other than the blood bible's; the view's pointe
 draws; `VS_UI`'s own reads of the model objects it draws (inventory grids, skill trees, party
 slots). Each is a route a server value takes into an index or a buffer that no test has read.
 
-**How:** one PR per route, in this order ((a), the text system, is done: PR #577, under *Done*):
-(b) the descriptor renderers under `VS_UI/src` that take a model object
-(`grep -an Descript VS_UI/src/*.cpp`, with `-a`: the NUL bytes in `VS_UI_GameCommon.cpp` stop a
-plain grep); (c) the view's name pointers (`MTopView`'s hover and name draws); (d) the `VS_UI`
-grid and tree reads. A route found clean is written up on the safety
+**How:** one PR per route, in this order ((a), the text system, and (b), the descriptor renderers,
+are done: PRs #577 and #578, under *Done*): (c) the view's name pointers (`MTopView`'s hover and
+name draws); (d) the `VS_UI` grid and tree reads, starting with the skill window's drawing of the
+ids in the usable skill set, where (b) stopped (`grep -a`: the NUL bytes in
+`VS_UI_GameCommon.cpp` stop a plain grep). A route found clean is written up on the safety
 page as followed, with the line it stopped at; a route found open gets a lib fix, a test and a
 review row.
 
@@ -222,4 +222,15 @@ the old scale, since they read their expectations from the table.
 Followed and found clean: [packet input safety](../protocol/packet-input-safety.md) writes it up
 and says where it stopped (SDL_ttf's rasteriser and the backend's blit). Owner:
 `tests/unit/test_text_wrap_bounds.cpp` (a 2048-byte row of mixed and malformed UTF-8 wrapped,
-measured and drawn; widths of zero and one). Routes (b) to (d) are task 5.
+measured and drawn; widths of zero and one). Routes (c) and (d) are task 5.
+
+### 5 (b). The descriptor renderers (PR #578)
+
+Followed, and open in three places, each a `NULL` that reached a `std::string`. A bomb or mine of a
+type the item table lacks gave the usable skills `ACTIONINFO_NULL`, whose description appended the
+skill row's `NULL` name. An item of any type the table lacks had `NULL` names. A pet under level ten looked its
+option name up past the game string table. [Packet input safety](../protocol/packet-input-safety.md)
+writes the walk up, and the [code-health review](code-health-review-2026-08-29.md) has the three
+rows. Owners: `SkillAvailable.ABombOrMineOfATypeTheTableLacksShowsNoAction`,
+`PickupReplies.ABombOrMineOfATypeTheTableLacksGivesNoSkill`, `ItemCore.ATypeTheTableLacksIsNamedEmpty`
+and the two `PetOptionPart` tests of a pet's option name.

@@ -8043,7 +8043,8 @@ MTopView::DrawItemNameList()
 			nameColor = m_ColorNameItemOption;
 		}
 
-		if (pItemName != NULL)
+		// An item with no name (a type the table lacks) draws no text.
+		if (*pItemName != '\0')
 		{
 			// So that the text fits inside the screen..
 			x = g_GameRect.right - g_GetStringWidth( pItemName, g_ClientPrintInfo[FONTID_ITEM]->hfont );

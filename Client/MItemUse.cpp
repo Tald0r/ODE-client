@@ -2018,7 +2018,9 @@ void	MPetEnchantItem::UseInventory()
 std::string MPetItem::GetPetOptionName()
 {
 	std::string petOptionName;
-	if(GetSilver() > 0/* && GetEnchantLevel()!=0xFFFF by viva */)
+	// The number is the pet's level, the server's: names start at ten, and
+	// under it the unsigned level less ten wraps.
+	if(GetSilver() > 0 && GetNumber() >= 10/* && GetEnchantLevel()!=0xFFFF by viva */)
 	{
 		// The attribute as the number the server sent: it need not name a part.
 		const int optionPart = GetEnchantLevel();
@@ -2050,12 +2052,12 @@ std::string MPetItem::GetPetOptionName()
 			switch(optionPart)
 			{
 			case ITEMOPTION_TABLE::PART_LUCK:
-				petOptionName = (*g_pGameStringTable)[STRING_MESSAGE_OPTION_NAME_LUCK_3+optionLevel].GetString();
+				petOptionName = GetGameString(STRING_MESSAGE_OPTION_NAME_LUCK_3+optionLevel);
 				petOptionName += " ";
 				break;
 
 			case ITEMOPTION_TABLE::PART_ALL_ATTR:
-				petOptionName = (*g_pGameStringTable)[STRING_MESSAGE_OPTION_NAME_ATTR_3+optionLevel].GetString();
+				petOptionName = GetGameString(STRING_MESSAGE_OPTION_NAME_ATTR_3+optionLevel);
 				petOptionName += " ";
 				break;
 
@@ -2071,7 +2073,8 @@ std::string MPetItem::GetPetOptionName()
 std::string MPetItem::GetPetOptionEName()
 {
 	std::string petOptionName;
-	if(GetSilver() > 0)
+	// As GetPetOptionName: names start at level ten.
+	if(GetSilver() > 0 && GetNumber() >= 10)
 	{
 		// The attribute as the number the server sent: it need not name a part.
 		const int optionPart = GetEnchantLevel();
@@ -2103,12 +2106,12 @@ std::string MPetItem::GetPetOptionEName()
 			switch(optionPart)
 			{
 			case ITEMOPTION_TABLE::PART_LUCK:
-				petOptionName = (*g_pGameStringTable)[STRING_MESSAGE_OPTION_ENAME_LUCK_3+optionLevel].GetString();
+				petOptionName = GetGameString(STRING_MESSAGE_OPTION_ENAME_LUCK_3+optionLevel);
 				petOptionName += " ";
 				break;
 
 			case ITEMOPTION_TABLE::PART_ALL_ATTR:
-				petOptionName = (*g_pGameStringTable)[STRING_MESSAGE_OPTION_ENAME_ATTR_3+optionLevel].GetString();
+				petOptionName = GetGameString(STRING_MESSAGE_OPTION_ENAME_ATTR_3+optionLevel);
 				petOptionName += " ";
 				break;
 
