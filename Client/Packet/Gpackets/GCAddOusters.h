@@ -33,6 +33,9 @@ public:
 	GCAddOusters();
 	GCAddOusters(const PCOustersInfo3 & slayerInfo);
 	virtual ~GCAddOusters();
+	// It owns what its read allocates, so a copy would free it twice.
+	GCAddOusters( const GCAddOusters& ) = delete;
+	GCAddOusters& operator = ( const GCAddOusters& ) = delete;
 
 public:
     void read(SocketInputStream & iStream);

@@ -18,6 +18,9 @@ class GCPetInfo : public Packet
 public:
 	GCPetInfo();
 	virtual ~GCPetInfo();
+	// It owns what its read allocates, so a copy would free it twice.
+	GCPetInfo( const GCPetInfo& ) = delete;
+	GCPetInfo& operator = ( const GCPetInfo& ) = delete;
 
 public:
 	void read(SocketInputStream & iStream);

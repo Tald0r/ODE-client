@@ -255,6 +255,9 @@ void Receive(ObjectID_t id, const Ousters& ousters = {})
 	packet.setPetInfo(ousters.pet);
 	packet.setNicknameInfo(ousters.nickname);
 	GCAddOustersHandler::execute(&packet, nullptr);
+	// The pet and the nickname are the caller's, not the packet's to free.
+	packet.setPetInfo(nullptr);
+	packet.setNicknameInfo(nullptr);
 }
 
 std::vector<std::string> Health(const std::string& who)

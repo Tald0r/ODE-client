@@ -32,6 +32,9 @@ public:
 	GCAddSlayer();
 	GCAddSlayer(const PCSlayerInfo3 & slayerInfo);
 	virtual ~GCAddSlayer();
+	// It owns what its read allocates, so a copy would free it twice.
+	GCAddSlayer( const GCAddSlayer& ) = delete;
+	GCAddSlayer& operator = ( const GCAddSlayer& ) = delete;
 
 public:
     void read(SocketInputStream & iStream);

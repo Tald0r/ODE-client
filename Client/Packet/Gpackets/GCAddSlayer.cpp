@@ -28,9 +28,10 @@ GCAddSlayer::GCAddSlayer(const PCSlayerInfo3& info)
 
 GCAddSlayer::~GCAddSlayer()
 {
-	
+	// Every member is the packet's: the reply copies what it shows.
 	SAFE_DELETE(m_pEffectInfo);
-
+	SAFE_DELETE(m_pPetInfo);
+	SAFE_DELETE(m_pNicknameInfo);
 }
 
 void GCAddSlayer::read ( SocketInputStream & iStream )

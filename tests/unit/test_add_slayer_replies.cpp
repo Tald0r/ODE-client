@@ -267,6 +267,9 @@ void Receive(ObjectID_t id, const Slayer& slayer = {})
 	packet.setPetInfo(slayer.pet);
 	packet.setNicknameInfo(slayer.nickname);
 	GCAddSlayerHandler::execute(&packet, nullptr);
+	// The pet and the nickname are the caller's, not the packet's to free.
+	packet.setPetInfo(nullptr);
+	packet.setNicknameInfo(nullptr);
 }
 
 std::vector<std::string> Health(const std::string& who)
