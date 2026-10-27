@@ -35,7 +35,8 @@ void LCRegisterPlayerErrorHandler::execute ( LCRegisterPlayerError * pPacket , P
 	{
 		int stringID;
 
-		switch ((ErrorID)pPacket->getErrorID())
+		// The wire byte, not an ErrorID: it need not name one.
+		switch (pPacket->getErrorID())
 		{
 			case ALREADY_REGISTER_ID:		stringID = STRING_ERROR_ALREADY_REGISTER_ID;		break;
 			case ALREADY_REGISTER_SSN:		stringID = STRING_ERROR_ALREADY_REGISTER_SSN;		break;

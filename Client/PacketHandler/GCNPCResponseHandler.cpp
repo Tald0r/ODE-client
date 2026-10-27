@@ -898,7 +898,8 @@ void GCNPCResponseHandler::execute ( GCNPCResponse * pPacket , Player * pPlayer 
 			NPCPresentation::RunInputNameWindow(2);
 			break;
 		case NPC_RESPONSE_QUEST :
-			switch( (QuestMessage) pPacket->getParameter() )
+			// The wire value, not a QuestMessage: it need not name one.
+			switch( pPacket->getParameter() )
 			{
 			case START_SUCCESS :
 				DialogPresentation::PopupFreeMessageDlg((*g_pGameStringTable)[UI_STRING_MESSAGE_START_MONSTER_KILL_QUEST].GetString() );

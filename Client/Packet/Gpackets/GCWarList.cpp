@@ -73,7 +73,8 @@ void GCWarList::read (SocketInputStream & iStream)
 		WarInfo* pWarInfo = NULL;
 		iStream.read( warType );
 
-		switch ((WarType)warType)
+		// The wire byte, not a WarType: the default refuses what it does not name.
+		switch (warType)
 		{
 			case WAR_GUILD :
 				pWarInfo = new GuildWarInfo;
