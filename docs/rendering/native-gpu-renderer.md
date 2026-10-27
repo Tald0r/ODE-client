@@ -160,6 +160,13 @@ original's on every path, but for a pixel decoded to black, which is a hole in
 every backend draw of an index sprite. SDL-port stubs this migration did not
 reach retain their previous behavior (for example `BltIndexSpriteColor` draws
 plain). It does not change game protocol or asset formats.
+
+The palette gradation effect (`CSpriteSurface::memcpyPalEffectGradation`) sums green's top five
+bits since 2026-10-27, as the registered `memcpyEffectGradation` does, so its `ColorToGradation`
+index stays in the table's 94 entries; it is still unregistered (only `EFFECT_SCREEN` is), and so
+are the other palette effects, which assume a five-bit green. `CSprite::memcpyDarkerFilter` scales
+the six-bit green the same way, but no draw reaches it: the backend's `BltSpriteDarkerFilter` is a
+stub with no caller.
 RGBA glyph blending retains the device's arithmetic; subchannel rounding can
 differ from the software RGB565 renderer, as described above.
 

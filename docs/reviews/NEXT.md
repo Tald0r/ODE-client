@@ -122,25 +122,6 @@ page says `BltIndexSpriteColor` draws plain. **Tests to add:** an oracle draw pe
 `tests/render/test_sprite_gpu.cpp`, next to `IndexSpriteColorSetDrawsEveryPixelFromTheSet` and
 the darkness one, with a low gradation (high gradations decode to black).
 
-### 7. `memcpyPalEffectGradation` reads five bits of a six-bit green (latent)
-
-**What:** `CSpriteSurface::memcpyPalEffectGradation` in
-`Client/SpriteLib/CSpriteSurface_Effects.cpp` computes `g = (s >> s_bSHIFT_G) & 0x1F` on a 5:6:5
-pixel, so greens 32 to 62 wrap before `ColorToGradation[r + g + b]`. It is latent: the
-`EFFECT_GRADATION` slot of `s_pMemcpyPalEffectFunctionTable` (`CSpriteSurface_SDL.cpp`) is
-`NULL`, only `EFFECT_SCREEN` is registered, and the file's header says the palette effects stay
-unregistered until ported because they assume a 5-bit green. Noted in the #566 review
-(`3c3db3e6`).
-
-**How:** take green's top five bits as `ColorSetDarkness` does through `ColorDraw::Green` since
-#563, keep the `ColorToGradation` index in range (94 entries since #566; say in the renderer page
-whether the fix registers the routine). Sweep `grep -rn 'SHIFT_G) & 0x1F' Client/SpriteLib`:
-ignore the hits in `CSpriteSurface.cpp` (not compiled) and decide `CSprite::memcpyDarkerFilter`
-(`CSprite.cpp`), which has the same mask.
-
-**Test:** a pixel whose green is 32 (`0x0400`): the bug sums it to 0 and the fix to 16; a pure
-green of 63 agrees under both. `tests/render/test_sprite_gpu.cpp` already uses that pixel.
-
 ### 8. Packets that never free what their read allocates
 
 **What:** measured while taking task 2, with its harness (`ReadShortBodies` in
@@ -244,3 +225,13 @@ list of `MAX_RECEVIER_NUM` numbers and numbers of `MAX_NUMBER_LENGTH` digits tha
 (and, if the server's copy matches, the server) refuses, while its `getPacketMaxSize` counts the
 caller's number as `MAX_RECEVIER_NUM` bytes, not `MAX_NUMBER_LENGTH`, so `write` can emit 113
 bytes against a stated 108.
+
+### 7. `memcpyPalEffectGradation` reads five bits of a six-bit green (latent) (PR #573)
+
+Fixed: the routine takes green's top five bits, as the registered `memcpyEffectGradation` does,
+so a green of 32 sums to 16 and white to 93, the table's last entry; it stays unregistered, and the
+[native GPU renderer](../rendering/native-gpu-renderer.md) page says so. The sweep's other
+compiled hit, `CSprite::memcpyDarkerFilter`, had the same mask and scales the six-bit green now;
+no draw reaches it (the backend's `BltSpriteDarkerFilter` is a stub with no caller). Owners:
+`SpriteGpu.PaletteGradationTakesGreensTopFiveBits` and `DarkerFilterScalesTheSixBitGreen` in
+`tests/render/test_sprite_gpu.cpp`.

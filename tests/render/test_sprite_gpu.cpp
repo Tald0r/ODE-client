@@ -1287,3 +1287,42 @@ TEST(SpriteGpu, CompleteMixedFramesMatchCpuWithoutCompositionReadbacks)
 		CHECK_EQ(before.surfaceUploads, SpriteGpu::GetCounters().surfaceUploads);
 	}
 }
+
+// memcpyPalEffectGradation (unregistered on this backend) maps a palette
+// colour to its set's gradation through ColorToGradation, indexed by
+// three five-bit channels as memcpyEffectGradation indexes it. It took
+// green's low five bits of the six, so a green of 32 summed to 0; green's
+// top five bits sum it to 16, and a green of 63 to 31 either way.
+TEST(SpriteGpu, PaletteGradationTakesGreensTopFiveBits)
+{
+	CIndexSprite::SetColorSet();
+	const int previousValue = CSpriteSurface::s_Value1;
+	const int set = 1;
+	CSpriteSurface::s_Value1 = set;
+	const auto toSet = [&](int sum) { return CIndexSprite::ColorSet[set][CIndexSprite::ColorToGradation[sum]]; };
+	CHECK(toSet(16) != toSet(0));	// so the wrapped green shows
+	MPalette palette;
+	palette.Init(2);
+	palette[0] = 0x0400;	// green 32
+	palette[1] = 0x07e0;	// green 63
+	BYTE pixels[2] = {0, 1};
+	WORD drawn[2] = {0, 0};
+	CSpriteSurface::memcpyPalEffectGradation(drawn, pixels, 2, palette);
+	CHECK_EQ(toSet(16), drawn[0]);
+	CHECK_EQ(toSet(31), drawn[1]);
+	CSpriteSurface::s_Value1 = previousValue;
+}
+
+// CSprite::memcpyDarkerFilter (its blits have no caller on this backend)
+// scales each channel by the filter's value in 32nds. It took green's low
+// five bits too, so a green of 32 or more lost its top bit.
+TEST(SpriteGpu, DarkerFilterScalesTheSixBitGreen)
+{
+	const WORD source[3] = {0x0400, 0x07e0, 0xffff};
+	BYTE filter[3] = {32, 16, 32};
+	WORD drawn[3] = {0, 0, 0};
+	CSprite::memcpyDarkerFilter(drawn, const_cast<WORD*>(source), filter, 3);
+	CHECK_EQ(WORD(0x0400), drawn[0]);	// all 32 of 32: as it was
+	CHECK_EQ(WORD(31 << 5), drawn[1]);	// half of 63
+	CHECK_EQ(WORD(0xffff), drawn[2]);
+}

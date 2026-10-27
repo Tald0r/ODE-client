@@ -1509,7 +1509,7 @@ CSprite::memcpyDarkerFilter(WORD* pDest, WORD* pSource, BYTE* pFilter, WORD pixe
 		
 		*pDest = 
 			(((((*pSource >> ColorDraw::s_bSHIFT_R) & 0x1F) * darker) >> 5) << ColorDraw::s_bSHIFT_R)
-			| (((((*pSource >> ColorDraw::s_bSHIFT_G) & 0x1F) * darker) >> 5) << ColorDraw::s_bSHIFT_G)
+			| (((ColorDraw::Green(*pSource) * darker) >> 5) << ColorDraw::s_bSHIFT_G)	// green is six bits
 			| (((*pSource & 0x1F) * darker) >> 5);
 			
 		pDest++;

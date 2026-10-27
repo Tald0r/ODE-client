@@ -2,6 +2,9 @@
 
 ## 2026-10-27
 
+* **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says the palette
+  gradation effect and the darker filter take a six-bit green the right way, and that neither is
+  drawn; the [next work plan](reviews/NEXT.md) moves its task 7 to *Done*.
 * **Update**: the `Assert`-only bounds row of the [code-health review](reviews/code-health-review-2026-08-29.md)
   is fixed; the [next work plan](reviews/NEXT.md) moves its task 3 to *Done* with the follow-ups it
   leaves; [fuzzing](protocol/fuzzing.md) says where the game target's failed `Assert`s were.
