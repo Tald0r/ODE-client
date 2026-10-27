@@ -9092,10 +9092,11 @@ Follow-ups from 4.102, all older than the move:
   the wire's unchecked item type, follows a sign list whose length
   `BloodBibleSignInfo::read` never bounds, and uses `g_pPlayer` unguarded.
   `GCBloodBibleSignInfo` leaves `m_pInfo` uninitialised until `read`, never
-  frees the info `read` allocates, and `BloodBibleSignInfo` leaves
-  `m_ListSize` uninitialised for `write`.
-- `GCPetInfo` never frees the `PetInfo` its `read` allocates; `SetPetInfo`
-  uses `g_pZone` unguarded.
+  frees the info `read` allocates (both fixed 2026-10-27, PR #574), and
+  `BloodBibleSignInfo` leaves `m_ListSize` uninitialised for `write`.
+- `GCPetInfo` never frees the `PetInfo` its `read` allocates (fixed
+  2026-10-27, PR #574: its destructor frees it); `SetPetInfo` uses `g_pZone`
+  unguarded.
 - `GCChangeWeather::read` casts any byte to `Weather` (values 0-4, no fixed
   underlying type), undefined from 8 up; `SetWeather` does not bound the
   level. `SetLightning` uses `g_pZone` and `g_pPlayer` unguarded.
