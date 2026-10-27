@@ -7602,6 +7602,8 @@ rounds settled* for the host rules). Test fixtures share
   >   swords, blades, guns from 16, shields and helms from 15, crosses and
   >   maces from 14) are drawn from their frame IDs on the new slayer's
   >   actions, a coat from two frame sets.
+  >   Since 2026-10-27 the three draws are no stubs: the darkened one since
+  >   #563, the colour-set one since #566 and the brightened one since #575.
   >
   > R1 is 16 Windows / 14 Ninja.
   - Owner: membership, R1, `test_creature_effect.cpp`: 23 tests (with the fix's). Each

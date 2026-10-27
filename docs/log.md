@@ -2,6 +2,10 @@
 
 ## 2026-10-27
 
+* **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says how
+  `BltIndexSpriteColor` and `BltIndexSpriteBrightness` draw now that they are no stubs, and that a
+  black pixel of the three decoded effect draws is opaque; the [next work plan](reviews/NEXT.md)
+  moves its task 6 to *Done*.
 * **Update**: the [next work plan](reviews/NEXT.md) moves its task 8 to *Done*; the
   [restructuring plan](reviews/RESTRUCTURING.md)'s 4.93 follow-up on the SMS list's units says it
   is fixed.

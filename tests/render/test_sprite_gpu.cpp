@@ -1355,3 +1355,81 @@ TEST(SpriteGpu, Conversions1555TakeGreensTopFiveBits)
 	CSpritePal::memcpy1555(fromPalette, pixels, 3, palette);
 	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], fromPalette[i]);
 }
+
+namespace {
+
+// A hole; indexed pixels at gradations 0 (channel 0) and 2 (channel 3);
+// fixed white, cyan, yellow and a green of 32.
+struct TintedSprite : CIndexSprite565 {
+	TintedSprite()
+	{
+		m_Width = 7; m_Height = 1;
+		m_Pixels = new WORD*[1];
+		m_Pixels[0] = new WORD[10]{1, 1, 2, 0x0000, 0x0302, 4, 0xffff, 0x07ff, 0xffe0, 0x0400};
+		m_bInit = true;
+	}
+};
+
+} // namespace
+
+// BltIndexSpriteColor tints as CIndexSprite::BltColor drew in the original:
+// an indexed pixel takes the default gradation row (384) at its own
+// gradation and a fixed pixel its own colour, each masked to one channel
+// (rgb 0 red, 1 green, 2 blue). A pixel the mask leaves black is drawn
+// black, not a hole. It drew plain on this backend.
+TEST(SpriteGpu, IndexSpriteColorTintsEveryPixelToOneChannel)
+{
+	Fixture f;
+	CIndexSprite::SetColorSet();
+	const int previousValue = CSpriteSurface::s_Value1;
+	TintedSprite sprite;
+	const WORD masks[3] = {0xf800, 0x07e0, 0x001f};
+	for (BYTE rgb = 0; rgb < 3; ++rgb)
+	{
+		const WORD mask = masks[rgb];
+		const WORD expected[7] = {0x5a69, WORD(CIndexSprite::ColorSet[384][0] & mask),
+			WORD(CIndexSprite::ColorSet[384][2] & mask), WORD(0xffff & mask), WORD(0x07ff & mask),
+			WORD(0xffe0 & mask), WORD(0x0400 & mask)};
+		POINT origin{0, 3};
+		f.surface.FillSurface(0x5a69);
+		f.surface.BltIndexSpriteColor(&origin, &sprite, rgb);
+		CHECK_EQ(int(rgb), CSpriteSurface::s_Value1);
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
+			CHECK_EQ(y == 3 && x < 7 ? expected[x] : WORD(0x5a69), f.Pixel(x, y));
+	}
+	CHECK(WORD(0x07ff & masks[0]) == 0);	// so a black pixel shows
+	CSpriteSurface::s_Value1 = previousValue;
+}
+
+// BltIndexSpriteBrightness draws as CIndexSprite::BltBrightness drew: an
+// indexed pixel in its own colour set, a fixed pixel with the brightness
+// added to each channel and wrapped, red and blue at 32 and the six-bit
+// green, twice the brightness added, at 64, as the original's five bits
+// wrapped at 32. So 32, the only brightness the game passes, draws every
+// pixel as it is.
+TEST(SpriteGpu, IndexSpriteBrightnessAddsToTheFixedPixelsAndWraps)
+{
+	Fixture f;
+	CIndexSprite::SetColorSet();
+	const int previousValue = CSpriteSurface::s_Value1;
+	TintedSprite sprite;
+	const auto bright = [](WORD c, int v) {
+		return WORD(((((c >> 11) + v) & 31) << 11) | (((((c >> 5) & 63) + 2 * v) & 63) << 5) | (((c & 31) + v) & 31));
+	};
+	for (int v : {1, 4, 32})
+	{
+		const WORD expected[7] = {0x5a69,
+			CIndexSprite::ColorSet[CIndexSprite::GetUsingColorSet(0)][0],
+			CIndexSprite::ColorSet[CIndexSprite::GetUsingColorSet(3)][2],
+			bright(0xffff, v), bright(0x07ff, v), bright(0xffe0, v), bright(0x0400, v)};
+		POINT origin{0, 3};
+		f.surface.FillSurface(0x5a69);
+		f.surface.BltIndexSpriteBrightness(&origin, &sprite, BYTE(v));
+		CHECK_EQ(v, CSpriteSurface::s_Value1);
+		for (int y = 0; y < 8; ++y) for (int x = 0; x < 8; ++x)
+			CHECK_EQ(y == 3 && x < 7 ? expected[x] : WORD(0x5a69), f.Pixel(x, y));
+	}
+	CHECK_EQ(WORD(0x0400), bright(0x0400, 32));
+	CHECK(bright(0xffff, 1) != 0xffff);
+	CSpriteSurface::s_Value1 = previousValue;
+}

@@ -1031,44 +1031,81 @@ void CSpriteSurface::BltIndexSpriteAlpha(POINT* pPoint, CIndexSprite* pSprite, B
 	                    backend_sprite, flags, alpha);
 }
 
+// Draws an index sprite as one of CIndexSprite's own CPU blits decodes it, for
+// an effect the cached backend sprite cannot show: the decode is drawn as a
+// transient RLE sprite. It decodes twice, over 0x0000 and 0xffff, so a pixel
+// the blit wrote is the one that is the same in both: it is opaque, black
+// included, and the rest is a hole. Off the clip the original drew nothing
+// and left s_Value1, so nothing is decoded there.
+template <typename Decode>
+static void BltIndexSpriteDecode(spritectl_surface_t surface, POINT* pPoint, CIndexSprite* pSprite, Decode decode)
+{
+	if (!pPoint || !pSprite || !pSprite->IsInit() || !surface || !surface->surface) {
+		return;
+	}
+	const int width = pSprite->GetWidth(), height = pSprite->GetHeight();
+	const SDL_Rect& clip = surface->surface->clip_rect;
+	if (width > 0x7fff || height > 0x7fff	// its row pitch is a WORD; a height past it is no sprite
+		|| int64_t(pPoint->x) + width <= clip.x || int64_t(pPoint->y) + height <= clip.y
+		|| pPoint->x >= int64_t(clip.x) + clip.w || pPoint->y >= int64_t(clip.y) + clip.h) {
+		return;
+	}
+	std::vector<WORD> unset(size_t(width) * height, 0x0000), set(unset.size(), 0xffff);
+	decode(unset.data(), WORD(width * 2));
+	decode(set.data(), WORD(width * 2));
+	std::unique_ptr<spritectl_sprite_s, decltype(&spritectl_destroy_sprite)> decoded(
+		spritectl_create_sprite_rle(width, height), spritectl_destroy_sprite);
+	if (!decoded) {
+		return;
+	}
+	std::vector<WORD> row;
+	for (int y = 0; y < height; ++y) {
+		const size_t line = size_t(y) * width;
+		row.assign(1, 0);
+		int written = 0;
+		for (int x = 0; x < width;) {
+			if (unset[line + x] != set[line + x]) {
+				++x;
+				continue;
+			}
+			int end = x;
+			while (end < width && unset[line + end] == set[line + end]) ++end;
+			++row[0];
+			row.push_back(WORD(x - written));
+			row.push_back(WORD(end - x));
+			row.insert(row.end(), unset.begin() + line + x, unset.begin() + line + end);
+			written = x = end;
+		}
+		if (row.size() > 0xffff || spritectl_sprite_set_scanline_rle(
+			decoded.get(), y, row.data(), static_cast<uint16_t>(row.size())) != 0) return;
+	}
+	spritectl_blt_sprite(surface, pPoint->x, pPoint->y, decoded.get(), 0, 255);
+}
+
+// CIndexSprite::BltColor: an indexed pixel takes the default gradation row at
+// its own gradation and a fixed pixel its own colour, each masked to channel
+// rgb. The backend sprite holds the sprite's own colour sets, so it is drawn
+// from the CPU decode.
 void CSpriteSurface::BltIndexSpriteColor(POINT* pPoint, CIndexSprite* pSprite, BYTE rgb) {
-	(void)rgb;
-	/* TODO: Implement color tinting */
-	BltIndexSprite(pPoint, pSprite);
+	BltIndexSpriteDecode(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch) {
+		pSprite->BltColor(dest, pitch, rgb);
+	});
 }
 
 // Every pixel is drawn from the one colour set: an indexed pixel from its own
 // gradation and a fixed one from the gradation its colour maps to, which is
 // CIndexSprite::BltColorSet. The decoded backend sprite holds the sprite's own
-// sets, so the set's decode is drawn as a transient sprite, the set being the
-// draw's rather than the sprite's. A pixel decoded to 0x0000 is a hole, as in
-// every backend draw of an index sprite. A set past the table draws the sprite
-// as it is: the original read past ColorSet there, and the addon call sites
-// pass EffectColorSet unchecked.
+// sets, so the set's decode is drawn, the set being the draw's rather than the
+// sprite's. A set past the table draws the sprite as it is: the original read
+// past ColorSet there, and the addon call sites pass EffectColorSet unchecked.
 void CSpriteSurface::BltIndexSpriteColorSet(POINT* pPoint, CIndexSprite* pSprite, WORD colorSet) {
-	if (!pPoint || !pSprite || !pSprite->IsInit() || !m_backend_surface || !m_backend_surface->surface) {
-		return;
-	}
 	if (colorSet >= MAX_COLORSET) {
-		BltIndexSprite(pPoint, pSprite);
+		if (pPoint && pSprite && pSprite->IsInit()) BltIndexSprite(pPoint, pSprite);
 		return;
 	}
-	const int width = pSprite->GetWidth(), height = pSprite->GetHeight();
-	const SDL_Rect& clip = m_backend_surface->surface->clip_rect;
-	if (width > 0x7fff || height > 0x7fff	// its row pitch is a WORD; a height past it is no sprite
-		|| int64_t(pPoint->x) + width <= clip.x || int64_t(pPoint->y) + height <= clip.y
-		|| pPoint->x >= int64_t(clip.x) + clip.w || pPoint->y >= int64_t(clip.y) + clip.h) {
-		return;	// off the clip the original drew nothing and left s_Value1
-	}
-	std::vector<WORD> pixels(size_t(width) * height, 0x0000);
-	pSprite->BltColorSet(pixels.data(), WORD(width * 2), colorSet);
-	spritectl_sprite_t decoded = spritectl_create_sprite(width, height, SPRITECTL_FORMAT_RGB565,
-		pixels.data(), pixels.size() * sizeof(WORD));
-	if (!decoded) {
-		return;
-	}
-	spritectl_blt_sprite(m_backend_surface, pPoint->x, pPoint->y, decoded, 0, 255);
-	spritectl_destroy_sprite(decoded);
+	BltIndexSpriteDecode(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch) {
+		pSprite->BltColorSet(dest, pitch, colorSet);
+	});
 }
 
 void CSpriteSurface::BltIndexSpriteEffect(POINT* pPoint, CIndexSprite* pSprite) {
@@ -1130,10 +1167,22 @@ void CSpriteSurface::BltIndexSpriteEffect(POINT* pPoint, CIndexSprite* pSprite) 
 	spritectl_blt_sprite(m_backend_surface, pPoint->x, pPoint->y, wiped.get(), 0, 255);
 }
 
+// CIndexSprite::BltBrightness: an indexed pixel in its own colour set and a
+// fixed pixel through memcpyBrightness, which adds BrightBits to each channel.
+// A brightness that is a multiple of 32, the 32 every caller passes, wraps each
+// channel back to itself, so the cached sprite is drawn, sparing three decodes
+// a frame per brightened pet; a black pixel stays a hole there, as in the plain
+// draw.
 void CSpriteSurface::BltIndexSpriteBrightness(POINT* pPoint, CIndexSprite* pSprite, BYTE BrightBits) {
-	(void)BrightBits;
-	/* TODO: Implement brightness */
-	BltIndexSprite(pPoint, pSprite);
+	if ((BrightBits & 31) == 0) {
+		if (!pPoint || !pSprite || !pSprite->IsInit()) return;
+		s_Value1 = BrightBits;
+		BltIndexSprite(pPoint, pSprite);
+		return;
+	}
+	BltIndexSpriteDecode(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch) {
+		pSprite->BltBrightness(dest, pitch, BrightBits);
+	});
 }
 
 /* ============================================================================

@@ -86,42 +86,6 @@ review row.
 **Keep:** a value a library function could check is checked in the library; the exemption is for
 the rendering alone.
 
-### 6. `BltIndexSpriteColor` and `BltIndexSpriteBrightness`: the last drawing stubs
-
-**What:** `CSpriteSurface::BltIndexSpriteColor(POINT*, CIndexSprite*, BYTE rgb)` and
-`BltIndexSpriteBrightness(POINT*, CIndexSprite*, BYTE)` in
-`Client/SpriteLib/CSpriteSurface_Adapter.cpp` ignore their effect and call `BltIndexSprite`.
-Live callers: an installed mine drawn in red (`Client/MTopView.cpp`, the `ITEM_CLASS_MINE`
-branch, `rgb` 0) and the `FAKE_CREATURE_BRIGHTNESS` fake's three draws in
-`Client/CreatureEffectDraw.cpp`. The item pack's two tinted draws (`C_VS_UI_ITEM::BltColor` and
-`BltLockedColor`, `VS_UI/src/VS_UI_Item.cpp`) have no live caller; the one reference is
-commented out. This is a `fix:`, `Test path: lib + test`; the files are library members through
-`tests/arch/*_files.txt`.
-
-**How, tint:** the DirectDraw original is `CIndexSprite::BltColor` (`Client/SpriteLib/CIndexSprite.cpp`):
-an indexed pixel takes the file-local row `defaultGradationColor` (384) at its own gradation,
-masked by `ColorDraw::s_wMASK_RGB[rgb]`; a fixed pixel goes through `memcpyColor`. Do not reuse it
-unchanged: `s_wMASK_RGB` is all zeros in this build (`basic/ColorDraw.cpp`; `InitMask` has no
-caller, and would set shift counts, not masks), so every indexed pixel would decode to 0, a hole.
-Mask with `0xf800`, `0x07e0`, `0x001f` as the SDL `memcpyColor` (`CSpriteSurface_SDL.cpp`) does.
-Two patterns exist to copy: `BltIndexSpriteColorSet` (PR #566) decodes into a transient backend
-sprite and draws it with `spritectl_blt_sprite`; `BltIndexSpriteDarkness` (PR #563) first tries
-`SpriteGpu::DrawEffect` and falls back to two CPU decodes written into the locked surface. The
-pixel-sprite tint is `BltSpriteColor` through `DrawEffect` with `Effect::Color`, so the GPU path
-is the one to try first; the cached backend sprite holds the sprite's own colour sets, so a GPU
-tint over it must still take row 384 for the indexed pixels.
-
-**How, brightness:** `CIndexSprite::BltBrightness` sends fixed pixels through
-`CSpriteSurface::memcpyBrightness`, which is an empty SDL stub (`CSpriteSurface_SDL.cpp`;
-`memcpyDarkness` beside it was ported). Port it, then draw as the darkness routine does.
-
-**Tests to flip:** `TopView3Item.AMineIsDrawnPlainInstalledOrNot` in
-`tests/unit/test_top_view_3.cpp` and `APetMovingFastIsDrawnToo` (with the file header) in `tests/unit/test_creature_effect.cpp`
-pin the stubs as recorded defects; the [native GPU renderer](../rendering/native-gpu-renderer.md)
-page says `BltIndexSpriteColor` draws plain. **Tests to add:** an oracle draw per effect in
-`tests/render/test_sprite_gpu.cpp`, next to `IndexSpriteColorSetDrawsEveryPixelFromTheSet` and
-the darkness one, with a low gradation (high gradations decode to black).
-
 ### 9. The gradation table is built on one green scale and read on another
 
 **What:** found in the review of task 7. `CIndexSprite::SetColorSet` builds `GradationValue[j]`
@@ -136,11 +100,12 @@ pins skill-state icons drawn with set 59. One caller agrees with the thresholds:
 `GetColorToGradation` a six-bit sum directly. `GetColorToGradation` also measures its second
 distance from `GradationValue[g-1]` where it means `GradationValue[g]`.
 
-**How:** make the two scales agree, and fix the distance. Rescaling `GradationValue` to five
-bits moves `GetIndexColor`'s conversions; a table of 126 entries read with six-bit sums moves the
-three readers instead. Either way changes colours on screen, so work out first what the original
-drew (the DirectDraw build's `ColorDraw::Green` and the table that came with its data), then pin
-the new colours in the tests that pin the current ones and say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
+**How:** make the two scales agree, and fix the distance. The original build read green as five
+bits: its `ColorDraw::Green` was `(c >> 6) & 0x1F`, with `s_bSHIFT_G` 6 on 5:6:5 (`fa74958e`,
+`Client/DirectXLib/CDirectDraw.h` and `.cpp`), so its `GradationValue` and `GetIndexColor` summed
+three five-bit channels, as the readers do; the port's six-bit `Green` split the scales. Summing
+`Green(color) >> 1` in both restores the original. It changes colours on screen, so pin the new
+colours in the tests that pin the current ones and say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
 
 ### 10. Kept in view, no task
 
@@ -219,6 +184,22 @@ list of `MAX_RECEVIER_NUM` numbers and numbers of `MAX_NUMBER_LENGTH` digits tha
 (and, if the server's copy matches, the server) refuses, while its `getPacketMaxSize` counts the
 caller's number as `MAX_RECEVIER_NUM` bytes, not `MAX_NUMBER_LENGTH`, so `write` can emit 113
 bytes against a stated 108.
+
+### 6. `BltIndexSpriteColor` and `BltIndexSpriteBrightness`: the last drawing stubs (PR #575)
+
+Both draw now, as `BltIndexSpriteColorSet` does: the sprite is decoded by `CIndexSprite`'s own blit
+(`BltColor`, `BltBrightness`) and drawn as a transient RLE sprite, decoded twice over black and
+white so a pixel the blit wrote stays opaque, black included; `BltIndexSpriteColorSet` shares the
+helper, so a black pixel of its decode is no longer a hole. `BltColor` masks with `TintMask`
+(`0xf800`, `0x07e0`, `0x001f`, as `memcpyColor`) instead of the never-filled
+`ColorDraw::s_wMASK_RGB`, and `memcpyBrightness` is ported: it adds the brightness to each channel
+and wraps, green at 64, so the 32 every caller passes leaves every pixel as it is (the original,
+reading green as five bits, also dropped green's lowest bit), and a multiple of 32 draws the
+cached sprite instead of decoding. Owners: `SpriteGpu.IndexSpriteColorTintsEveryPixelToOneChannel` and
+`IndexSpriteBrightnessAddsToTheFixedPixelsAndWraps`, and
+`TopView3Item.AnInstalledMineIsDrawnRedAndAnotherPlain`, which fails if an installed mine draws
+plain. No GPU path: the cached backend sprite holds the sprite's own colour sets, and the tint
+needs row 384 for its indexed pixels.
 
 ### 7. `memcpyPalEffectGradation` reads five bits of a six-bit green (latent) (PR #573)
 
