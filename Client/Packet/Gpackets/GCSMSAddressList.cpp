@@ -69,6 +69,9 @@ GCSMSAddressList::GCSMSAddressList ()
 //////////////////////////////////////////////////////////////////////
 GCSMSAddressList::~GCSMSAddressList ()
 {
+	// The units are the packet's: the SMS list copies what it shows.
+	for ( AddressUnit* pUnit : m_Addresses )
+		delete pUnit;
 }
 
 //////////////////////////////////////////////////////////////////////

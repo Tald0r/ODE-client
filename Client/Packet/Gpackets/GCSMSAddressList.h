@@ -40,6 +40,9 @@ class GCSMSAddressList : public Packet
 public:
 	GCSMSAddressList();
 	~GCSMSAddressList();
+	// It owns its units, so a copy would free them twice.
+	GCSMSAddressList( const GCSMSAddressList& ) = delete;
+	GCSMSAddressList& operator = ( const GCSMSAddressList& ) = delete;
 	
 public:
 	void read(SocketInputStream & iStream);

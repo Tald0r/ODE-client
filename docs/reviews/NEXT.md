@@ -122,32 +122,6 @@ page says `BltIndexSpriteColor` draws plain. **Tests to add:** an oracle draw pe
 `tests/render/test_sprite_gpu.cpp`, next to `IndexSpriteColorSetDrawsEveryPixelFromTheSet` and
 the darkness one, with a low gradation (high gradations decode to black).
 
-### 8. Packets that never free what their read allocates
-
-**What:** measured while taking task 2, with its harness (`ReadShortBodies` in
-`tests/unit/test_packet_fuzz_findings.cpp`): seven packets allocate a member in `read` that their
-destructor never frees, so each one received leaks it, refused or read whole. `GCAddSlayer`,
-`GCAddVampire` and `GCAddOusters` free their `EffectInfo` but not their `PetInfo` or
-`NicknameInfo`; `GCPetInfo` frees no `PetInfo`, `GCBloodBibleSignInfo` no `BloodBibleSignInfo`,
-and `GCMyStoreInfo` and `GCOtherStoreInfo` no `StoreInfo` (about a megabyte held after 512 short
-frames each). Beside them, `GCSMSAddressList` frees none of its `AddressUnit`s by design: its
-handler hands them to the executable's SMS list, and that list leaks every one in the end. It keeps
-them only while its window exists (`C_VS_UI_GAME::SetSMSAddressList` returns early otherwise), and
-`C_VS_UI_SMS_LIST::SetSMSList` clears the previous list without freeing it, while its destructor
-frees none; a frame refused after its read (trailing bytes) leaks them too. Its `DeleteList` also
-deletes the last unit when no id matches, while that unit is still in the list: a use after free
-(`VS_UI/src/vs_ui_gamecommon2.cpp`; read it with `grep -a`).
-
-**How:** trace each member's owner first: a handler or a presentation host may keep the pointer
-(`GCPetInfo`'s pet, the sign info, the store info), and freeing it then is a use after free. Where
-the reply copies, free it in the destructor and delete the copy operations, as `GCPetStashList`
-and `GCNicknameList` do since task 2; where something keeps it, make the hand-off explicit. The
-SMS units want the SMS list to copy what it shows, as the nickname window does, which is a
-`VS_UI` change.
-
-**Test:** add each packet to a `CHECK_SHORT_BODIES_LEAK_NOTHING` list once its owner is settled,
-and drop `GCSMSAddressList` from `FreeWhatThePacketDoesNotOwn` when its units are the packet's.
-
 ### 9. The gradation table is built on one green scale and read on another
 
 **What:** found in the review of task 7. `CIndexSprite::SetColorSet` builds `GradationValue[j]`
@@ -260,3 +234,14 @@ with no caller. Owners: `SpriteGpu.PaletteGradationTakesGreensTopFiveBits`,
 `tests/render/test_sprite_gpu.cpp`. Left: `memcpyPalEffectGradation` indexes `ColorSet[s_Value1]`
 without the range check `memcpyEffectGradation` makes, which matters once it is registered; and
 the table's scale, task 9.
+
+### 8. Packets that never free what their read allocates (PR #574)
+
+Fixed. The seven packets free their members in their destructors and delete their copy operations
+(`GCBloodBibleSignInfo`'s constructor also nulls its pointer); every reply copies what it shows.
+The SMS list (`C_VS_UI_SMS_LIST`, `VS_UI`) keeps copies of its own `AddressUnit` type now and frees
+them on a new list, in `DeleteList`, which deletes only the unit the id names, and in its
+destructor; so `GCSMSAddressList` frees its units too. Owners: `PacketFuzzFindings`'
+`MemberReadsLeakNothing` and `GameListReadsThatThrowLeakNothing`, which measures the SMS list's
+packet whole now that the test frees nothing for it. The `VS_UI` change has no test of its own: a
+window cannot be built in the unit suite.

@@ -20,6 +20,9 @@ class GCOtherStoreInfo : public Packet
 public:
 	GCOtherStoreInfo()  : m_pInfo(NULL)  { }
 	virtual ~GCOtherStoreInfo();
+	// It owns what its read allocates, so a copy would free it twice.
+	GCOtherStoreInfo( const GCOtherStoreInfo& ) = delete;
+	GCOtherStoreInfo& operator = ( const GCOtherStoreInfo& ) = delete;
 
 public:
 	void read(SocketInputStream & iStream);

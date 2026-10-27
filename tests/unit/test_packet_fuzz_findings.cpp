@@ -27,9 +27,17 @@
 #include "SocketImpl.h"
 #include "StoreInfo.h"
 #include "Gpackets/GCActiveGuildList.h"
+#include "Gpackets/GCAddMonster.h"
+#include "Gpackets/GCAddMonsterFromBurrowing.h"
+#include "Gpackets/GCAddMonsterFromTransformation.h"
 #include "Cpackets/CGSMSSend.h"
 #include "Gpackets/GCAddNewItemToZone.h"
+#include "Gpackets/GCAddOusters.h"
+#include "Gpackets/GCAddSlayer.h"
 #include "Gpackets/GCAddVampire.h"
+#include "Gpackets/GCAddVampireFromBurrowing.h"
+#include "Gpackets/GCAddVampireFromTransformation.h"
+#include "Gpackets/GCBloodBibleSignInfo.h"
 #include "Gpackets/GCChangeWeather.h"
 #include "Gpackets/GCGoodsList.h"
 #include "Gpackets/GCGQuestStatusInfo.h"
@@ -38,6 +46,7 @@
 #include "Gpackets/GCHolyLandBonusInfo.h"
 #include "Gpackets/GCKickMessage.h"
 #include "Gpackets/GCModifyNickname.h"
+#include "Gpackets/GCMorph1.h"
 #include "Gpackets/GCMonsterKillQuestInfo.h"
 #include "Gpackets/GCMyStoreInfo.h"
 #include "Gpackets/GCNicknameList.h"
@@ -45,11 +54,13 @@
 #include "Gpackets/GCNPCInfo.h"
 #include "Gpackets/GCOtherStoreInfo.h"
 #include "Gpackets/GCPartyJoined.h"
+#include "Gpackets/GCPetInfo.h"
 #include "Gpackets/GCPetStashList.h"
 #include "Gpackets/GCShowUnionInfo.h"
 #include "Gpackets/GCSkillInfo.h"
 #include "Gpackets/GCSMSAddressList.h"
 #include "Gpackets/GCStashList.h"
+#include "Gpackets/GCSubInventoryInfo.h"
 #include "Gpackets/GCSweeperBonusInfo.h"
 #include "Gpackets/GCSystemMessage.h"
 #include "Gpackets/GCTimeLimitItemInfo.h"
@@ -708,19 +719,6 @@ long long	HeldHeapBytes()
 #endif
 }
 
-// What the packet does not own: the SMS list's address units are the
-// handler's to hand to the executable's SMS list, which keeps them, and
-// the packet frees none, refused or read whole (a follow-up in
-// docs/reviews/NEXT.md). The test frees what it still holds, so what it
-// measures there is the unit whose read throws.
-void	FreeWhatThePacketDoesNotOwn(Packet&) {}
-void	FreeWhatThePacketDoesNotOwn(GCSMSAddressList& packet)
-{
-	for (AddressUnit* pUnit : packet.getAddresses())
-		delete pUnit;
-	packet.getAddresses().clear();
-}
-
 // One pass of reads of PacketT, a fresh packet per frame; any refusal is
 // caught, as the receive loop catches it.
 template <class PacketT>
@@ -734,7 +732,6 @@ void	ReadShortBodies(unsigned char fill)
 			f.m_Stream.read(&packet);
 		} catch (Throwable&) {
 		}
-		FreeWhatThePacketDoesNotOwn(packet);
 	}
 }
 
@@ -798,6 +795,29 @@ TEST(PacketFuzzFindings, PeerListReadsThatThrowLeakNothing)
 {
 	CHECK_SHORT_BODIES_LEAK_NOTHING(CRWhisper);
 	CHECK_SHORT_BODIES_LEAK_NOTHING(RCRequestedFile);
+}
+
+// The packets that read into a member they allocate: seven never freed it,
+// refused or read whole (GCAddSlayer, GCAddVampire and GCAddOusters their
+// pet and nickname, GCPetInfo, GCBloodBibleSignInfo, GCMyStoreInfo and
+// GCOtherStoreInfo theirs), and their replies copy what they show; the
+// rest freed theirs already.
+TEST(PacketFuzzFindings, MemberReadsLeakNothing)
+{
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddMonster);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddMonsterFromBurrowing);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddMonsterFromTransformation);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddOusters);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddSlayer);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddVampire);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddVampireFromBurrowing);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCAddVampireFromTransformation);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCBloodBibleSignInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCMorph1);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCMyStoreInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCOtherStoreInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCPetInfo);
+	CHECK_SHORT_BODIES_LEAK_NOTHING(GCSubInventoryInfo);
 }
 
 

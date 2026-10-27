@@ -18,8 +18,11 @@
 class GCBloodBibleSignInfo : public Packet
 {
 public:
-	GCBloodBibleSignInfo() { }
+	GCBloodBibleSignInfo() : m_pInfo(NULL) { }
 	virtual ~GCBloodBibleSignInfo();
+	// It owns what its read allocates, so a copy would free it twice.
+	GCBloodBibleSignInfo( const GCBloodBibleSignInfo& ) = delete;
+	GCBloodBibleSignInfo& operator = ( const GCBloodBibleSignInfo& ) = delete;
 
 public:
 	void read(SocketInputStream & iStream);

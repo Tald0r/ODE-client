@@ -33,6 +33,9 @@ public:
 	GCAddVampire() : m_pEffectInfo(NULL), m_pPetInfo(NULL), m_pNicknameInfo(NULL) { m_FromFlag = 0; }
 	GCAddVampire(const PCVampireInfo3 & vampireInfo) : m_VampireInfo(vampireInfo), m_pEffectInfo(NULL), m_pPetInfo(NULL), m_pNicknameInfo(NULL) { m_FromFlag = 0; }
 	virtual ~GCAddVampire();
+	// It owns what its read allocates, so a copy would free it twice.
+	GCAddVampire( const GCAddVampire& ) = delete;
+	GCAddVampire& operator = ( const GCAddVampire& ) = delete;
 	
 public:
     void read(SocketInputStream & iStream);

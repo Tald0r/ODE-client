@@ -158,6 +158,7 @@ void RunEveryHandler()
 	GCBloodBibleSignInfo bible;
 	bible.setSignInfo(&sign);
 	GCBloodBibleSignInfoHandler::execute(&bible, nullptr);
+	bible.setSignInfo(nullptr);	// the test's, not the packet's to free
 	ReceiveWeather(WEATHER_RAINY, 3);
 	ReceiveLightning(2);
 	PetInfo pet;
@@ -165,6 +166,7 @@ void RunEveryHandler()
 	petInfo.setObjectID(55);
 	petInfo.setPetInfo(&pet);
 	GCPetInfoHandler::execute(&petInfo, nullptr);
+	petInfo.setPetInfo(nullptr);	// the test's, not the packet's to free
 	GCAddInstalledMineToZone mine;
 	mine.setObjectID(78);
 	GCAddInstalledMineToZoneHandler::execute(&mine, nullptr);
@@ -250,12 +252,14 @@ TEST(WorldEventHandlers, WeatherLightningBloodBibleAndPetInfoArePassedOn)
 	GCBloodBibleSignInfo bible;
 	bible.setSignInfo(&sign);
 	GCBloodBibleSignInfoHandler::execute(&bible, nullptr);
+	bible.setSignInfo(nullptr);	// the test's, not the packet's to free
 	CHECK(lastPointer == &sign);
 	PetInfo pet;
 	GCPetInfo petInfo;
 	petInfo.setObjectID(55);
 	petInfo.setPetInfo(&pet);
 	GCPetInfoHandler::execute(&petInfo, nullptr);
+	petInfo.setPetInfo(nullptr);	// the test's, not the packet's to free
 	CHECK(lastPointer == &pet);
 	// The lightning's delay arrives in tenths of a second and is passed on in milliseconds.
 	CHECK(calls == std::vector<std::string>({"weather|" + N(WEATHER_SNOWY) + "|7", "lightning|300", "bloodbible", "pet|55"}));

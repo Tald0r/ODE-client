@@ -187,9 +187,6 @@ TEST(CommunicationPresentationHandlers, AnAddressListIsPresentedOnlyWhenItHasEnt
 	GCSMSAddressListHandler::execute(&packet, nullptr);
 	CHECK_EQ(1u, calls.size());
 	CHECK(!calls.empty() && calls[0] == "smslist|2|7,slayer,Friend,0101234567|8,vampire,Rival,0107654321");
-	// The executable's SMS list adopts these units; the recording host does not.
-	for (AddressUnit* unit : packet.getAddresses()) delete unit;
-	packet.getAddresses().clear();
 }
 
 TEST(CommunicationPresentationHandlers, AddAndDeleteConfirmationsNeedTheMatchingRequest)

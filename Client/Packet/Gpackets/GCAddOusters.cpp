@@ -27,9 +27,10 @@ GCAddOusters::GCAddOusters(const PCOustersInfo3& info)
 
 GCAddOusters::~GCAddOusters()
 {
-	
+	// Every member is the packet's: the reply copies what it shows.
 	SAFE_DELETE(m_pEffectInfo);
-
+	SAFE_DELETE(m_pPetInfo);
+	SAFE_DELETE(m_pNicknameInfo);
 }
 
 void GCAddOusters::read ( SocketInputStream & iStream )

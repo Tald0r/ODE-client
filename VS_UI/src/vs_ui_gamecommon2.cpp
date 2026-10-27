@@ -11475,6 +11475,10 @@ C_VS_UI_SMS_LIST::~C_VS_UI_SMS_LIST()
 {
 	g_UnregisterWindow(this);
 
+	// The units are the list's own: SetSMSList copies the packet's.
+	for (AddressUnit* pUnit : m_Addresses)
+		delete pUnit;
+	m_Addresses.clear();
 	DeleteNew(m_pC_scroll_bar);
 	DeleteNew( m_pC_button_group );
 //	gC_vs_ui.AcquireSMS();
@@ -11529,10 +11533,13 @@ void	C_VS_UI_SMS_LIST::SetSMSList(void *pVoid)
 {
 	std::vector<AddressUnit*>*	NewList = (std::vector<AddressUnit*>*)pVoid;
 	std::vector<AddressUnit*>::iterator itr = NewList->begin();
+	// The list keeps copies, freeing the last list's: the packet frees its own.
+	for (AddressUnit* pUnit : m_Addresses)
+		delete pUnit;
 	m_Addresses.clear();
 	while(itr != NewList->end())
 	{
-		m_Addresses.push_back((*itr));
+		m_Addresses.push_back(new AddressUnit(**itr));
 		itr++;
 	}
 
@@ -11561,11 +11568,11 @@ void	C_VS_UI_SMS_LIST::DeleteList(int id)
 		if(_AddressUnit->ElementID == static_cast<DWORD>(id))
 		{
 			m_Addresses.erase(itr);
+			DeleteNew(_AddressUnit);	// only the unit the id names
 			break;
 		}
 		itr++;
 	}
-	DeleteNew(_AddressUnit);
 	m_pC_scroll_bar->SetPositionCount(m_Addresses.size());
 }
 	
