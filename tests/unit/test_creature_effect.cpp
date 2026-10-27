@@ -31,11 +31,11 @@
 // A creature drawn with an effect (task 4.250: MTopView's members until
 // then, gameview's since). Each test draws through the moved code onto
 // one surface and lays the blits it should make, with the colour sets
-// named, onto another; the two pictures must match. SpriteLib's SDL
-// backend darkens a darkened index sprite but draws a brightened or
-// colour-set one as a plain one, so a picture shows where each part
-// went, in which colours and how dark, not a brightening or an effect
-// colour.
+// named, onto another; the two pictures must match. A brightened index
+// sprite comes out as it is: the one brightness the game passes, 32,
+// wraps every channel back to itself, as in the original. So a picture
+// shows where each part went, in which colours and how dark, not a
+// brightening or an effect colour.
 namespace {
 
 const char* kSpritePath = "creature_effect_sprite.bin";
@@ -433,8 +433,9 @@ TEST(CreatureEffect, NothingForAFrameTheActionHasNotGotOrForWhatIsNotWorn)
 TEST(CreatureEffect, APetMovingFastIsDrawnToo)
 {
 	// A pet that brightens and one that darkens draw where a creature does;
-	// where it stands the second is a bit darker (the SDL backend draws a
-	// brightened blit as it is).
+	// where it stands the second is a bit darker (a brightness of 32 wraps
+	// every channel back to itself, so the brightened blit is the sprite
+	// as it is).
 	for (MFakeCreature::FAKE_CREATURE_TYPE type : {MFakeCreature::FAKE_CREATURE_BRIGHTNESS, MFakeCreature::FAKE_CREATURE_STAND})
 	{
 		Scene scene;

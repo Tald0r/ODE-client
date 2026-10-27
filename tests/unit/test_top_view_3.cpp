@@ -76,7 +76,7 @@ MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 // stubs several other blits a test here meets (each pinned where it
 // shows): BltSpriteOutline draws nothing, so a selected item or burrow is
 // not drawn at all; SetClipRight is a no-op, so a party HP bar is never
-// cut; BltSpriteAlphaFilter and BltIndexSpriteColor draw plain. BltSpriteHalf
+// cut; BltSpriteAlphaFilter draws plain. BltSpriteHalf
 // is not reached at all: its CPU fallback reads a CSprite's (null) 565
 // pixel buffer, so a half image object is undefined behaviour headless.
 struct MTopViewTestAccess3
@@ -1193,6 +1193,12 @@ struct Ground : Scene
 		CIndexSprite::SetUsingColorSet(colorSet, colorSet);
 		expected.Index(x, y, View().m_ItemTileISPK[2]);
 	}
+	// The tile tinted to one channel, as an installed mine is drawn (rgb 0, red).
+	void TintedTile(int x, int y, BYTE rgb)
+	{
+		POINT p = {x, y};
+		expected.surface.BltIndexSpriteColor(&p, &View().m_ItemTileISPK[2], rgb);
+	}
 	int Named() { return int(View().m_listDrawItemName.size()); }
 	// The body's chat, due to fade: DrawItem fades it once it reaches the corpse.
 	static void Chatting(Creature& body)
@@ -1294,18 +1300,22 @@ TEST(TopView3Item, ASelectedItemIsOnlyOutlined)
 	CHECK_EQ(0x1111, int(scene.View().m_SOMOutlineColor));
 }
 
-TEST(TopView3Item, AMineIsDrawnPlainInstalledOrNot)
+TEST(TopView3Item, AnInstalledMineIsDrawnRedAndAnotherPlain)
 {
+	std::vector<WORD> pictures[2];
 	for (bool installed : {false, true})
 	{
 		Ground scene;
 		ItemProbe<MMine>& mine = scene.Put<MMine>(0);
 		if (installed) mine.SetInstalled();
 		scene.Draw(mine);
-		// Recorded defect: BltIndexSpriteColor draws plain on SDL, so an installed mine is not red.
-		scene.Tile(23, 32, 30);
+		if (installed) scene.TintedTile(23, 32, 0);
+		else scene.Tile(23, 32, 30);
 		CHECK(scene.Same());
+		pictures[installed] = scene.drawn.Picture();
 	}
+	// The tint shows: drawn plain, as the backend used to, the two would match.
+	CHECK(pictures[0] != pictures[1]);
 }
 
 TEST(TopView3Item, AFallingItemIsDrawnAtItsDropFrameAboveTheGround)

@@ -497,12 +497,16 @@ void CSpriteSurface::memcpyDarkness(WORD* pDest, WORD* pSource, WORD pixels)
     }
 }
 
+// The original adds s_Value1 to each five-bit channel and wraps at 32
+// (& 0x1F); green is six bits on 5:6:5, so it takes twice that and wraps at 64.
 void CSpriteSurface::memcpyBrightness(WORD* pDest, WORD* pSource, WORD pixels)
 {
-	(void)pDest;
-	(void)pSource;
-	(void)pixels;
-	/* TODO: Implement */
+    const int add = s_Value1;
+    for (int i = 0; i < pixels; ++i) {
+        const WORD c = pSource[i];
+        pDest[i] = WORD(((((c >> 11) + add) & 31) << 11)
+            | (((((c >> 5) & 63) + 2 * add) & 63) << 5) | (((c & 31) + add) & 31));
+    }
 }
 
 /* ============================================================================

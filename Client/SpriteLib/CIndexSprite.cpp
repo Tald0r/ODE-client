@@ -31,6 +31,9 @@ int		CIndexSprite::s_IndexValue[MAX_COLORSET_USE];
 // Blt Color에서 기본색으로 사용할 ColorSet
 //-----------------------------------------------------------------------------
 const int defaultGradationColor = 384;
+// The channel a tint keeps (rgb 0 red, 1 green, 2 blue, as memcpyColor masks
+// a fixed pixel); ColorDraw::s_wMASK_RGB is never filled on this backend.
+static WORD TintMask(BYTE rgb) { const WORD masks[] = {0xf800, 0x07e0, 0x001f}; return rgb < 3 ? masks[rgb] : 0xffff; }
 
 //-----------------------------------------------------------------------------
 // memcpy Effect
@@ -4376,7 +4379,7 @@ CIndexSprite::BltColor(WORD *pDest, WORD pitch, BYTE rgb)
 
 							// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 							*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 							pDestTemp ++;
 						} while (--k);
 					}
@@ -4479,7 +4482,7 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 								// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 								*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 								pDestTemp ++;
 							} while (--k);
 						}
@@ -4517,7 +4520,7 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 								// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 								*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 								pDestTemp ++;
 							} while (--k);
 						}
@@ -4588,7 +4591,7 @@ CIndexSprite::BltColorClipLeft(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 							// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 							*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 							pDestTemp ++;
 						} while (--k);
 					}
@@ -4696,7 +4699,7 @@ CIndexSprite::BltColorClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 								// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 								*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 								pDestTemp ++;
 							} while (--k);
 						}						
@@ -4721,7 +4724,7 @@ CIndexSprite::BltColorClipRight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 						// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 						*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 						pDestTemp ++;
 					} while (--k);
 				}		
@@ -4842,7 +4845,7 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 								// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 								*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 								pDestTemp ++;
 							} while (--k);
 						}
@@ -4880,7 +4883,7 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 								// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 								*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 								pDestTemp ++;
 							} while (--k);
 						}
@@ -4982,7 +4985,7 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 									// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 									*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 									pDestTemp ++;
 								} while (--k);
 							}						
@@ -5007,7 +5010,7 @@ CIndexSprite::BltColorClipWidth(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 							// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 							*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 							pDestTemp ++;
 						} while (--k);
 					}
@@ -5092,7 +5095,7 @@ CIndexSprite::BltColorClipHeight(WORD *pDest, WORD pitch, RECT* pRect, BYTE rgb)
 
 						// s_IndexValue와 관련된 색을 선택해서 출력한다.				
 						*pDestTemp		= ColorSet[defaultGradationColor][colorGradation]
-												& ColorDraw::s_wMASK_RGB[rgb];
+												& TintMask(rgb);
 						pDestTemp ++;
 					} while (--k);
 				}
