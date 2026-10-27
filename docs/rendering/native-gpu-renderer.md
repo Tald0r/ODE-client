@@ -160,7 +160,8 @@ sprite's own colour sets. They decode twice, over black and white, so a pixel th
 opaque, black included, and the result is the original's on every path (the cached plain draw
 still takes a black pixel for a hole). The tint masks to `0xf800`, `0x07e0` or `0x001f`, as
 `memcpyColor` does, because `ColorDraw::s_wMASK_RGB` is never filled on this backend; the
-brightness adds to each channel and wraps, green at 64, so the 32 the game passes changes nothing.
+brightness adds to each channel and wraps, green at 64, so the 32 the game passes changes no pixel
+and draws the cached sprite instead.
 SDL-port stubs this migration did not reach retain their previous behavior (for example
 `BltSpriteDarkerFilter` draws plain). It does not change game protocol or asset formats.
 RGBA glyph blending retains the device's arithmetic; subchannel rounding can

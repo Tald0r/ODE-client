@@ -100,11 +100,12 @@ pins skill-state icons drawn with set 59. One caller agrees with the thresholds:
 `GetColorToGradation` a six-bit sum directly. `GetColorToGradation` also measures its second
 distance from `GradationValue[g-1]` where it means `GradationValue[g]`.
 
-**How:** make the two scales agree, and fix the distance. Rescaling `GradationValue` to five
-bits moves `GetIndexColor`'s conversions; a table of 126 entries read with six-bit sums moves the
-three readers instead. Either way changes colours on screen, so work out first what the original
-drew (the DirectDraw build's `ColorDraw::Green` and the table that came with its data), then pin
-the new colours in the tests that pin the current ones and say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
+**How:** make the two scales agree, and fix the distance. The original build read green as five
+bits: its `ColorDraw::Green` was `(c >> 6) & 0x1F`, with `s_bSHIFT_G` 6 on 5:6:5 (`fa74958e`,
+`Client/DirectXLib/CDirectDraw.h` and `.cpp`), so its `GradationValue` and `GetIndexColor` summed
+three five-bit channels, as the readers do; the port's six-bit `Green` split the scales. Summing
+`Green(color) >> 1` in both restores the original. It changes colours on screen, so pin the new
+colours in the tests that pin the current ones and say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
 
 ### 10. Kept in view, no task
 
@@ -192,8 +193,9 @@ white so a pixel the blit wrote stays opaque, black included; `BltIndexSpriteCol
 helper, so a black pixel of its decode is no longer a hole. `BltColor` masks with `TintMask`
 (`0xf800`, `0x07e0`, `0x001f`, as `memcpyColor`) instead of the never-filled
 `ColorDraw::s_wMASK_RGB`, and `memcpyBrightness` is ported: it adds the brightness to each channel
-and wraps, green at 64, so the 32 every caller passes leaves the pixels as they are, as the
-original did. Owners: `SpriteGpu.IndexSpriteColorTintsEveryPixelToOneChannel` and
+and wraps, green at 64, so the 32 every caller passes leaves every pixel as it is (the original,
+reading green as five bits, also dropped green's lowest bit), and a multiple of 32 draws the
+cached sprite instead of decoding. Owners: `SpriteGpu.IndexSpriteColorTintsEveryPixelToOneChannel` and
 `IndexSpriteBrightnessAddsToTheFixedPixelsAndWraps`, and
 `TopView3Item.AnInstalledMineIsDrawnRedAndAnotherPlain`, which fails if an installed mine draws
 plain. No GPU path: the cached backend sprite holds the sprite's own colour sets, and the tint

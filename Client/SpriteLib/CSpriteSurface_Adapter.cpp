@@ -1169,7 +1169,17 @@ void CSpriteSurface::BltIndexSpriteEffect(POINT* pPoint, CIndexSprite* pSprite) 
 
 // CIndexSprite::BltBrightness: an indexed pixel in its own colour set and a
 // fixed pixel through memcpyBrightness, which adds BrightBits to each channel.
+// A brightness that is a multiple of 32, the 32 every caller passes, wraps each
+// channel back to itself, so the cached sprite is drawn, sparing three decodes
+// a frame per brightened pet; a black pixel stays a hole there, as in the plain
+// draw.
 void CSpriteSurface::BltIndexSpriteBrightness(POINT* pPoint, CIndexSprite* pSprite, BYTE BrightBits) {
+	if ((BrightBits & 31) == 0) {
+		if (!pPoint || !pSprite || !pSprite->IsInit()) return;
+		s_Value1 = BrightBits;
+		BltIndexSprite(pPoint, pSprite);
+		return;
+	}
 	BltIndexSpriteDecode(m_backend_surface, pPoint, pSprite, [=](WORD* dest, WORD pitch) {
 		pSprite->BltBrightness(dest, pitch, BrightBits);
 	});

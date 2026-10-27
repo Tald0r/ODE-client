@@ -33,7 +33,8 @@
 // one surface and lays the blits it should make, with the colour sets
 // named, onto another; the two pictures must match. A brightened index
 // sprite comes out as it is: the one brightness the game passes, 32,
-// wraps every channel back to itself, as in the original. So a picture
+// wraps every channel back to itself (the original, reading green as five
+// bits, also dropped its lowest bit, which does not show). So a picture
 // shows where each part went, in which colours and how dark, not a
 // brightening or an effect colour.
 namespace {
