@@ -12353,7 +12353,8 @@ MPlayer::CalculateStatus()
 			MPetItem *pPetItem = pFakeCreature->GetPetItem();
 			if(pPetItem != NULL)
 			{
-				ITEMOPTION_TABLE::ITEMOPTION_PART attr = (ITEMOPTION_TABLE::ITEMOPTION_PART)pPetItem->GetEnchantLevel();
+				// The attribute as the number the server sent: it need not name a part.
+				const int attr = pPetItem->GetEnchantLevel();
 				if(attr == ITEMOPTION_TABLE::PART_ATTACK_SPEED)
 				{
 					AttackSpeed += pPetItem->GetSilver();
@@ -13065,7 +13066,8 @@ void	MPlayer::CalculateLightSight()
 			MPetItem *pPetItem = pFakeCreature->GetPetItem();
 			if(pPetItem != NULL)
 			{
-				ITEMOPTION_TABLE::ITEMOPTION_PART attr = (ITEMOPTION_TABLE::ITEMOPTION_PART)pPetItem->GetEnchantLevel();
+				// The attribute as the number the server sent: it need not name a part.
+				const int attr = pPetItem->GetEnchantLevel();
 				if(attr == ITEMOPTION_TABLE::PART_VISION)
 				{
 					m_LightSight += pPetItem->GetSilver();

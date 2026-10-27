@@ -5,6 +5,8 @@
 #ifndef __REQUEST_TYPES_H__
 #define __REQUEST_TYPES_H__
 
+#include "SystemTypes.h"
+
 //--------------------------------------------------------------------------------
 // RequestMode
 //--------------------------------------------------------------------------------
@@ -25,7 +27,9 @@ enum REQUEST_CLIENT_MODE
 //--------------------------------------------------------------------------------
 // RequestFileType
 //--------------------------------------------------------------------------------
-enum REQUEST_FILE_TYPE
+// A fixed type: RCRequestedFileInfo::read stores a peer's byte in it, and
+// any byte is then a value of it, as CR_REQUEST_CODE's are.
+enum REQUEST_FILE_TYPE : BYTE
 {
 	REQUEST_FILE_NULL,
 

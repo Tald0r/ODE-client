@@ -280,7 +280,7 @@ string PCVampireInfo2::toString () const
 		<< "ObjectID:" << m_ObjectID
 		<< ",Name:" << m_Name
 		<< ",Level:" << m_Level
-		<< ",Sex:" << Sex2String[m_Sex]
+		<< ",Sex:" << SexName(m_Sex)
 		<< ",BatColor:" << (int)m_BatColor
 		<< ",SkinColor:" << (int)m_SkinColor
 		<< ",MasterEffectColor:" << (int)m_MasterEffectColor

@@ -1065,7 +1065,8 @@ MItem::GetItemOptionColorSet(int OptionNum)
 		{
 			if(GetSilver() > 0)	// an attribute shows as a colour
 			{
-				ITEMOPTION_TABLE::ITEMOPTION_PART optionPart = static_cast<ITEMOPTION_TABLE::ITEMOPTION_PART>(GetEnchantLevel());
+				// The attribute as the number the server sent: it need not name a part.
+				const int optionPart = GetEnchantLevel();
 
 				int size = g_pItemOptionTable->GetSize();
 

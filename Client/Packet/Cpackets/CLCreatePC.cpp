@@ -83,7 +83,7 @@ std::string CLCreatePC::toString () const
 	StringStream msg;
 	msg << "CLCreatePC(Name: " << m_Name 
 		<< ",Slot:" << Slot2String[m_Slot]
-		<< ",Sex:" << Sex2String[getSex()]
+		<< ",Sex:" << SexName(getSex())
 		<< ",HairStyle:" << HairStyle2String[getHairStyle()] 
 		<< ",HairColor:" << (int)getHairColor()
 		<< ",SkinColor:" << (int)getSkinColor()

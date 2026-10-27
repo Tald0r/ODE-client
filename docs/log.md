@@ -1,5 +1,13 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-27
+
+* **Update**: the two enum rows of the [code-health review](reviews/code-health-review-2026-08-29.md),
+  *The same cast where UBSan does not look* and the PC infos' sex, are fixed, with the eight sites
+  two sweeps found; the [next work plan](reviews/NEXT.md) moves its task 1 to *Done* and widens task
+  2 to the other sites that leak an entry whose read throws; [fuzzing](protocol/fuzzing.md) says a
+  cast value that is never loaded is seen by no sanitizer.
+
 ## 2026-10-26
 
 * **Creation**: [next work plan](reviews/NEXT.md), the ranked tasks left in the client after

@@ -177,3 +177,19 @@ TEST(ShopSoldHandler, NothingChangesForNoZoneNoCreatureNoNPCNoShopOrNoShelf)
 	CHECK(calls == std::vector<std::string>({"destroyed|802", "destroyed|801"}) || calls == std::vector<std::string>({"destroyed|801", "destroyed|802"}));
 	CHECK_EQ(0, alive);
 }
+
+// A shelf type past the shop's shelves finds no shelf: MAX_SHELF and
+// SHELF_BASE are enumerators, 8 and 0xff are past SHELF_TYPE's values.
+// The handler used to cast the byte to SHELF_TYPE before the shop's range
+// check, undefined for the last two and seen by no sanitizer, since the
+// cast value is only passed on; a regression guard.
+TEST(ShopSoldHandler, AShelfTypePastTheShelvesChangesNothing)
+{
+	World world;
+	for (ShopRackType_t shelf : {(ShopRackType_t)MShopShelf::MAX_SHELF, (ShopRackType_t)MShopShelf::SHELF_BASE, (ShopRackType_t)8, (ShopRackType_t)0xff})
+		Receive(1003, shelf, 3, 7);
+	CHECK(calls.empty());
+	CHECK_EQ(2, alive);
+	CHECK_EQ(1, world.fixed->GetVersion());
+	CHECK_EQ(1, world.special->GetVersion());
+}

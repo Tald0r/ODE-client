@@ -55,7 +55,8 @@ void GCShopSoldHandler::execute ( GCShopSold * pPacket , Player * pPlayer )
 			}
 			else
 			{
-				MShopShelf* pShopShelf = pShop->GetShelf( (MShopShelf::SHELF_TYPE)pPacket->getShopType() );
+				// The wire byte, not a SHELF_TYPE: GetShelf range-checks the integer.
+				MShopShelf* pShopShelf = pShop->GetShelf( pPacket->getShopType() );
 
 				if (pShopShelf==NULL)
 				{

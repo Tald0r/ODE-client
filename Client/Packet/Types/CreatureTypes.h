@@ -147,6 +147,10 @@ const std::string Sex2String [] =
 	"FEMALE" ,
 	"MALE"
 };
+// A sex as the debug strings print it: Sex2String has two names, and any
+// other byte the PC info readers store is a value of Sex too, its number.
+// Static as Sex2String is: an inline one would read another array in each file.
+static inline std::string SexName(Sex sex) { return sex <= MALE ? Sex2String[sex] : std::to_string((int)sex); }
 const uint szSex = szBYTE;
 
 

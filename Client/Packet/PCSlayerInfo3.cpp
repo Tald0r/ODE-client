@@ -141,7 +141,7 @@ string PCSlayerInfo3::toString () const
 		<< ",X:" << (int)m_X
 		<< ",Y:" << (int)m_Y
 		<< ",Dir:" << Dir2String[m_Dir]
-		<< ",Sex:" << Sex2String[getSex()]
+		<< ",Sex:" << SexName(getSex())
 		<< ",HairStyle:" << HairStyle2String[getHairStyle()]
 		<< ",HairColor:" << (int)getHairColor()
 		<< ",SkinColor:" << (int)getSkinColor()

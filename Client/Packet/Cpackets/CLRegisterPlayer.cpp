@@ -275,7 +275,7 @@ void CLRegisterPlayer::write ( SocketOutputStream & oStream ) const
 			<< "ID:" << m_ID
 			<< ",Password:" << m_Password 
 			<< ",Name:" << m_Name
-			<< ",Sex:" << Sex2String[m_Sex]
+			<< ",Sex:" << SexName(m_Sex)
 			<< ",SSN:" << m_SSN
 			<< ",Telephone:" << m_Telephone
 			<< ",Cellular:" << m_Cellular

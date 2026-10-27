@@ -33,7 +33,9 @@
 #include "Gpackets/GCMyStoreInfo.h"
 #include "Gpackets/GCOtherStoreInfo.h"
 #include "Gpackets/GCSystemMessage.h"
+#include "Gpackets/GCWarList.h"
 #include "Lpackets/LCPCList.h"
+#include "Rpackets/RCRequestedFile.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -556,5 +558,83 @@ TEST(PacketFuzzFindings, VampireSexPastTheEnumReadsBackAsSent)
 		CHECK(!FramedReadIsRefused(packet, frame, why));
 		CHECK_EQ((int)sex, (int)packet.getVampireInfo().getSex());
 		CHECK(packet.getVampireInfo().getSex() != MALE);
+	}
+}
+
+//----------------------------------------------------------------------
+// Found by reading: the same conversions where nothing loaded the value
+// for UBSan to see, or loaded it only after the read. A wire value past
+// the values of an enum with no fixed type is undefined as soon as it is
+// converted, and Clang's UBSan checks loads, not conversions.
+//----------------------------------------------------------------------
+
+// RCRequestedFileInfo::read stored a peer's file type byte in
+// REQUEST_FILE_TYPE, whose values end at 7, as its last enumerator, 4,
+// needs three bits; only a getter load lets UBSan see it. The byte reads
+// back as sent.
+TEST(PacketFuzzFindings, RequestedFileTypePastTheEnumReadsBackAsSent)
+{
+	for (unsigned char type : { (unsigned char)8, (unsigned char)0xff })
+	{
+		// The type, version 1, the filename "f", size 9.
+		FindingInFixture f({ type, 1, 0, 0, 0, 1, 'f', 9, 0, 0, 0 });
+		RCRequestedFileInfo info;
+		info.read(f.m_Stream);
+		CHECK_EQ(0u, f.m_Stream.length());
+		CHECK_EQ((int)type, (int)info.getRequestFileType());
+		CHECK(info.getFilename() == "f");
+		CHECK_EQ(9u, (unsigned int)info.getFileSize());
+	}
+}
+
+// GCWarList::read switched on its war type byte cast to WarType, whose
+// values end at 3, before the default could refuse it. 3 is a value of
+// the enum and names no war; 4 and 0xff are not values. Each is refused,
+// as it was: a regression guard, since no sanitizer sees the cast.
+TEST(PacketFuzzFindings, WarTypePastTheLastIsRefused)
+{
+	for (unsigned char type : { (unsigned char)(WAR_LEVEL + 1), (unsigned char)4, (unsigned char)0xff })
+	{
+		// One war, of this type.
+		FindingInFixture f({ 1, type });
+		GCWarList packet;
+		bool bRefused = false;
+		try {
+			packet.read(f.m_Stream);
+		} catch (Error&) {
+			bRefused = true;
+		}
+		CHECK(bRefused);
+		CHECK(packet.isEmpty());
+	}
+}
+
+// PCOustersInfo::toString, compiled in every build, named the sex with
+// Sex2String[m_Sex], an array of two names, for any byte the read
+// stored: a read past the array. A byte that names no sex is printed as
+// its number; the golden Ousters is MALE.
+TEST(PacketFuzzFindings, OustersInfoStringPrintsASexItHasNoNameForAsItsNumber)
+{
+	std::vector<unsigned char> body = PCListGolden();
+	const std::size_t begin = OustersSlot(body) - 1 - std::strlen("GoldOusters");
+	// The slot, then the alignment, then the sex.
+	const std::size_t sexAt = OustersSlot(body) + 1 + szAlignment;
+	CHECK_EQ((int)MALE, (int)body[sexAt]);
+	const struct { unsigned char sex; const char* named; } rows[] = {
+		{ (unsigned char)FEMALE, ",Sex:FEMALE," },
+		{ (unsigned char)MALE, ",Sex:MALE," },
+		{ 2, ",Sex:2," },
+		{ 5, ",Sex:5," },
+		{ 0xff, ",Sex:255," },
+	};
+	for (const auto& row : rows)
+	{
+		body[sexAt] = row.sex;
+		FindingInFixture f(std::vector<unsigned char>(body.begin() + begin, body.end()));
+		PCOustersInfo info;
+		info.read(f.m_Stream);
+		CHECK_EQ(0u, f.m_Stream.length());
+		CHECK_EQ((int)row.sex, (int)info.getSex());
+		CHECK(info.toString().find(row.named) != std::string::npos);
 	}
 }

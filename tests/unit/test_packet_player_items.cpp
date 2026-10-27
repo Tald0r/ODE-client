@@ -1569,6 +1569,36 @@ TEST(PacketPlayerItems, PetInfoFlyingPetsAndAttributeColours)
 	CHECK(Same({}));
 }
 
+// The attribute is the server's byte, compared with the table's parts as
+// a number: ITEMOPTION_PART has no fixed type and its values end at 63,
+// so 64 used to be undefined once SetPetInfo converted it.
+TEST(PacketPlayerItems, PetInfoAttributePastTheOptionPartsTakesItsRowsColour)
+{
+	Scene scene;
+	MCreature* pOwner = Owner(scene, 300);
+	scene.actions.GetMutable(RESULT_MAGIC_BLOODY_TUNNEL_INTO)->Init(1);
+	scene.actions.GetMutable(RESULT_MAGIC_BLOODY_TUNNEL_INTO)->GetMutable(0)->EffectGeneratorID = 7;
+	scene.actions.GetMutable(RESULT_MAGIC_BLOODY_TUNNEL_INTO)->GetMutable(0)->Count = 5;
+	testfw::MutableRow(scene.creatureTypes, 706).Name = "Hawk";
+	const int part = 64;
+	testfw::MutableRow(*g_pItemOptionTable, 1).Part = ITEMOPTION_TABLE::PART_VISION;
+	testfw::MutableRow(*g_pItemOptionTable, 1).ColorSet = 311;
+	testfw::MutableRow(*g_pItemOptionTable, 2).Part = part;
+	testfw::MutableRow(*g_pItemOptionTable, 2).ColorSet = 322;
+	PetInfo pet = Pet(4, 5);
+	pet.setPetAttr(PetAttr_t(part));
+	pet.setPetAttrLevel(2);
+
+	SetPetInfo(&pet, 300);
+
+	MFakeCreature* pPet = dynamic_cast<MFakeCreature*>(scene.zone->GetFakeCreature(pOwner->GetPetID()));
+	CHECK(pPet != NULL && pPet->GetPetItem() != NULL);
+	if (pPet == NULL || pPet->GetPetItem() == NULL) return;
+	CHECK_EQ(322, pPet->GetBodyColor1());
+	CHECK_EQ(322, pPet->GetPetItem()->GetItemColorSet());
+	CHECK_EQ(part, pPet->GetPetItem()->GetEnchantLevel());
+}
+
 //----------------------------------------------------------------------
 // The player's own pet is the pet item in its inventory; when the info is
 // about the pet it already has, a level gained (the message by the
