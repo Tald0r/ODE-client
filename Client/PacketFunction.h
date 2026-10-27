@@ -191,7 +191,7 @@ extern void SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID);
 // sources declared each for itself until task 4.253.
 class GCAddMonster;
 extern DWORD	ConvertMillisecondToFrame(DWORD ms);
-extern void		PopupErrorMessage(ErrorID errorID);
+extern void		PopupErrorMessage(int errorID);
 extern int		UI_GetFaceStyle(bool bMale, int faceStyle);
 extern void		SetSubInventoryInfo(InventoryInfo* pInventoryInfo);
 extern void		SetFlagTo(bool bTae);

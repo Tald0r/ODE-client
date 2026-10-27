@@ -2004,7 +2004,7 @@ void	UsePetFromInventory(MItem* pPet);
 // The item class table MItem::NewItem creates through (MItemUse.cpp).
 MItem*	NewItemOfClass(ITEM_CLASS itemClass);
 // The popup for a login error code (PacketFunction.cpp).
-void	PopupErrorMessage(ErrorID errorID);
+void	PopupErrorMessage(int errorID);
 
 static const MItemHost	s_ItemHost = {
 	.pCurrentFrame			= &g_CurrentFrame,
@@ -2904,7 +2904,7 @@ static const LoginPresentation::Host s_LoginPresentationHost = {
 	.QueueWaitPCListMode = [] { g_ModeNext = MODE_WAIT_PCLIST; },
 	.QueueLoginWrongMode = [] { g_ModeNext = MODE_LOGIN_WRONG; },
 	.IsSelectPCMode = [] { return g_Mode == MODE_WAIT_SELECTPC; },
-	.PopupErrorMessage = [](int errorID) { PopupErrorMessage(static_cast<ErrorID>(errorID)); },
+	.PopupErrorMessage = PopupErrorMessage,
 	.QueueWaitSelectPCMode = [] { g_ModeNext = MODE_WAIT_SELECTPC; },
 	.ShowMessage = g_ShowMessage,
 	.InitPlayer = [](int x, int y, int direction) { InitPlayer(x, y, direction); },

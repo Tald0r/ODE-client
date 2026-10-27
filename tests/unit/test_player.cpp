@@ -2622,6 +2622,45 @@ TEST(Player, APetsWindowShowsWhatItsItemSays)
 	CHECK(Same({ "pet|901|7|3|12|-1|Rex|0" }));
 }
 
+// A pet's attribute (its item's enchant level, the server's byte) adds the
+// attribute's level to the player's attack speed or light sight when it is
+// that part, and any other number adds nothing. It used to be converted to
+// ITEMOPTION_PART first, whose values end at 63: undefined for 64 and
+// 0xff, which Clang's UBSan reported at the comparison's load.
+TEST(Player, APetsAttributeAddsToTheStatItNamesAndAnyOtherNumberToNone)
+{
+	Scene scene;
+	PlayerProbe& me = *scene.me;
+	g_pItemTable->InitClass(ITEM_CLASS_PET_ITEM, 1);
+	MItem* pPet = NewItemOfClass(ITEM_CLASS_PET_ITEM);
+	pPet->SetItemType(0);
+	pPet->SetSilver(7);
+	MFakeCreature* pFake = new MFakeCreature;
+	pFake->SetZone(g_pZone);
+	pFake->SetCreatureType(5);
+	pFake->SetID(40000);
+	pFake->SetPosition(22, 15);
+	pFake->SetPetItem(static_cast<MPetItem*>(pPet));
+	CHECK(scene.zone->AddFakeCreature(pFake));
+	me.SetPetID(40000);
+	g_Mode = MODE_GAME;
+	auto speedAndSight = [&](int part) {
+		pPet->SetEnchantLevel(WORD(part));
+		me.CalculateStatus();
+		me.CalculateLightSight();
+		return std::make_pair(int(me.GetStatus(MODIFY_ATTACK_SPEED)), me.GetLightSight());
+	};
+	const auto plain = speedAndSight(ITEMOPTION_TABLE::PART_STR);
+	CHECK(speedAndSight(64) == plain);
+	CHECK(speedAndSight(0xff) == plain);
+	const auto fast = speedAndSight(ITEMOPTION_TABLE::PART_ATTACK_SPEED);
+	CHECK_EQ(plain.first + 7, fast.first);
+	CHECK_EQ(plain.second, fast.second);
+	const auto keen = speedAndSight(ITEMOPTION_TABLE::PART_VISION);
+	CHECK_EQ(plain.first, keen.first);
+	CHECK_EQ(plain.second + 7, keen.second);
+}
+
 TEST(Player, ItsBlowSoundsWhereItStandsAndShakesAReadyPad)
 {
 	Scene scene;

@@ -3542,8 +3542,9 @@ SetPCOustersInfo(PCOustersInfo2* pInfo)
 // Popup Error Message
 //-----------------------------------------------------------------------------
 void
-PopupErrorMessage(ErrorID errorID)
+PopupErrorMessage(int errorID)
 {
+	// The wire byte, not an ErrorID: it need not name one.
 	switch (errorID)
 	{
 		case INVALID_ID_PASSWORD : 
@@ -5010,7 +5011,8 @@ SetPetInfo(PetInfo* pPetInfo, TYPE_OBJECTID objectID)
 				{
 					if(pPetInfo->getPetAttrLevel() > 0)	// if it has an attribute, show the color
 					{
-						ITEMOPTION_TABLE::ITEMOPTION_PART optionPart = static_cast<ITEMOPTION_TABLE::ITEMOPTION_PART>(pPetInfo->getPetAttr());
+						// The attribute as the number the server sent: it need not name a part.
+						const int optionPart = pPetInfo->getPetAttr();
 
 						int size = g_pItemOptionTable->GetSize();
 

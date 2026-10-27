@@ -154,7 +154,9 @@ TEST(PacketHelpers, EachLoginErrorHasItsMessageBox)
 		g_pUIDialog->CloseMessageDlg();
 		return seen;
 	};
-	struct Case { ErrorID error; int string; bool exits; };
+	// The login host passes the server's byte on as an int, past ErrorID's
+	// values (0 to 31) too.
+	struct Case { int error; int string; bool exits; };
 	const Case cases[] = {
 		{INVALID_ID_PASSWORD, STRING_ERROR_INVALID_ID_PASSWORD, true}, {ALREADY_CONNECTED, STRING_ERROR_ALREADY_CONNECTED, true},
 		{ALREADY_REGISTER_ID, STRING_ERROR_ALREADY_REGISTER_ID, true}, {ALREADY_REGISTER_SSN, STRING_ERROR_ALREADY_REGISTER_SSN, true},
@@ -172,6 +174,7 @@ TEST(PacketHelpers, EachLoginErrorHasItsMessageBox)
 		// table at a UI string's index.
 		{CHECK_VERSION_ERROR, UI_STRING_MESSAGE_CHECK_VERSION_ERROR, true},
 		{CHILDGUARD_DENYED, STRING_ERROR_ETC_ERROR, false},
+		{32, STRING_ERROR_ETC_ERROR, false}, {200, STRING_ERROR_ETC_ERROR, false}, {255, STRING_ERROR_ETC_ERROR, false},
 	};
 	for (const Case& c : cases)
 	{

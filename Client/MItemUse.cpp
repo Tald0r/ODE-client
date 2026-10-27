@@ -2020,7 +2020,8 @@ std::string MPetItem::GetPetOptionName()
 	std::string petOptionName;
 	if(GetSilver() > 0/* && GetEnchantLevel()!=0xFFFF by viva */)
 	{
-		ITEMOPTION_TABLE::ITEMOPTION_PART optionPart = static_cast<ITEMOPTION_TABLE::ITEMOPTION_PART>(GetEnchantLevel());
+		// The attribute as the number the server sent: it need not name a part.
+		const int optionPart = GetEnchantLevel();
 		int optionLevel = (GetNumber()-10)/10;
 
 		int size = g_pItemOptionTable->GetSize();
@@ -2072,7 +2073,8 @@ std::string MPetItem::GetPetOptionEName()
 	std::string petOptionName;
 	if(GetSilver() > 0)
 	{
-		ITEMOPTION_TABLE::ITEMOPTION_PART optionPart = static_cast<ITEMOPTION_TABLE::ITEMOPTION_PART>(GetEnchantLevel());
+		// The attribute as the number the server sent: it need not name a part.
+		const int optionPart = GetEnchantLevel();
 		int optionLevel = (GetNumber()-10)/10;
 
 		int size = g_pItemOptionTable->GetSize();
