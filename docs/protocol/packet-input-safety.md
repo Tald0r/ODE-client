@@ -65,11 +65,14 @@ seen none of the routes walked here, so a new string sink is found by the same w
 
 **The text system holds a server string safely** (followed 2026-10-27, task 5 (a) of the
 [next work plan](../reviews/NEXT.md)). `TextService`'s measuring, wrapping and drawing loop over
-the string's own bytes: `Utf8Decode` never reads past the count it is given and always moves on
-by at least one byte, a width of zero or below keeps the row on one line, a width narrower than any
+the string's own bytes: `Utf8Decode` never reads past the count it is given and, given at least one
+byte, always moves on by one or more, and every loop stops at a NUL, so a string is measured and
+drawn up to its first; a width of zero or below keeps the row on one line, a width narrower than any
 glyph puts one glyph on each line and ends, the normalisation, glyph and metric caches refuse an
 entry past their budget before they evict, and a glyph's blit clips to its target however far the
-pen runs. The walk stops at `TTF_RenderUTF8_Blended` and `spritectl_blt_sprite`, SDL_ttf's and the
+pen runs. Two things are layout, not memory: a wrapped line can overhang the width by the one
+glyph that made it break, and `DrawLine` draws past a newline that the measure it aligns by stops
+at. The walk stops at `TTF_RenderUTF8_Blended` and `spritectl_blt_sprite`, SDL_ttf's and the
 backend's. `tests/unit/test_text_wrap_bounds.cpp` pins a 2048-byte row of mixed and malformed
 UTF-8 wrapped, measured and drawn, and the two widths.
 

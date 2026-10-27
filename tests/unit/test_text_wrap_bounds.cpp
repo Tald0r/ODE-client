@@ -100,9 +100,10 @@ TEST(TextWrapBounds, DrawingATwoKilobyteRowStaysOnTheSurface)
 	auto style = text.GetDefaultStyle();
 	style.color = TextSystem::ColorFromRGB(0xFFFFFF);
 	const std::string row = LongRow();
-	// Left, far right and far left of the surface: the pen runs thousands of
-	// pixels past its edge, and the blits clip.
-	for (int x : {0, 100000, -100000})
+	// Left, a few pixels past its left edge, far right and far left of the
+	// surface: the pen runs thousands of pixels past its edge, and the blits
+	// clip, a glyph across the left edge too.
+	for (int x : {0, -3, 100000, -100000})
 		text.DrawLine(target, row, x, 0, 0, style);
 	spritectl_surface_info_t info{};
 	CHECK_EQ(0, spritectl_lock_surface(surface.GetBackendSurface(), &info));
