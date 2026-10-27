@@ -148,7 +148,25 @@ SMS units want the SMS list to copy what it shows, as the nickname window does, 
 **Test:** add each packet to a `CHECK_SHORT_BODIES_LEAK_NOTHING` list once its owner is settled,
 and drop `GCSMSAddressList` from `FreeWhatThePacketDoesNotOwn` when its units are the packet's.
 
-### 9. Kept in view, no task
+### 9. The gradation table is built on one green scale and read on another
+
+**What:** found in the review of task 7. `CIndexSprite::SetColorSet` builds `GradationValue[j]`
+from `ColorDraw::Red + Green + Blue` of the blue ramp, and `ColorDraw::Green` decodes six bits, so
+set 0's white sums to 125; `GetColorToGradation` fills `ColorToGradation[0..93]` against those
+thresholds, and `GetIndexColor` sums a six-bit green into the same lookup. The table's three
+readers, `memcpyEffectGradation`, the GPU gradation table in `CSpriteSurface_Adapter.cpp` and
+`memcpyPalEffectGradation`, index it with three five-bit channels instead (white is 93), so a
+white pixel lands about five steps down the ramp and never on gradation 0. It is live: the
+colour-set and gradation draws use it, and `test_spritesurface_pal_blit.cpp` pins skill-state
+icons drawn with set 59. `GetColorToGradation` also measures its second distance from
+`GradationValue[g-1]` where it means `GradationValue[g]`.
+
+**How:** make the two scales agree, and fix the distance. Either way changes colours on screen, so
+work out first what the original drew (the DirectDraw build's `ColorDraw::Green` and the table
+that came with its data), then pin the new colours in the tests that pin the current ones and
+say so in the [native GPU renderer](../rendering/native-gpu-renderer.md) page.
+
+### 10. Kept in view, no task
 
 - The 5:5:5 sprite decoders are latent ([client traps](../architecture/client-traps.md)) and
   tested; nothing in the shipped data uses them.
@@ -231,7 +249,12 @@ bytes against a stated 108.
 Fixed: the routine takes green's top five bits, as the registered `memcpyEffectGradation` does,
 so a green of 32 sums to 16 and white to 93, the table's last entry; it stays unregistered, and the
 [native GPU renderer](../rendering/native-gpu-renderer.md) page says so. The sweep's other
-compiled hit, `CSprite::memcpyDarkerFilter`, had the same mask and scales the six-bit green now;
-no draw reaches it (the backend's `BltSpriteDarkerFilter` is a stub with no caller). Owners:
-`SpriteGpu.PaletteGradationTakesGreensTopFiveBits` and `DarkerFilterScalesTheSixBitGreen` in
-`tests/render/test_sprite_gpu.cpp`.
+compiled hit, `CSprite::memcpyDarkerFilter`, had the same mask and scales the six-bit green now,
+and the review found four more spelled `& 0x0000001F`, the 1:5:5:5 conversions `CSprite::memcpy1555`
+and `memcpy1555Small` and their `CSpritePal` twins, which take green's top five bits now. No draw
+reaches any of them: the backend's `BltSpriteDarkerFilter` and `BltSprite*1555*NotTrans` are stubs
+with no caller. Owners: `SpriteGpu.PaletteGradationTakesGreensTopFiveBits`,
+`DarkerFilterScalesTheSixBitGreen` and `Conversions1555TakeGreensTopFiveBits` in
+`tests/render/test_sprite_gpu.cpp`. Left: `memcpyPalEffectGradation` indexes `ColorSet[s_Value1]`
+without the range check `memcpyEffectGradation` makes, which matters once it is registered; and
+the table's scale, task 9.

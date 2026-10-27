@@ -9624,7 +9624,7 @@ CSprite::memcpy1555(WORD* pDest, WORD* pSource, WORD pixels)
 		sTemp = *pSource;
 	
 		sr = (sTemp >> ColorDraw::s_bSHIFT_R);// & 0x0F;
-		sg = (sTemp >> ColorDraw::s_bSHIFT_G) & 0x0000001F;
+		sg = ColorDraw::Green(sTemp) >> 1;	// 1:5:5:5 has five bits of green; 5:6:5 has six
 		sb = (sTemp >> ColorDraw::s_bSHIFT_B) & 0x0000001F;
 		
 		*pDest =	0x8000 |
@@ -9745,7 +9745,7 @@ CSprite::memcpy1555Small(WORD* pDest, WORD* pSource, WORD pixels)
 		sTemp = *pSource;
 	
 		sr = (sTemp >> ColorDraw::s_bSHIFT_R);// & 0x0F;
-		sg = (sTemp >> ColorDraw::s_bSHIFT_G) & 0x0000001F;
+		sg = ColorDraw::Green(sTemp) >> 1;	// 1:5:5:5 has five bits of green; 5:6:5 has six
 		sb = (sTemp >> ColorDraw::s_bSHIFT_B) & 0x0000001F;
 		
 		*pDest =	0x8000 | //(s_Value1 << 15) |

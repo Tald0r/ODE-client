@@ -1326,3 +1326,32 @@ TEST(SpriteGpu, DarkerFilterScalesTheSixBitGreen)
 	CHECK_EQ(WORD(31 << 5), drawn[1]);	// half of 63
 	CHECK_EQ(WORD(0xffff), drawn[2]);
 }
+
+// The 1:5:5:5 conversions (their blits have no caller on this backend)
+// took green's low five bits of 5:6:5's six too, so a green of 32 or more
+// lost its top bit; they take its top five now. A green of 63 and white
+// agree under both. CSpritePal::memcpy1555Small steps by statics a test
+// cannot set; it has the same line.
+TEST(SpriteGpu, Conversions1555TakeGreensTopFiveBits)
+{
+	const WORD source[3] = {0x0400, 0x07e0, 0xffff};
+	const WORD expected[3] = {WORD(0x8000 | (16 << 5)), WORD(0x8000 | (31 << 5)), WORD(0xffff)};
+	WORD drawn[3] = {0, 0, 0};
+	CSprite::memcpy1555(drawn, const_cast<WORD*>(source), 3);
+	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], drawn[i]);
+	const DWORD shift = CSprite::s_Value2, step = CSprite::s_Value3;
+	CSprite::s_Value2 = 0;
+	CSprite::s_Value3 = 1;
+	WORD small[3] = {0, 0, 0};
+	CSprite::memcpy1555Small(small, const_cast<WORD*>(source), 3);
+	CSprite::s_Value2 = shift;
+	CSprite::s_Value3 = step;
+	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], small[i]);
+	MPalette palette;
+	palette.Init(3);
+	for (int i = 0; i < 3; ++i) palette[BYTE(i)] = source[i];
+	BYTE pixels[3] = {0, 1, 2};
+	WORD fromPalette[3] = {0, 0, 0};
+	CSpritePal::memcpy1555(fromPalette, pixels, 3, palette);
+	for (int i = 0; i < 3; ++i) CHECK_EQ(expected[i], fromPalette[i]);
+}
