@@ -8,8 +8,8 @@ namespace CommunicationPresentation {
 
 // Friend, SMS address-book and whisper replies only present what they
 // receive. A missing service skips that presentation. A packet is borrowed
-// for the call, but SetSMSList's list holds the packet's AddressUnits, which
-// the executable's SMS list keeps after the call. The Hide* queries are
+// for the call, SetSMSList's list too: it holds the packet's AddressUnits,
+// which the executable's SMS list copies. The Hide* queries are
 // the player's options to hide holy-land, master-lair and war system
 // messages; a missing query hides nothing.
 struct Host

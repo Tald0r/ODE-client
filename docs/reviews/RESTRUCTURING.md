@@ -8964,6 +8964,9 @@ Follow-ups from 4.93, all older than the move:
   UI. Freeing them in the packet's destructor would leave the list dangling;
   settle ownership first. `DeleteList` also deletes the last unit it visited
   when the id is not found, which stays listed.
+  Fixed 2026-10-27 (PR #574): the SMS list keeps copies of its own type and
+  frees them on a new list, in `DeleteList` (only the unit the id names) and
+  in its destructor, and the packet frees its units.
 - `GCWhisperFailedHandler` sends its message to chat line 5, commented
   "info"; since `CLD_UNION` was inserted (2004) line 5 is the union line and
   info is 6, so whisper failures show among union chat.

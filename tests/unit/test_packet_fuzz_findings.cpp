@@ -719,19 +719,6 @@ long long	HeldHeapBytes()
 #endif
 }
 
-// What the packet does not own: the SMS list's address units are the
-// handler's to hand to the executable's SMS list, which keeps them, and
-// the packet frees none, refused or read whole (a follow-up in
-// docs/reviews/NEXT.md). The test frees what it still holds, so what it
-// measures there is the unit whose read throws.
-void	FreeWhatThePacketDoesNotOwn(Packet&) {}
-void	FreeWhatThePacketDoesNotOwn(GCSMSAddressList& packet)
-{
-	for (AddressUnit* pUnit : packet.getAddresses())
-		delete pUnit;
-	packet.getAddresses().clear();
-}
-
 // One pass of reads of PacketT, a fresh packet per frame; any refusal is
 // caught, as the receive loop catches it.
 template <class PacketT>
@@ -745,7 +732,6 @@ void	ReadShortBodies(unsigned char fill)
 			f.m_Stream.read(&packet);
 		} catch (Throwable&) {
 		}
-		FreeWhatThePacketDoesNotOwn(packet);
 	}
 }
 

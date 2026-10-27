@@ -2,6 +2,9 @@
 
 ## 2026-10-27
 
+* **Update**: the [next work plan](reviews/NEXT.md) moves its task 8 to *Done*; the
+  [restructuring plan](reviews/RESTRUCTURING.md)'s 4.93 follow-up on the SMS list's units says it
+  is fixed.
 * **Update**: the [native GPU renderer](rendering/native-gpu-renderer.md) page says the palette
   gradation effect, the darker filter and the 1:5:5:5 conversions take a six-bit green the right
   way, and that none is drawn; the [next work plan](reviews/NEXT.md) moves its task 7 to *Done* and
