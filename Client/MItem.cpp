@@ -331,7 +331,10 @@ MItem::GetName()
 				}
 			}
 
-			return (*g_pItemTable)[GetItemClass()][m_ItemType].HName;
+			// A type the table lacks reads the default row, whose name is
+			// NULL, and callers build strings from the name.
+			const char* pszHName = (*g_pItemTable)[GetItemClass()][m_ItemType].HName.GetString();
+			return pszHName != NULL ? pszHName : "";
 		}
 		//else 
 //		{
@@ -387,7 +390,9 @@ MItem::GetEName() const
 				}
 			}
 		}
-		return (*g_pItemTable)[GetItemClass()][m_ItemType].EName; 		
+		// As GetName: a type the table lacks has no name.
+		const char* pszEName = (*g_pItemTable)[GetItemClass()][m_ItemType].EName.GetString();
+		return pszEName != NULL ? pszEName : "";
 	}
 	
 

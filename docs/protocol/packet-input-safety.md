@@ -60,7 +60,7 @@ length, or in a fixed array through a call bounded by that array: `snprintf(dst,
 The 128-byte stack buffers this page used to name are of that kind now. The longest string,
 `GCNPCAskDynamic`'s subject and answers (`WORD` lengths, bounded only by the frame's 11,294-byte
 maximum), is cut to the talk box's 2048-byte row. Not followed: the descriptor renderers other than
-the blood bible's, and the view, which keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have
+the blood bible's (followed since, below), and the view, which keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have
 seen none of the routes walked here, so a new string sink is found by the same walk.
 
 **The text system holds a server string safely** (followed 2026-10-27, task 5 (a) of the
@@ -75,6 +75,54 @@ glyph that made it break, and `DrawLine` draws past a newline that the measure i
 at. The walk stops at `TTF_RenderUTF8_Blended` and `spritectl_blt_sprite`, SDL_ttf's and the
 backend's. `tests/unit/test_text_wrap_bounds.cpp` pins a 2048-byte row of mixed and malformed
 UTF-8 wrapped, measured and drawn, and the two widths.
+
+**The descriptor renderers: three server values reached a `NULL` that a `std::string` cannot
+take** (followed 2026-10-27, task 5 (b) of the [next work plan](../reviews/NEXT.md)). Of the eight
+renderers `g_InstallDescriptor` registers (`VS_UI/src/VS_UI_Description.cpp`), the item's takes a
+model object and the two skill renderers a skill id (the tree's a domain too). The others take
+strings, a help page or the blood bible's status, which were followed before. The item renderers
+take an `MItem` and a second item, a socketed core zap. `MItemHost::ItemDestroyed` drops the
+descriptor when either one is deleted, and the description dialog (`RunDescDialog`) reads its item
+once, when it is built, and keeps only the text. Every lookup by the item's class, type, option ids
+or enchant level goes through a type table that answers a default row, or through `GetPartName`,
+which range-checks the part. The option loop stops at the option table's size, the price per unit
+is divided only under `GetNumber() >= 1`, and the core zap's lines are drawn only for types 0 to 3.
+A default row's names are `NULL`, which `g_Print`, `g_GetStringWidth` and `SafeFormat` accept, but
+two names reached code that does not:
+- the item's own name. `MItem::GetName` and `GetEName` answered the default row's `NULL` for a
+  type the table lacks; the description dialog appends both to `std::string`s, and
+  `GCRemoveFromGearHandler` formats the name with `snprintf`'s `%s`. They answer an empty name now
+  (`ItemCore.ATypeTheTableLacksIsNamedEmpty`);
+- a pet's option name, which prefixes its tooltip (`MPetItem::GetPetOptionName` and `EName`). The
+  pet's level is its item number, the server's byte, and below ten the unsigned level less ten
+  wrapped to 429,496,728: for a pet with the luck or all-attribute part, the name was looked up
+  that far past the game string table and its `NULL` assigned to a `std::string`. A pet under level
+  ten has no option name now, and the lookup goes through `GetGameString`, which answers an empty
+  string for any id (`PetOptionPart.APetUnderLevelTenHasNoOptionName`,
+  `PetOptionPart.APetPastItsPartsRowsWithNoStringIsUnnamed`).
+
+The tree renderer's skill id comes from its domain's tree, which is data. The skill renderer's
+(`DID_SKILL`) comes from the usable skill set (`MSkillSet`): the skill window's wheel cycles
+through it, skipping passive skills, and the window's timer shows the selected skill's description. A learned skill is one its domain's tree holds (`MSkillDomain::LearnSkill`), and
+`GCLearnSkillOK` adds only an id the skill table holds (for a slayer or vampire, even one the tree
+refused). A bomb or mine adds its item row's action, and a type the item table lacks reads the
+default row, whose action is `ACTIONINFO_NULL` (0xFFFF): past the skill table and past the values
+the action enum can hold (0 to 2,047), so the cast to it was undefined too. Both the rebuild (`MSkillSet::SetAvailableSkills`) and the pickup reply
+(`GCDeleteandPickUpOK`) added it. Its description read the default skill row, whose learn level, 100,
+is under the default limit of 255, so it appended the row's `NULL` English name to a
+`std::string`, which crashes. Neither site adds the null action now
+(`SkillAvailable.ABombOrMineOfATypeTheTableLacksShowsNoAction`,
+`PickupReplies.ABombOrMineOfATypeTheTableLacksGivesNoSkill`). The
+[code-health review](../reviews/code-health-review-2026-08-29.md) has a row for each of the three.
+
+The server values the skill renderers draw are a skill's level and exp, as numbers and an exp
+percent through `SafeFormat`. The slayer window's exp bar, outside the renderers, clips the same
+percent to a rect, and `WithSpriteClip` draws nothing for the inverted rect a negative exp makes.
+Two hazards come from the data files, not the server: the percent divides by a hundredth of the
+row's max exp, which is zero for a max exp of 1 to 99, and an unnamed skill row's `NULL` name
+would reach the same `std::string`, as an unnamed option row or a missing game string at a fixed id
+would reach the item tooltip's (the quest prefix, the pet's option name, "not exist"). The walk stops at the skill window's own drawing of the ids in
+the usable set, which is route (d).
 
 **One string could grow without bound instead.** `GCNPCAskVariable`'s parameters fill an NPC
 line's `%(Name)` markers through `ApplyParameters` (`Client/MNPCScriptTable.cpp`), which runs the

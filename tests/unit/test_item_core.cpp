@@ -380,6 +380,17 @@ TEST(ItemCore, SwordNameIsTheTableName)
 	CHECK(StrEq(item.GetEName(), "Longsword"));
 }
 
+// The type is the server's. Past the table's two rows it reads the default
+// row, whose names hold NULL, and callers build strings from a name.
+TEST(ItemCore, ATypeTheTableLacksIsNamedEmpty)
+{
+	ItemWorld world;
+	Sword item;
+	item.SetItemType(2);
+	CHECK(StrEq(item.GetName(), ""));
+	CHECK(StrEq(item.GetEName(), ""));
+}
+
 //----------------------------------------------------------------------
 // The pet affect refresh goes through the host before the colour read.
 //----------------------------------------------------------------------
