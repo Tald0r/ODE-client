@@ -60,7 +60,7 @@ length, or in a fixed array through a call bounded by that array: `snprintf(dst,
 The 128-byte stack buffers this page used to name are of that kind now. The longest string,
 `GCNPCAskDynamic`'s subject and answers (`WORD` lengths, bounded only by the frame's 11,294-byte
 maximum), is cut to the talk box's 2048-byte row. Not followed: the descriptor renderers other than
-the blood bible's (followed since, below), and the view, which keeps pointers to the names it draws. No ratchet pins the result: a spelling count would have
+the blood bible's, and the view, which keeps pointers to the names it draws (both followed since, below). No ratchet pins the result: a spelling count would have
 seen none of the routes walked here, so a new string sink is found by the same walk.
 
 **The text system holds a server string safely** (followed 2026-10-27, task 5 (a) of the
@@ -123,6 +123,58 @@ row's max exp, which is zero for a max exp of 1 to 99, and an unnamed skill row'
 would reach the same `std::string`, as an unnamed option row or a missing game string at a fixed id
 would reach the item tooltip's (the quest prefix, the pet's option name, "not exist"). The walk stops at the skill window's own drawing of the ids in
 the usable set, which is route (d).
+
+**The view's name draws hold their names, but three things the server reaches were open**
+(followed 2026-10-28, task 5 (c) of the [next work plan](../reviews/NEXT.md)). A `DRAWTEXT_NODE`
+keeps a `const char*`, not a copy. `MTopView::DrawZone` queues the nodes while it draws, then prints
+and frees them at its end (`DrawTextList`, `ClearTextList`), and no handler runs in between. If the
+surface does not lock, `DrawZone` returns early, and rows `DrawEvent` queued before that wait for
+the next frame: they point into the player's own chat ring, which outlives them. Every queued
+string lives in the model or a table at least that long: a creature's name, its nickname's
+`std::string`, its chat ring, its level name and hallucination name (indices `CreatureNameSelection`
+bounds by the table's size), the player's character id, and an item's name. `g_Print` and
+`DrawTextList` both accept `NULL`. The item name list is rebuilt at the start of each `DrawZone`,
+and its node copies the item's id; `SelectItemName`, which runs between frames, looks the item up
+in the zone by that id, never through the pointer. The hovered creature (`m_pSelectedCreature`) is
+reset at the same point and read only during the frame.
+
+The indices in the name draws hold:
+- the name's colour is one of five alignment colours, and `MCreature::SetStatus` stores every
+  creature's alignment through `ConvertAlignment`, which answers 0 to 4. The player's own name
+  takes the converted step in its character slot, not its stored value, which is raw;
+- the guild id is a key into the guild info map, and the mark's sprite id is tested against the
+  mark file's index (`MGuildMarkManager`);
+- the grade and pet-level marks are bounded by their callers, and the sprite pack (`CTypePack2`)
+  answers an empty sprite past its end;
+- the request icon's frame is clamped to its last.
+
+Three things were open, each fixed with a test that failed on the unfixed code; the
+[code-health review](../reviews/code-health-review-2026-08-29.md) has a row for each:
+- **the HP bars overflowed an `int`.** The bars under a creature's name, over the player's own and
+  beside a party member computed `maxPixels * currentHP / maxHP` in `int`. A creature's HP is 32
+  bits from the server (`GCOtherModifyInfo`'s long entries set any status of another creature, and
+  `GCModifyInformation` the player's), so for HP from about 21 million (2^31 over the bar's width)
+  the product overflowed: undefined, and in practice a bar of the wrong length, empty at
+  0x7FFFFFFF. The product is 64 bits now, and the party bar clamps a current HP negative as an
+  `int` to 0 as the other two do, so a maximum past 2^31 draws full there too
+  (`TopView1Name.TheHPBarIsQueuedUnderTheName`,
+  `TopView1MyName.ThePlayersNameAndBarSitOverItsHead`,
+  `TopView3PartyHP.AFullBarAtTheTopOfThirtyOneBitsIsFull`). The name bars' boxes are clipped to
+  the surface, and the party bar draws its foreground only when its edge is right of the surface's
+  left side, so the overflow never reached memory;
+- **a nameless creature's name went to `strncmp`.** A fake creature other than a pet (an afterimage, a
+  turret) is never named, and the fake ids (0 to 9999) are chosen without regard to the server's,
+  which can use the same; the hovered id then selects the fake instead when it is drawn after, and
+  `DrawCreatureName` compared its `NULL` name with the operator prefix. It tests the name first now
+  (`TopView1Name.ANamelessCreatureQueuesNoName`);
+- **an undrawn item name kept an uninitialised box.** `DRAWITEMNAME_NODE` got its box only from
+  `DrawItemNameList`, which skips an empty name and everything in darkness or a coffin, while
+  `SelectItemName` hit-tests every node on every update while the list is on: a node over recycled memory could select
+  an item whose name was never shown. The box starts empty now
+  (`TopView1ItemNames.ANameNotYetDrawnHoldsNoPoint`).
+
+The walk stops at the text system, followed in (a), and at the chat ring's contents, which the
+string audit above bounded.
 
 **One string could grow without bound instead.** `GCNPCAskVariable`'s parameters fill an NPC
 line's `%(Name)` markers through `ApplyParameters` (`Client/MNPCScriptTable.cpp`), which runs the

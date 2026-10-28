@@ -21,6 +21,8 @@ class DRAWITEMNAME_NODE {
 			m_Distance	= dist;
 			m_ID		= pItem->GetID();
 			m_pItem		= pItem;
+			// No point until DrawItemNameList places the name, which it can skip.
+			m_Rect		= RECT{0, 0, 0, 0};
 		}
 
 		//-------------------------------------------------------

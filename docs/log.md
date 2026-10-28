@@ -1,5 +1,13 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-28
+
+* **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the walk of the
+  view's name pointers and the three things it found open (HP bars overflowing an `int`, a fake
+  creature's `NULL` name in `strncmp`, an item name's uninitialised box), fixed with rows in the
+  [code-health review](reviews/code-health-review-2026-08-29.md); the
+  [next work plan](reviews/NEXT.md) moves task 5 (c) to *Done*.
+
 ## 2026-10-27
 
 * **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the descriptor

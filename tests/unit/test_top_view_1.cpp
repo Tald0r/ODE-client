@@ -48,6 +48,7 @@
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <new>
 #include <set>
 #include <string>
 #include <vector>
@@ -1136,6 +1137,24 @@ TEST(TopView1ItemNames, APointPicksTheFirstNameWhoseBoxHoldsIt)
 	CHECK(v.SelectItemName(50, 50) == nullptr);
 }
 
+// A name gets its box only when DrawItemNameList draws it, which it skips in
+// darkness or a coffin and for an empty name, while SelectItemName runs on
+// every update. A node built over a placed one's memory holds no point.
+TEST(TopView1ItemNames, ANameNotYetDrawnHoldsNoPoint)
+{
+	Model model;
+	std::unique_ptr<MItem> item = Item(100);
+	alignas(DRAWITEMNAME_NODE) unsigned char storage[sizeof(DRAWITEMNAME_NODE)];
+	DRAWITEMNAME_NODE* placed = new (storage) DRAWITEMNAME_NODE(1, item.get());
+	placed->SetRect(RECT{0, 0, 100, 100});
+	CHECK(placed->IsPointInRect(50, 50));
+	placed->~DRAWITEMNAME_NODE();
+	DRAWITEMNAME_NODE* fresh = new (storage) DRAWITEMNAME_NODE(1, item.get());
+	CHECK(!fresh->IsPointInRect(50, 50));
+	CHECK(!fresh->IsPointInRect(0, 0));
+	fresh->~DRAWITEMNAME_NODE();
+}
+
 //----------------------------------------------------------------------
 // The text queue
 //----------------------------------------------------------------------
@@ -2033,6 +2052,7 @@ void LoadSprite(CSprite& sprite, int n)
 // A creature whose drawn state a test sets.
 template<class Kind> struct Figure : Kind
 {
+	using MCreature::m_pName;
 	using MCreature::m_CreatureType;
 	using MCreature::m_ChatString;
 	using MCreature::m_ChatStringCurrent;
@@ -2811,6 +2831,21 @@ TEST(TopView1Name, NoNameForGhostsGatesTheBuriedOrTheFarWhenBlind)
 	}
 }
 
+// A fake creature other than a pet (an afterimage, a turret) is never named, and the server
+// chooses creature ids, so one can match a fake's and make it the hovered one.
+TEST(TopView1Name, ANamelessCreatureQueuesNoName)
+{
+	Hud scene;
+	MTopView& v = *scene;
+	v.m_pointChatString = {60, 100};
+	Creature c;
+	c.Become(kMonster, 9, 5, 5, "Kim");
+	delete[] c.m_pName;
+	c.m_pName = NULL;
+	Access::Name(v, &c);
+	CHECK(Queue(v).empty());
+}
+
 TEST(TopView1Name, TheHPBarIsQueuedUnderTheName)
 {
 	Hud scene;
@@ -2829,6 +2864,8 @@ TEST(TopView1Name, TheHPBarIsQueuedUnderTheName)
 		{150, 100, bar.maxHPBar},		// past the maximum: full
 		{0xFFFFFFFFu, 100, 0},		// negative: empty
 		{1, 300, bar.maxHPBar / 300},
+		{0x7FFFFFFFu, 0x7FFFFFFFu, bar.maxHPBar},	// the server's 32 bits: full, not overflowed
+		{50, 0x80000000u, bar.maxHPBar},			// a maximum negative as an int: full
 	};
 	for (const auto& test : cases)
 	{
@@ -3261,6 +3298,7 @@ TEST(TopView1MyName, ThePlayersNameAndBarSitOverItsHead)
 		{90, 60, bar.maxHPBar},
 		{0, 60, 0},
 		{30, 0, 0},		// no maximum: empty, where a creature's is full
+		{0x7FFFFFFFu, 0x7FFFFFFFu, bar.maxHPBar},	// the server's 32 bits: full, not overflowed
 	};
 	for (const auto& test : cases)
 	{
