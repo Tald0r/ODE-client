@@ -176,6 +176,56 @@ Three things were open, each fixed with a test that failed on the unfixed code; 
 The walk stops at the text system, followed in (a), and at the chat ring's contents, which the
 string audit above bounded.
 
+**`VS_UI`'s own reads of the model hold its grids and trees, but its bars and the skill window's
+delay divided by the server's values, and its colour sets were the server's** (followed
+2026-10-29, task 5 (d) of the [next work plan](../reviews/NEXT.md)). The skill window draws an id
+from the usable skill set through the skill table's sprite id and a sprite pack, both of which
+answer a default past their end, and since task 5 (b) the set holds only ids the table has; its
+hotkeys come from the player's own file. The skill trees draw from static tables and constant
+domains. An inventory grid draws an item at the cell `MGridItemManager` accepted it into, with a
+frame from the item table and a sprite pack, which both answer a default.
+
+Three things were open, each fixed in the library or the window with a test; the
+[code-health review](../reviews/code-health-review-2026-08-29.md) has a row for each:
+- **the bars divided by a maximum the server sends.** The player's HP and MP bars
+  (`C_VS_UI_HPBAR`) divided by the maxima in the player's slot (16-bit in the player's info,
+  32-bit in `GCModifyInformation`'s long entries), the party manager by each member's maximum HP
+  (`GCPartyPosition`), and the experience bars (the HP bar's own for vampires and ousters, the
+  ousters window's, the slayer window's domain bars) by the goal of the player's level or domain
+  level, which reads 0 past the experience table's last row. A maximum or goal of 0 was an integer
+  division by zero on every draw, a trap on x86; the ousters MP bar's `MP_MAX + 1` was 0 for a
+  maximum of 0xFFFFFFFF, and the info window's domain bars and their total multiplied the server's
+  32-bit domain levels in `int`. Every such bar goes through `BarFill` (`VS_UI_util.h`) now, which
+  multiplies in 64 bits, clamps to the bar and draws nothing for no maximum, and the total is
+  summed in 64 bits. `HPBar.AFillIsSixtyFourBitsClampedAndEmptyWithNoMaximum` pins `BarFill`;
+  `HPBar.EveryBarIsDrawnWithNoMaximumToDivideBy` and `PartyManager.AMemberWithNoMaximumHPIsDrawn`
+  draw the HP bar (across and down, every race, maxima of 0 and 0xFFFFFFFF) and the party manager,
+  where UBSan reported a division by zero at 20 lines on the unfixed code. Apple Silicon does not
+  trap on one, so on macOS they are regression guards, and no test draws the slayer, ousters
+  or info window;
+- **the skill window's delay divided by a formula of the server's level.** `C_VS_UI_SKILL::GetDelay`
+  shows the share of a usable skill's delay left, and Will of Life's delay is its formula's for the
+  player's level, after the table's delay was tested: `GetWillOfLifeDelay` multiplies decore's
+  `(30 + level) * 2` by 100, which is 0 at -30 and overflows an `int` from about 10.7 million.
+  `WillOfLifeOutput` takes a level outside the byte the PC infos carry (0 to 255) as that byte's
+  nearer end now, where the delay neither overflows nor reaches 0
+  (`VampireSkillCost.WillOfLifeTakesALevelPastTheWireByteAsItsLast`: on the unfixed code the delay
+  at -30 was 0, and UBSan reported the window's division);
+- **a colour set past the table indexed `ColorSet`.** Every indexed pixel reads
+  `CIndexSprite::ColorSet[s_IndexValue[channel]]`, a static table of `MAX_COLORSET` (495) rows,
+  and the server chooses some colour sets: a pet item's main colour (`SetItemColorSet` from the
+  item's slot info, which `GetItemOptionColorSet` answers for a pet), the player's skin and hair
+  (the player's info), and the character list's skin, which `MakeCharacterSlot` clamps to the
+  table except for the two special values. `SetUsingColorSet` and `SetUsingColorSetOnly` store a
+  set the table lacks as the first row now (`CIndexSpriteColorSet.ASetPastTheTableIsDrawnWithTheFirst`).
+  Most callers map the quest and unique items' special values (0xFFFE, 0xFFFF) first, as before;
+  the few that pass one unmapped (that skin, an operator's body colour taken from a unique coat)
+  draw the first row now, where they read past the table.
+
+The walk stops at the sprite data: a pixel's gradation byte indexes within a row of `ColorSet`
+(0 to 255 into 30 entries) unchecked in the CPU decoders and the SDL wipe, which only the sprite
+packs choose.
+
 **One string could grow without bound instead.** `GCNPCAskVariable`'s parameters fill an NPC
 line's `%(Name)` markers through `ApplyParameters` (`Client/MNPCScriptTable.cpp`), which runs the
 keys in map order, so a value may hold a later key's marker. Each level multiplied the text: up to

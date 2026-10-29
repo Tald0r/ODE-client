@@ -1700,7 +1700,7 @@ void C_VS_UI_SLAYER::Show()
 					if(goal_exp)
 					{
 						m_pC_main_spk->BltLocked(x+bar_x, y+bar_y+bar_gap*0, EXP_BACK);
-						rect.Set(0, 0, m_pC_main_spk->GetWidth(EXP_BAR)*(goal_exp - exp_remain)/(max(1, goal_exp)), m_pC_main_spk->GetHeight(EXP_BAR));
+						rect.Set(0, 0, BarFill(m_pC_main_spk->GetWidth(EXP_BAR), (long long)goal_exp - exp_remain, goal_exp), m_pC_main_spk->GetHeight(EXP_BAR));
 						m_pC_main_spk->BltLockedClip(x+bar_x+3, y+bar_y+bar_gap*0+3, rect, EXP_BAR);
 					}
 					exp_remain = g_char_slot_ingame.DEX_EXP_REMAIN;
@@ -1708,7 +1708,7 @@ void C_VS_UI_SLAYER::Show()
 					if(goal_exp)
 					{
 						m_pC_main_spk->BltLocked(x+bar_x, y+bar_y+bar_gap*1, EXP_BACK);
-						rect.Set(0, 0, m_pC_main_spk->GetWidth(EXP_BAR)*(goal_exp - exp_remain)/(max(1, goal_exp)), m_pC_main_spk->GetHeight(EXP_BAR));
+						rect.Set(0, 0, BarFill(m_pC_main_spk->GetWidth(EXP_BAR), (long long)goal_exp - exp_remain, goal_exp), m_pC_main_spk->GetHeight(EXP_BAR));
 						m_pC_main_spk->BltLockedClip(x+bar_x+3, y+bar_y+bar_gap*1+3, rect, EXP_BAR);
 					}
 					exp_remain = g_char_slot_ingame.INT_EXP_REMAIN;
@@ -1716,7 +1716,7 @@ void C_VS_UI_SLAYER::Show()
 					if(goal_exp)
 					{
 						m_pC_main_spk->BltLocked(x+bar_x, y+bar_y+bar_gap*2, EXP_BACK);
-						rect.Set(0, 0, m_pC_main_spk->GetWidth(EXP_BAR)*(goal_exp - exp_remain)/(max(1, goal_exp)), m_pC_main_spk->GetHeight(EXP_BAR));
+						rect.Set(0, 0, BarFill(m_pC_main_spk->GetWidth(EXP_BAR), (long long)goal_exp - exp_remain, goal_exp), m_pC_main_spk->GetHeight(EXP_BAR));
 						m_pC_main_spk->BltLockedClip(x+bar_x+3, y+bar_y+bar_gap*2+3, rect, EXP_BAR);
 					}
 
@@ -1727,7 +1727,7 @@ void C_VS_UI_SLAYER::Show()
 						const int goal_exp = (*g_pSkillManager)[domain[i]].GetExpInfo(domain_level).GoalExp;
 						//도메인 경험치 바
 						m_pC_main_spk->BltLocked(x+bar_x, y+bar_y+bar_gap*(3+i), EXP_BACK);
-						rect.Set(0, 0, m_pC_main_spk->GetWidth(EXP_BAR)*(goal_exp - exp_remain)/(goal_exp), m_pC_main_spk->GetHeight(EXP_BAR));
+						rect.Set(0, 0, BarFill(m_pC_main_spk->GetWidth(EXP_BAR), (long long)goal_exp - exp_remain, goal_exp), m_pC_main_spk->GetHeight(EXP_BAR));
 						m_pC_main_spk->BltLockedClip(x+bar_x+3, y+bar_y+bar_gap*(3+i)+3, rect, EXP_BAR);
 					}
 					

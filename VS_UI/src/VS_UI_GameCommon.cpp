@@ -11245,7 +11245,7 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 			if(i == 0)
 			{
 				Rect rect;
-				rect.Set(0, 0, (m_p_image_spk->GetWidth(HPBAR))*g_char_slot_ingame.HP/g_char_slot_ingame.HP_MAX, m_p_image_spk->GetHeight(HPBAR));
+				rect.Set(0, 0, BarFill(m_p_image_spk->GetWidth(HPBAR), g_char_slot_ingame.HP, g_char_slot_ingame.HP_MAX), m_p_image_spk->GetHeight(HPBAR));
 				m_p_image_spk->BltLockedClip(point.x +34, point.y +25, rect, HPBAR);
 			}
 			else
@@ -11254,7 +11254,7 @@ void	C_VS_UI_PARTY_MANAGER::Show()
 				if(info)
 				{
 					Rect rect;
-					rect.Set(0, 0, (m_p_image_spk->GetWidth(HPBAR))*info->HP/info->MaxHP, m_p_image_spk->GetHeight(HPBAR));
+					rect.Set(0, 0, BarFill(m_p_image_spk->GetWidth(HPBAR), info->HP, info->MaxHP), m_p_image_spk->GetHeight(HPBAR));
 					m_p_image_spk->BltLockedClip(point.x +34, point.y +25, rect, HPBAR);
 				}
 			}
@@ -15849,7 +15849,7 @@ void	C_VS_UI_INFO::_Show1()
 					
 					//도메인 레벨 바
 					Rect rect;
-					rect.Set(0, 0, gpC_global_resource->m_pC_info_spk->GetWidth(C_GLOBAL_RESOURCE::DOMAIN_BAR)*domain_level/MAX_LEVEL, gpC_global_resource->m_pC_info_spk->GetHeight(C_GLOBAL_RESOURCE::DOMAIN_BAR));
+					rect.Set(0, 0, BarFill(gpC_global_resource->m_pC_info_spk->GetWidth(C_GLOBAL_RESOURCE::DOMAIN_BAR), domain_level, MAX_LEVEL), gpC_global_resource->m_pC_info_spk->GetHeight(C_GLOBAL_RESOURCE::DOMAIN_BAR));
 					gpC_global_resource->m_pC_info_spk->BltLockedClip(x+domain_bar_x, y+domain_bar_y+skip_y, rect, C_GLOBAL_RESOURCE::DOMAIN_BAR);
 					
 					//도메인 경험치 바
@@ -15981,8 +15981,9 @@ void	C_VS_UI_INFO::_Show1()
 					gpC_base->m_p_DDSurface_back->Lock();
 				}
 				
-				int dm_level = 0;
-				int dm_sum = 0;
+				// The total sums five of the server's 32-bit domain levels.
+				long long dm_level = 0;
+				long long dm_sum = 0;
 				for(int i = 0; i < 6; i++)
 				{
 					Rect rect;
@@ -15999,7 +16000,7 @@ void	C_VS_UI_INFO::_Show1()
 						dm_level = (*g_pSkillManager)[(SKILLDOMAIN)i].GetDomainLevel();
 						dm_sum += dm_level;
 					}
-					rect.Set(0, 0, gpC_global_resource->m_pC_info_spk->GetWidth(C_GLOBAL_RESOURCE::DOMAIN_BAR)*dm_level/MAX_LEVEL, gpC_global_resource->m_pC_info_spk->GetHeight(C_GLOBAL_RESOURCE::DOMAIN_BAR));
+					rect.Set(0, 0, BarFill(gpC_global_resource->m_pC_info_spk->GetWidth(C_GLOBAL_RESOURCE::DOMAIN_BAR), dm_level, MAX_LEVEL), gpC_global_resource->m_pC_info_spk->GetHeight(C_GLOBAL_RESOURCE::DOMAIN_BAR));
 					gpC_global_resource->m_pC_info_spk->BltLockedClip(x+domain_bar_x-20, y+domain_bar_y+i*30+skip_y, rect, C_GLOBAL_RESOURCE::DOMAIN_BAR);
 				}
 				
@@ -16153,7 +16154,7 @@ void	C_VS_UI_INFO::_Show1()
 		{
 			g_FL2_GetDC();
 			
-			int dm_level = 0, dm_sum = 0;
+			long long dm_level = 0, dm_sum = 0;	// as above: five 32-bit levels
 			char sz_temp[80];
 			
 			for(int i = 0; i < 6; i++)
@@ -20843,14 +20844,14 @@ void C_VS_UI_HPBAR::Show()
 					
 					Rect rect;
 					//hpbar
-					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(HPBAR_WIDTH+m_small_offset)*hp/max(1, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetHeight(HPBAR_WIDTH+m_small_offset));
+					rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(HPBAR_WIDTH+m_small_offset), hp, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetHeight(HPBAR_WIDTH+m_small_offset));
 					if(g_char_slot_ingame.bl_drained)
 						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_BLOOD_WIDTH+m_small_offset);
 					else
 						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_WIDTH+m_small_offset);
 					
 					//mpbar
-					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(MPBAR_WIDTH+m_small_offset)*mp/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetHeight(MPBAR_WIDTH+m_small_offset));
+					rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(MPBAR_WIDTH+m_small_offset), mp, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetHeight(MPBAR_WIDTH+m_small_offset));
 					m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, MPBAR_WIDTH+m_small_offset);
 				}
 				else
@@ -20869,14 +20870,14 @@ void C_VS_UI_HPBAR::Show()
 					
 					Rect rect;
 					//hpbar
-					rect.Set(0, m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)-m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)*hp/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetWidth(HPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)*hp/g_char_slot_ingame.HP_MAX);
+					rect.Set(0, m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)-BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset), hp, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetWidth(HPBAR_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset), hp, g_char_slot_ingame.HP_MAX));
 					if(g_char_slot_ingame.bl_drained)
 						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_BLOOD_HEIGHT+m_small_offset);
 					else
 						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_HEIGHT+m_small_offset);
 					
 					//mpbar
-					rect.Set(0, m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)-m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)*mp/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetWidth(MPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)*mp/g_char_slot_ingame.MP_MAX);
+					rect.Set(0, m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)-BarFill(m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset), mp, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetWidth(MPBAR_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset), mp, g_char_slot_ingame.MP_MAX));
 					m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, MPBAR_HEIGHT+m_small_offset);
 				}
 				gpC_base->m_p_DDSurface_back->Unlock();
@@ -20920,11 +20921,11 @@ void C_VS_UI_HPBAR::Show()
 					Rect rect;
 					
 					// hpbar
-					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(HPBAR_WIDTH+m_small_offset)*hp/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetHeight(HPBAR_WIDTH+m_small_offset));
+					rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(HPBAR_WIDTH+m_small_offset), hp, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetHeight(HPBAR_WIDTH+m_small_offset));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_WIDTH+m_small_offset);
 					
 					// slivered hpbar
-					rect.Set(m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_WIDTH+m_small_offset)-m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_WIDTH+m_small_offset)*g_char_slot_ingame.SILVER_HP/g_char_slot_ingame.HP_MAX, 0, m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_WIDTH+m_small_offset)*g_char_slot_ingame.SILVER_HP/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetHeight(HPBAR_SILVER_WIDTH+m_small_offset));
+					rect.Set(m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_WIDTH+m_small_offset)-BarFill(m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_WIDTH+m_small_offset), g_char_slot_ingame.SILVER_HP, g_char_slot_ingame.HP_MAX), 0, BarFill(m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_WIDTH+m_small_offset), g_char_slot_ingame.SILVER_HP, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetHeight(HPBAR_SILVER_WIDTH+m_small_offset));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_SILVER_WIDTH+m_small_offset);
 					
 					//exp bar
@@ -20932,7 +20933,7 @@ void C_VS_UI_HPBAR::Show()
 					__int64 goal_exp = g_pExperienceTable->GetVampireInfo( g_char_slot_ingame.level ).GoalExp;
 					int exp_width = m_pC_hpbar_spk->GetWidth(EXPBAR_WIDTH+m_small_offset);
 					int exp_height = m_pC_hpbar_spk->GetHeight(EXPBAR_WIDTH+m_small_offset);
-					int exp_bar = exp_width * (goal_exp - exp_remain) / goal_exp;
+					int exp_bar = BarFill(exp_width, goal_exp - exp_remain, goal_exp);
 					
 					//exp bar
 					rect.Set(0, 0, exp_bar, exp_height );
@@ -20956,18 +20957,18 @@ void C_VS_UI_HPBAR::Show()
 					Rect rect;
 					
 					// hpbar
-					rect.Set(0, m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)-m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)*hp/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetWidth(HPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)*hp/g_char_slot_ingame.HP_MAX);
+					rect.Set(0, m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)-BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset), hp, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetWidth(HPBAR_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset), hp, g_char_slot_ingame.HP_MAX));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_HEIGHT+m_small_offset);
 					
 					// silver hpbar
-					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(HPBAR_SILVER_HEIGHT+m_small_offset)*g_char_slot_ingame.SILVER_HP/g_char_slot_ingame.HP_MAX);
+					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(HPBAR_SILVER_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_SILVER_HEIGHT+m_small_offset), g_char_slot_ingame.SILVER_HP, g_char_slot_ingame.HP_MAX));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_SILVER_HEIGHT+m_small_offset);
 					
 					int exp_remain = g_char_slot_ingame.EXP_REMAIN;
 					__int64 goal_exp = g_pExperienceTable->GetVampireInfo( g_char_slot_ingame.level ).GoalExp;
 					int exp_width = m_pC_hpbar_spk->GetWidth(EXPBAR_HEIGHT+m_small_offset);
 					int exp_height = m_pC_hpbar_spk->GetHeight(EXPBAR_HEIGHT+m_small_offset);
-					int exp_bar = exp_height * (goal_exp - exp_remain) / goal_exp;
+					int exp_bar = BarFill(exp_height, goal_exp - exp_remain, goal_exp);
 					
 					//exp bar
 					rect.Set(0, exp_height - exp_bar, exp_width, exp_bar);
@@ -20999,7 +21000,10 @@ void C_VS_UI_HPBAR::Show()
 		{
 			if(gpC_base->m_p_DDSurface_back->Lock())
 			{
-				int Magnification = min(2, (g_char_slot_ingame.MP / (g_char_slot_ingame.MP_MAX+1))) ;
+				// MP past the maximum fills a second and third bar. The maximum is the
+				// server's: 0xFFFFFFFF is -1 here, and its +1 was a division by zero.
+				const long long mpShare = g_char_slot_ingame.MP_MAX < 0 ? 0 : g_char_slot_ingame.MP / (g_char_slot_ingame.MP_MAX + 1LL);
+				int Magnification = mpShare < 0 ? 0 : mpShare > 2 ? 2 : int(mpShare);
 				int CurrentMP = g_char_slot_ingame.MP - (g_char_slot_ingame.MP_MAX*Magnification);
 				int mp = min(max(0, g_char_slot_ingame.MP), g_char_slot_ingame.MP_MAX);
 				
@@ -21021,20 +21025,20 @@ void C_VS_UI_HPBAR::Show()
 					Rect rect;
 					
 					// hpbar
-					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(HPBAR_WIDTH+m_small_offset)*hp/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetHeight(HPBAR_WIDTH+m_small_offset));
+					rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(HPBAR_WIDTH+m_small_offset), hp, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetHeight(HPBAR_WIDTH+m_small_offset));
 //					if(g_char_slot_ingame.bl_drained)
 						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_WIDTH+m_small_offset);
 //					else
 //						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, OUSTERS_HPBAR_BLOOD_WIDTH+m_small_offset);
 					
 					// slivered hpbar
-					rect.Set(m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset)-m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset)*g_char_slot_ingame.SILVER_HP/g_char_slot_ingame.HP_MAX, 0, m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset)*g_char_slot_ingame.SILVER_HP/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetHeight(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset));
+					rect.Set(m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset)-BarFill(m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset), g_char_slot_ingame.SILVER_HP, g_char_slot_ingame.HP_MAX), 0, BarFill(m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset), g_char_slot_ingame.SILVER_HP, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetHeight(OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, OUSTERS_HPBAR_SILVER_WIDTH+m_small_offset);
 
 					//mpbar
 					if(Magnification == 0)
 					{
-						rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(MPBAR_WIDTH+m_small_offset)*mp/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetHeight(MPBAR_WIDTH+m_small_offset));
+						rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(MPBAR_WIDTH+m_small_offset), mp, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetHeight(MPBAR_WIDTH+m_small_offset));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, MPBAR_WIDTH+m_small_offset);
 					}
 					else if( Magnification == 1)
@@ -21043,7 +21047,7 @@ void C_VS_UI_HPBAR::Show()
 
 						rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(MPBAR_WIDTH+m_small_offset), m_pC_hpbar_spk->GetHeight(MPBAR_WIDTH+m_small_offset));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, MPBAR_WIDTH+m_small_offset);
-						rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(sprIndex1)*CurrentMP/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetHeight(sprIndex1));
+						rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(sprIndex1), CurrentMP, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetHeight(sprIndex1));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, sprIndex1);
 					}
 					else if( Magnification == 2)
@@ -21053,7 +21057,7 @@ void C_VS_UI_HPBAR::Show()
 
 						rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(sprIndex1), m_pC_hpbar_spk->GetHeight(sprIndex1));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, sprIndex1);
-						rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(sprIndex2)*CurrentMP/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetHeight(sprIndex2));
+						rect.Set(0, 0, BarFill(m_pC_hpbar_spk->GetWidth(sprIndex2), CurrentMP, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetHeight(sprIndex2));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, sprIndex2);
 					}
 					
@@ -21061,7 +21065,7 @@ void C_VS_UI_HPBAR::Show()
 					__int64 goal_exp = g_pExperienceTable->GetOustersInfo( g_char_slot_ingame.level ).GoalExp;
 					int exp_width = m_pC_hpbar_spk->GetWidth(OUSTERS_EXPBAR_WIDTH+m_small_offset);
 					int exp_height = m_pC_hpbar_spk->GetHeight(OUSTERS_EXPBAR_WIDTH+m_small_offset);
-					int exp_bar = exp_width * (goal_exp - exp_remain) / goal_exp;
+					int exp_bar = BarFill(exp_width, goal_exp - exp_remain, goal_exp);
 					/*int((float)exp_width * ((float)exp_remain / (float)goal_exp));*/
 					
 					
@@ -21090,7 +21094,7 @@ void C_VS_UI_HPBAR::Show()
 					Rect rect;
 					
 					// hpbar
-					rect.Set(0, m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)-m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)*hp/g_char_slot_ingame.HP_MAX, m_pC_hpbar_spk->GetWidth(HPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)*hp/g_char_slot_ingame.HP_MAX);
+					rect.Set(0, m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset)-BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset), hp, g_char_slot_ingame.HP_MAX), m_pC_hpbar_spk->GetWidth(HPBAR_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(HPBAR_HEIGHT+m_small_offset), hp, g_char_slot_ingame.HP_MAX));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_HEIGHT+m_small_offset);
 //					if(g_char_slot_ingame.bl_drained)
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, HPBAR_HEIGHT+m_small_offset);
@@ -21098,13 +21102,13 @@ void C_VS_UI_HPBAR::Show()
 //						m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, OUSTERS_HPBAR_BLOOD_HEIGHT+m_small_offset);
 					
 					// slivered hpbar
-					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(OUSTERS_HPBAR_SILVER_HEIGHT+m_small_offset)*g_char_slot_ingame.SILVER_HP/g_char_slot_ingame.HP_MAX);
+					rect.Set(0, 0, m_pC_hpbar_spk->GetWidth(OUSTERS_HPBAR_SILVER_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(OUSTERS_HPBAR_SILVER_HEIGHT+m_small_offset), g_char_slot_ingame.SILVER_HP, g_char_slot_ingame.HP_MAX));
 					m_pC_hpbar_spk->BltLockedClip(x+hpbar_x, y+hpbar_y, rect, OUSTERS_HPBAR_SILVER_HEIGHT+m_small_offset);
 					
 					//mpbar
 					if(Magnification == 0)
 					{
-						rect.Set(0, m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)-m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)*mp/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetWidth(MPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)*mp/g_char_slot_ingame.MP_MAX);
+						rect.Set(0, m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)-BarFill(m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset), mp, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetWidth(MPBAR_HEIGHT+m_small_offset), BarFill(m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset), mp, g_char_slot_ingame.MP_MAX));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, MPBAR_HEIGHT+m_small_offset);
 					}
 					else if( Magnification == 1)
@@ -21113,7 +21117,7 @@ void C_VS_UI_HPBAR::Show()
 											
 						rect.Set(0, m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset)-m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetWidth(MPBAR_HEIGHT+m_small_offset), m_pC_hpbar_spk->GetHeight(MPBAR_HEIGHT+m_small_offset));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, MPBAR_HEIGHT+m_small_offset);
-						rect.Set(0, m_pC_hpbar_spk->GetHeight(sprIndex1)-m_pC_hpbar_spk->GetHeight(sprIndex1)*CurrentMP/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetWidth(sprIndex1), m_pC_hpbar_spk->GetHeight(sprIndex1)*CurrentMP/g_char_slot_ingame.MP_MAX);
+						rect.Set(0, m_pC_hpbar_spk->GetHeight(sprIndex1)-BarFill(m_pC_hpbar_spk->GetHeight(sprIndex1), CurrentMP, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetWidth(sprIndex1), BarFill(m_pC_hpbar_spk->GetHeight(sprIndex1), CurrentMP, g_char_slot_ingame.MP_MAX));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, sprIndex1);
 
 					}
@@ -21122,16 +21126,16 @@ void C_VS_UI_HPBAR::Show()
 						int sprIndex1 = OUSTERS_2ND_MPBAR_HEIGHT +((BYTE)m_small_mode*4);
 						int sprIndex2 = OUSTERS_3ND_MPBAR_HEIGHT +((BYTE)m_small_mode*4);
 
-						rect.Set(0, m_pC_hpbar_spk->GetHeight(sprIndex1)-m_pC_hpbar_spk->GetHeight(sprIndex1)*mp/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetWidth(sprIndex1), m_pC_hpbar_spk->GetHeight(sprIndex1));
+						rect.Set(0, m_pC_hpbar_spk->GetHeight(sprIndex1)-BarFill(m_pC_hpbar_spk->GetHeight(sprIndex1), mp, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetWidth(sprIndex1), m_pC_hpbar_spk->GetHeight(sprIndex1));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, sprIndex1);
-						rect.Set(0, m_pC_hpbar_spk->GetHeight(sprIndex2)-m_pC_hpbar_spk->GetHeight(sprIndex2)*CurrentMP/g_char_slot_ingame.MP_MAX, m_pC_hpbar_spk->GetWidth(sprIndex2), m_pC_hpbar_spk->GetHeight(sprIndex2)*CurrentMP/g_char_slot_ingame.MP_MAX);
+						rect.Set(0, m_pC_hpbar_spk->GetHeight(sprIndex2)-BarFill(m_pC_hpbar_spk->GetHeight(sprIndex2), CurrentMP, g_char_slot_ingame.MP_MAX), m_pC_hpbar_spk->GetWidth(sprIndex2), BarFill(m_pC_hpbar_spk->GetHeight(sprIndex2), CurrentMP, g_char_slot_ingame.MP_MAX));
 						m_pC_hpbar_spk->BltLockedClip(x+mpbar_x, y+mpbar_y, rect, sprIndex2);	
 					}					
 					int exp_remain = g_char_slot_ingame.EXP_REMAIN;
 					__int64 goal_exp = g_pExperienceTable->GetOustersInfo( g_char_slot_ingame.level ).GoalExp;
 					int exp_width = m_pC_hpbar_spk->GetWidth(OUSTERS_EXPBAR_HEIGHT+m_small_offset);
 					int exp_height = m_pC_hpbar_spk->GetHeight(OUSTERS_EXPBAR_HEIGHT+m_small_offset);
-					int exp_bar = exp_height * (goal_exp - exp_remain) / goal_exp;
+					int exp_bar = BarFill(exp_height, goal_exp - exp_remain, goal_exp);
 					
 					//exp bar
 					rect.Set(0, exp_height-exp_bar, exp_width, exp_bar);

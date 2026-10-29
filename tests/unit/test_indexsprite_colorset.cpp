@@ -140,3 +140,26 @@ TEST(CIndexSpriteColorSet, CachedBlitsFollowEachPaletteChannel)
     for (int i = 0; i < 4; ++i)
         CIndexSprite::SetUsingColorSetOnly(channels[i], saved[i]);
 }
+
+// A colour set is a row of ColorSet, which every indexed pixel reads, and
+// the server sends some: a pet item's main colour, a character's skin and
+// hair (the player's info, the character list). One the table lacks is
+// drawn with the first row, not read past the table's end.
+TEST(CIndexSpriteColorSet, ASetPastTheTableIsDrawnWithTheFirst)
+{
+	int saved[3];
+	for (int i = 0; i < 3; ++i)
+		saved[i] = CIndexSprite::GetUsingColorSet(BYTE(i));
+	CIndexSprite::SetUsingColorSet(MAX_COLORSET - 1, MAX_COLORSET);
+	CHECK_EQ(MAX_COLORSET - 1, CIndexSprite::GetUsingColorSet(0));
+	CHECK_EQ(0, CIndexSprite::GetUsingColorSet(1));
+	CIndexSprite::SetUsingColorSet(-1, 0xFFFF);
+	CHECK_EQ(0, CIndexSprite::GetUsingColorSet(0));
+	CHECK_EQ(0, CIndexSprite::GetUsingColorSet(1));
+	CIndexSprite::SetUsingColorSetOnly(2, 0xFFFE);
+	CHECK_EQ(0, CIndexSprite::GetUsingColorSet(2));
+	CIndexSprite::SetUsingColorSetOnly(2, 377);
+	CHECK_EQ(377, CIndexSprite::GetUsingColorSet(2));
+	for (int i = 0; i < 3; ++i)
+		CIndexSprite::SetUsingColorSetOnly(BYTE(i), saved[i]);
+}

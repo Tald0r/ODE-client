@@ -1,5 +1,13 @@
 # Knowledge Bundle Update Log
 
+## 2026-10-29
+
+* **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the walk of
+  `VS_UI`'s own reads of the model and the three things it found open (bars dividing by a maximum
+  the server sends, the skill window's Will of Life delay, colour sets past `CIndexSprite::ColorSet`), fixed with rows in the
+  [code-health review](reviews/code-health-review-2026-08-29.md); the
+  [next work plan](reviews/NEXT.md) moves task 5 (d) to *Done*, which finishes task 5.
+
 ## 2026-10-28
 
 * **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the walk of the

@@ -22,6 +22,19 @@
 
 typedef WORD SPRITE_ID;
 
+// The filled length of a bar `length` long showing `value` of `maximum`.
+// Both are the server's (HP, MP, experience past the table's last level):
+// the product is 64 bits, and a maximum of 0 or below fills nothing where
+// the division by it trapped.
+inline int BarFill(int length, long long value, long long maximum)
+{
+	if (maximum <= 0 || value <= 0)
+		return 0;
+	if (value >= maximum)
+		return length;
+	return int(length * value / maximum);
+}
+
 // sprite id가 아니다.
 #define NO_SPRITE_ID						ULONG_MAX
 

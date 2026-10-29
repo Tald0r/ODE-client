@@ -383,14 +383,23 @@ CIndexSprite::LoadIndexTableFromFile(std::ifstream& file)
 	return TRUE;
 }
 
+// A colour set is a row of ColorSet, which every indexed pixel reads. The
+// server sends some (a pet item's main colour, a character's skin and
+// hair), so one the table lacks is drawn with the first row instead of
+// read past the table's end.
+static int	KnownColorSet(int set)
+{
+	return set >= 0 && set < MAX_COLORSET ? set : 0;
+}
+
 //----------------------------------------------------------------------
 // 출력에 사용할 ColorSet을 선택한다.
 //----------------------------------------------------------------------
 void	
 CIndexSprite::SetUsingColorSet(int set1, int set2)
 {
-	s_IndexValue[0] = set1;
-	s_IndexValue[1] = set2;
+	s_IndexValue[0] = KnownColorSet(set1);
+	s_IndexValue[1] = KnownColorSet(set2);
 }
 
 //----------------------------------------------------------------------
@@ -399,7 +408,7 @@ CIndexSprite::SetUsingColorSet(int set1, int set2)
 void
 CIndexSprite::SetUsingColorSetOnly(BYTE setNumber, int colorSet)
 {
-	s_IndexValue[setNumber] = colorSet;
+	s_IndexValue[setNumber] = KnownColorSet(colorSet);
 }
 
 

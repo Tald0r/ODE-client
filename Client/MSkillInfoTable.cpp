@@ -240,7 +240,10 @@ namespace {
 decore::skillformula::SkillOutput	WillOfLifeOutput(int level)
 {
 	decore::skillformula::SkillInput in = {};
-	in.SkillLevel = level;
+	// The level is the server's, 32 bits from GCModifyInformation: outside the
+	// byte the PC infos carry it takes the byte's nearer end, where the delay's
+	// (30 + level) * 2 * 100 neither overflows nor reaches 0.
+	in.SkillLevel = level < 0 ? 0 : level > 255 ? 255 : level;
 	in.DomainLevel = 0;
 	in.DomainGrade = -1;
 	in.TargetType = decore::skillformula::SkillInput::TARGET_MAX;

@@ -1,7 +1,7 @@
 ---
 type: Record
 title: "Next work plan"
-description: "The ranked, self-contained tasks left in the client after the 2026-10-25 merges, each written so an agent with no other context can take it: the handler fuzzers' reach, the packet-safety routes the walks did not follow, the open code-health rows, the last drawing stubs, and the owner decisions that are not an agent's to make."
+description: "The ranked, self-contained tasks left in the client after the 2026-10-25 merges, each written so an agent with no other context can take it: the handler fuzzers' reach, the packet-safety routes the walks did not follow (done since), the open code-health rows, the last drawing stubs, and the owner decisions that are not an agent's to make."
 tags: [review, plan]
 ---
 
@@ -65,26 +65,6 @@ the sanitizers; the replay ctests over `tests/fuzz/regressions/` run everywhere)
 and a unit test. Record the run in the fuzzing page's *Triage* paragraph and in the code-health
 review's *Found by fuzzing* table, which is where runs are recorded (the fuzzing page has no
 table).
-
-### 5. The packet-safety walk's unfollowed routes
-
-**What:** [packet input safety](../protocol/packet-input-safety.md) says what each walk did not
-follow: the descriptor renderers other than the blood bible's; the view's pointers to the names it
-draws; `VS_UI`'s own reads of the model objects it draws (inventory grids, skill trees, party
-slots). Each is a route a server value takes into an index or a buffer that no test has read.
-
-**How:** (a), the text system, (b), the descriptor renderers, and (c), the view's name pointers,
-are done (PRs #577 to #579, under *Done*). Left: (d) the `VS_UI` grid and tree reads, starting with
-the skill window's drawing of the ids in the usable skill set, where (b) stopped, and the party
-manager's HP bars, which the review of (c) found dividing by a member's maximum HP with no zero
-test (`C_VS_UI_PARTY_MANAGER::Show`; `GCPartyPosition` stores the server's maximum as it came,
-which may be 0, and the creature paths cut a 32-bit one to a `WORD`, so 0x10000 is 0 too). Use
-`grep -a`: the NUL bytes in `VS_UI_GameCommon.cpp` stop a plain grep. A route found clean is written up on the safety
-page as followed, with the line it stopped at; a route found open gets a lib fix, a test and a
-review row.
-
-**Keep:** a value a library function could check is checked in the library; the exemption is for
-the rendering alone.
 
 ### 10. Kept in view, no task
 
@@ -224,7 +204,7 @@ the old scale, since they read their expectations from the table.
 Followed and found clean: [packet input safety](../protocol/packet-input-safety.md) writes it up
 and says where it stopped (SDL_ttf's rasteriser and the backend's blit). Owner:
 `tests/unit/test_text_wrap_bounds.cpp` (a 2048-byte row of mixed and malformed UTF-8 wrapped,
-measured and drawn; widths of zero and one). Route (d) is task 5.
+measured and drawn; widths of zero and one).
 
 ### 5 (b). The descriptor renderers (PR #578)
 
@@ -248,3 +228,17 @@ rows. Owners: the 32-bit cases in `TopView1Name.TheHPBarIsQueuedUnderTheName`,
 `TopView1MyName.ThePlayersNameAndBarSitOverItsHead` and
 `TopView3PartyHP.AFullBarAtTheTopOfThirtyOneBitsIsFull`, `TopView1Name.ANamelessCreatureQueuesNoName`
 and `TopView1ItemNames.ANameNotYetDrawnHoldsNoPoint`.
+
+### 5 (d). `VS_UI`'s grid, tree and bar reads (PR #580)
+
+Followed, and open in three places. The bars divided by a maximum the server sends (the player's HP
+and MP, a party member's HP, the goal of a level past the experience table), a division by zero on
+every draw; they go through `BarFill` now. The skill window's Will of Life delay divided by a
+formula of the server's level, 0 at -30; the formula takes the level within a byte now. A colour set past the table (a pet
+item's main colour, a character's skin and hair) indexed `CIndexSprite::ColorSet`;
+`SetUsingColorSet` draws it with the first row. The skill window's ids, the skill trees and the
+inventory grids hold. [Packet input safety](../protocol/packet-input-safety.md) writes the walk
+up, and the [code-health review](code-health-review-2026-08-29.md) has the three rows. Owners:
+`HPBar.AFillIsSixtyFourBitsClampedAndEmptyWithNoMaximum`, `HPBar.EveryBarIsDrawnWithNoMaximumToDivideBy`,
+`PartyManager.AMemberWithNoMaximumHPIsDrawn`, `VampireSkillCost.WillOfLifeTakesALevelPastTheWireByteAsItsLast`
+and `CIndexSpriteColorSet.ASetPastTheTableIsDrawnWithTheFirst`. With (d), task 5 is done.

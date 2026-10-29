@@ -8,6 +8,8 @@
 #include "MStringArray.h"
 #include "MZoneTable.h"
 #include "MParty.h"
+#include "ProfileManager.h"
+#include "ExperienceTable.h"
 #include "MItem.h"
 #include "MItemTable.h"
 #include "MItemOptionTable.h"
@@ -531,4 +533,86 @@ TEST(VampirePortalItem, AnItemListFocusForAZoneTheTableLacksDrawsNoLocation)
 	const std::vector<WORD> unmarked = ItemListDrawn(scene, 0);
 	CHECK(ItemListDrawn(scene, kKnownZone) != unmarked);
 	CHECK(ItemListDrawn(scene, kUnknownZone) == unmarked);
+}
+
+//----------------------------------------------------------------------
+// The HP and MP bars divide by a maximum the server sends: the player's
+// (GCModifyInformation, the player's info at login) and a party member's
+// (GCPartyPosition). A maximum of 0 was an integer division by zero on
+// every draw. BarFill's own test pins the empty bar; these draw the
+// windows, which an x86 build trapped in (Apple Silicon does not trap).
+//----------------------------------------------------------------------
+TEST(HPBar, EveryBarIsDrawnWithNoMaximumToDivideBy)
+{
+	Scene scene;
+	// An empty table: every level's goal is 0, as past the table's last.
+	ExperienceTable levels;
+	ExperienceTable* oldLevels = g_pExperienceTable;
+	g_pExperienceTable = &levels;
+	const S_SLOT old = g_char_slot_ingame;
+	const Race oldRace = g_eRaceInterface;
+	g_char_slot_ingame.HP = g_char_slot_ingame.MP = 0;
+	// A maximum of 0, and of 0xFFFFFFFF (-1 here), whose +1 the ousters MP
+	// bar divided by; across the bar, and down it once Start turns it.
+	for (int maximum : {0, -1})
+		for (bool height : {false, true})
+			for (Race race : {RACE_SLAYER, RACE_VAMPIRE, RACE_OUSTERS})
+			{
+				g_char_slot_ingame.HP_MAX = g_char_slot_ingame.MP_MAX = maximum;
+				g_eRaceInterface = race;
+				scene.uiWindows.SetHPBarHeight(height);
+				C_VS_UI_HPBAR bar;
+				bar.Start();
+				bar.Show();
+				bar.Finish();
+			}
+	scene.uiWindows.SetHPBarHeight(false);
+	g_eRaceInterface = oldRace;
+	g_char_slot_ingame = old;
+	g_pExperienceTable = oldLevels;
+	CHECK(true);		// drawn, not trapped
+}
+
+TEST(PartyManager, AMemberWithNoMaximumHPIsDrawn)
+{
+	Scene scene;
+	const S_SLOT old = g_char_slot_ingame;
+	g_char_slot_ingame.HP = 0;
+	g_char_slot_ingame.HP_MAX = 0;
+	// The face lookup asks the profiles before the bar is drawn.
+	ProfileManager profiles;
+	ProfileManager* oldProfiles = g_pProfileManager;
+	g_pProfileManager = &profiles;
+	MParty* oldParty = g_pParty;
+	MParty party;
+	g_pParty = &party;
+	PARTY_INFO* pMember = new PARTY_INFO;
+	pMember->Name = "Member";
+	pMember->zoneID = kKnownZone;
+	pMember->HP = 0;
+	pMember->MaxHP = 0;
+	party.AddMember(pMember);
+	{
+		C_VS_UI_PARTY_MANAGER window;
+		window.Start();
+		window.Show();
+		window.Finish();
+	}
+	g_pProfileManager = oldProfiles;
+	g_pParty = oldParty;
+	g_char_slot_ingame = old;
+	CHECK(true);		// drawn, not trapped
+}
+
+TEST(HPBar, AFillIsSixtyFourBitsClampedAndEmptyWithNoMaximum)
+{
+	CHECK_EQ(0, BarFill(100, 50, 0));
+	CHECK_EQ(0, BarFill(100, 0, 0));
+	CHECK_EQ(0, BarFill(100, 50, -1));
+	CHECK_EQ(50, BarFill(100, 50, 100));
+	CHECK_EQ(0, BarFill(100, -5, 100));
+	CHECK_EQ(100, BarFill(100, 150, 100));
+	// The server's 32 bits, which overflowed an int product.
+	CHECK_EQ(100, BarFill(100, 0x7FFFFFFF, 0x7FFFFFFF));
+	CHECK_EQ(50, BarFill(100, 0x40000000, 0x80000000LL));
 }
