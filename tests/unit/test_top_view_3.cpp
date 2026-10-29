@@ -53,6 +53,7 @@
 #include "DXLib/CDirectSound.h"
 
 #include <algorithm>
+#include <climits>
 #include <cstdio>
 #include <fstream>
 #include <memory>
@@ -561,6 +562,27 @@ TEST(TopView3PartyHP, TheForegroundIsDrawnOnlyWhenItsHPEdgeIsRightOfTheSurfacesL
 	scene.member.HP(5, 10);			// edge 0: not drawn
 	scene.Draw(-15, 4);
 	scene.Background(-5, 4);
+	CHECK(scene.Same());
+}
+
+TEST(TopView3PartyHP, AFullBarAtTheTopOfThirtyOneBitsIsFull)
+{
+	// The server's HP is 32 bits (GCOtherModifyInfo). At x = -15 a full bar's
+	// edge is 5, drawn; the share overflowing an int put it at -5, not drawn.
+	PartyBar scene;
+	scene.member.HP(0x7FFFFFFF, 0x7FFFFFFF);
+	scene.Draw(-15, 4);
+	scene.Background(-5, 4);
+	scene.Foreground(-5, 4);
+	CHECK(scene.Same());
+
+	// Past 2^31 both read negative as ints: a negative maximum is full, as
+	// under a name, where the unclamped HP's share wrapped to 0.
+	scene.Clear();
+	scene.member.HP(INT_MIN, -1);
+	scene.Draw(-15, 4);
+	scene.Background(-5, 4);
+	scene.Foreground(-5, 4);
 	CHECK(scene.Same());
 }
 

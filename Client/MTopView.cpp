@@ -14022,7 +14022,8 @@ MTopView::DrawPartyHP(POINT* pPoint, MCreature* pCreature)
 	//-----------------------------------------------------
 	// HP calculation
 	//-----------------------------------------------------
-	int currentHP		= pCreature->GetHP();
+	// The server's 32 bits: past 2^31 an int is negative, as under a name.
+	int currentHP		= max(0, int(pCreature->GetHP()));
 	int maxHP			= pCreature->GetMAX_HP();
 
 	//-----------------------------------------------------
@@ -14046,7 +14047,7 @@ MTopView::DrawPartyHP(POINT* pPoint, MCreature* pCreature)
 	CSprite* pHPSprite		= &m_EtcSPK[SPRITEID_PARTY_HP];
 
 	int maxPixels		= pHPBackSprite->GetWidth();
-	int currentPixels	= (maxHP==0)? 0 : maxPixels * currentHP / maxHP;
+	int currentPixels	= (maxHP==0)? 0 : int(maxPixels * (long long)currentHP / maxHP);
 
 	//-----------------------------------------------------
 	// Output
@@ -17693,7 +17694,9 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 	bool bMasterWords = pCreature->GetCreatureType()==CREATURETYPE_SLAYER_OPERATOR
 						|| pCreature->GetCreatureType()==CREATURETYPE_VAMPIRE_OPERATOR
 						|| pCreature->GetCreatureType() == CREATURETYPE_OUSTERS_OPERATOR
-						|| strncmp( pCreature->GetName(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetString(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetLength() ) == 0;
+						// A fake creature has no name, and can be the hovered one.
+						|| (pCreature->GetName() != NULL
+							&& strncmp( pCreature->GetName(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetString(), (*g_pGameStringTable)[UI_STRING_MESSAGE_MASTER_NAME].GetLength() ) == 0);
 //						|| (strstr(pCreature->GetName(), "운영자")!=NULL);
 
 	bool bHalluName = (g_pPlayer->HasEffectStatus(EFFECTSTATUS_HALLUCINATION) || 
@@ -18056,7 +18059,7 @@ MTopView::DrawCreatureName(MCreature* pCreature)
 		// Calculate the pixels actually shown
 		//-----------------------------------------------------
 		int maxPixels		= rectRight - rectLeft;
-		int currentPixels	= max(0,int((maxHP==0)? 0 : maxPixels * currentHP / maxHP));
+		int currentPixels	= max(0,int((maxHP==0)? 0 : maxPixels * (long long)currentHP / maxHP));
 
 		int nameX = //rectLeft+(MAX_HP_BAR>>1) - (namePixel>>1);
 					rectLeft + ((MAX_HP_BAR - namePixel)>>1);
@@ -18472,7 +18475,7 @@ MTopView::DrawCreatureMyName()
 		// Calculate the pixels actually shown
 		//-----------------------------------------------------
 		int maxPixels		= rectRight - rectLeft;
-		int currentPixels	= max(0,int((maxHP==0)? 0 : maxPixels * currentHP / maxHP));
+		int currentPixels	= max(0,int((maxHP==0)? 0 : maxPixels * (long long)currentHP / maxHP));
 
 		int nameX = //rectLeft+(MAX_HP_BAR>>1) - (namePixel>>1);
 					rectLeft + ((MAX_HP_BAR - namePixel)>>1);
