@@ -39,7 +39,8 @@ reaches memory by some third route. The packet-read [fuzz targets](fuzzing.md) a
 that does not model a route at all: they drive every `read()` with hostile bytes under ASan and
 UBSan, and found a heap overflow in `StoreInfo::read` and an out-of-array store in
 `LCPCList::read` that neither instrument counts. The handler targets go on into the handlers and
-the model, but not into the UI or the view behind the presentation hosts.
+the model, but not into the UI or the view behind the presentation hosts: their recording hosts
+stand in for some of the entries that read or keep a model object, and no seed reaches them yet.
 
 # Server strings into fixed buffers: none left (audit, 2026-10-24)
 

@@ -98,7 +98,7 @@ perl tests/tools/check_knowledge_bundle.pl .   # before pushing any docs change
 ## Current focus
 
 - [Packet input safety](docs/protocol/packet-input-safety.md) - unvalidated network input is the top open risk; no server string reaches a fixed buffer unbounded as far as the 2026-10-24 audit followed them (the page says where it stopped); the mail date, guild ranks, server zone ids and the creature direction found reaching the UI or the model unchecked are fixed; the 2026-10-25 walk of the presentation hosts is done and the page says what it did not follow.
-- [Fuzzing the packet readers and handlers](docs/protocol/fuzzing.md) - the one check that models no route; the handler targets reach the model, not the UI or the view behind the presentation hosts.
+- [Fuzzing the packet readers and handlers](docs/protocol/fuzzing.md) - the one check that models no route; the handler targets reach the model, not the UI or the view behind the presentation hosts, whose recording stand-ins no seed reaches yet.
 - [Format strings](docs/protocol/format-strings.md) - C19 is closed; read its review entry before trusting a ratchet at zero.
 - [Code-health reconciliation](docs/reviews/code-health-reconciliation-2026-09-23.md) - the current disposition of the [review](docs/reviews/code-health-review-2026-08-29.md)'s 197 findings.
 - [The restructuring plan](docs/reviews/RESTRUCTURING.md) - original plan complete as of 2026-09-09 (task 4.12 is still open); its *What the review rounds settled* section is the standing rulebook for library work.

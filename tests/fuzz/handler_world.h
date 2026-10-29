@@ -60,10 +60,14 @@
 // the zone, the creatures and the player, with the entries that reach
 // the UI, a sound or a peer over UDP left empty (see InstallHosts).
 // The wire and price hosts, which ReleaseGameObjectHosts keeps, stay.
-// A missing host answers as a missing config would, so a presentation
-// call is skipped, as every unit test runs them; what an adapter does
-// with the value a handler hands it (GameMain's SetWeather, a dialog's
-// text) is not reached.
+// Over them go recording_hosts.h's: the presentation entries whose real
+// adapter reads a model object a handler hands it read it too, and four
+// windows that draw from an object are modelled, so a sanitizer sees an
+// object freed while its window is still open at the end of a run. Every other entry
+// is missing, and a missing one answers as a missing config would, so
+// that presentation call is skipped, as every unit test runs them; what
+// an adapter does with an integer or a string a handler hands it
+// (GameMain's SetWeather, a dialog's text) is not reached.
 //
 // Two handlers are not dispatched: GCReconnectLogin and LCReconnect
 // reconnect the socket to the address the packet names, which a
@@ -183,6 +187,8 @@
 #include "Gpackets/GCReconnectLogin.h"
 #include "Lpackets/LCReconnect.h"
 
+#include "recording_hosts.h"
+
 #include <algorithm>
 #include <array>
 #include <cstdio>
@@ -281,6 +287,9 @@ public:
 
 	~World()
 	{
+		// What an open window would still draw from, while the world's
+		// objects are there (recording_hosts.h).
+		RecordingHosts::ReadOpenWindows();
 		// The zone first, while the hosts that free what lies in it are
 		// installed: the player out of it, as ReleaseAllObjects takes it.
 		if (g_pZone != NULL && g_pPlayer != NULL)
@@ -470,6 +479,8 @@ private:
 		CreatureState::SetHost(&creature);
 		PlayerState::SetHost(&player);
 		MItem::SetHost(&item);
+		// And the presentation entries that read a handler's objects.
+		RecordingHosts::Install();
 	}
 
 	//------------------------------------------------------------------
