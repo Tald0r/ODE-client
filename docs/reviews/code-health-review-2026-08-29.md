@@ -511,9 +511,35 @@ runs. Their unit tests likewise fail only under Clang's UBSan (the
 that tree is their guard; the effect status's test fails in the plain tree
 as well.
 
+Recording presentation hosts followed on 2026-10-29 (task 4 of the
+[next work plan](NEXT.md), PR #581, `tests/fuzz/recording_hosts.h`): the
+presentation entries whose real adapter reads a model object a handler
+hands it read it too, `PickUpItem`'s aborts on the `NULL` its adapter
+would read, and the shop, storage, pet storage and personal shop windows
+are modelled as `VS_UI` keeps them, so an object freed while its window
+is still open at the end of the run is read there. A 15-minute run of each
+target with them (game: 248,844 inputs, coverage to 37,037 points; login:
+211,632 inputs, to 13,452) found nothing, but that clean run says little:
+replaying the corpora it left, no recording entry was called once. None of
+the packets that reach one in this world (an NPC's shop list, a stash or
+pet stash list, a store info) has a golden, so none is in the seed corpus,
+and the fuzzer did not build one in 15 minutes; seven entries need state
+the world never makes (`GCAddItemToItemVerify` has goldens, but reaches
+`OkMixingForge` and `OkRemoveOption` only for a request `TempInformation`
+records; `PickUpItem` needs an item-check buffer, `RunOtherInfo` an
+installed `GetOtherInfoName`, and the three item windows open only when
+the player uses an item), so seeds alone can reach only the four windows.
+Seeds for them are what task 4 has left. The review of the recording
+hosts then found by reading what the model would report once seeds reach
+it: six routes by which a handler frees an object one of the four
+windows still draws (task 11 of the next work plan), and a quest
+condition byte that indexes past a four-entry table in `VS_UI`, which the
+walks of packet input safety had missed (task 12).
+
 What the targets do not reach: what a presentation host's adapter does
-with a handler's value (the handler targets install no UI, view or sound
-host, so `GameMain`'s `SetWeather` or a dialog's text is never called), a
+with a handler's integer or string (only the recording hosts' object
+entries are installed, so `GameMain`'s `SetWeather` or a dialog's text is
+never called), a
 reply to a request the player made (the world records none in
 `TempInformation`), the peer-to-peer `RC` handlers as
 `ClientCommunicationManager::Update` dispatches them, and the

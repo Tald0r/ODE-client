@@ -2,6 +2,14 @@
 
 ## 2026-10-29
 
+* **Update**: [fuzzing](protocol/fuzzing.md) says the handler targets install recording
+  presentation hosts (`tests/fuzz/recording_hosts.h`) and that their first run reached none of
+  them; [packet input safety](protocol/packet-input-safety.md) and `CLAUDE.md` say what the targets
+  reach now; the [next work plan](reviews/NEXT.md) narrows task 4 to the seeds that would reach
+  them and adds tasks 11 and 12 for what the review of the hosts found by reading (windows drawing
+  freed storages and shops, a quest condition byte), and the
+  [code-health review](reviews/code-health-review-2026-08-29.md) records the run.
+
 * **Update**: [packet input safety](protocol/packet-input-safety.md) writes up the walk of
   `VS_UI`'s own reads of the model and the three things it found open (bars dividing by a maximum
   the server sends, the skill window's Will of Life delay, colour sets past `CIndexSprite::ColorSet`), fixed with rows in the

@@ -44,27 +44,85 @@ to each.
 
 ## Tasks
 
-### 4. The handler fuzzers stop at the presentation hosts
+### 11. The storage and shop windows draw objects a handler frees
 
-**What:** `tests/fuzz/fuzz_client_stream_handlers.cpp` and its login twin dispatch every reply
-into the model with the executable's host adapters removed, so "what an adapter does with a
-handler's value (`GameMain`'s `SetWeather`, a dialog's text) is not reached"
-([fuzzing](../protocol/fuzzing.md)). The 2026-10-25 walk found the unguarded values on that side
-by reading, and unit tests pin them; no fuzzer runs the host side.
+**What:** four `VS_UI` windows draw from the object they were given on every frame
+(`C_VS_UI_SHOP::Show`, `C_VS_UI_STORAGE::Show`, the pet storage's and the personal shop's in
+`VS_UI_PetStorage.cpp`), and nothing tells them when the model frees it. The review of the
+recording hosts (task 4) found these routes by reading, each a use-after-free a server can cause:
+- `GCShopList` for an NPC, then `GCDeleteObject` of it: `MZone::RemoveCreature` deletes the NPC,
+  `MNPC::~MNPC` deletes its shop, and the shop window keeps drawing it;
+- `GCStashList`, then `GCPetStashList`, or the other way round: both delete and replace the shared
+  `g_pStorage`, and only their own window is handed the new one;
+- `GCUpdateInfo` with the pet storage open: it deletes `g_pStorage`, and `ZoneLoading::CloseWindows`
+  closes only the shop and the storage;
+- `GCMorph1` (`MPlayer::ChangeToSlayer`, `ChangeToVampire`) deletes `g_pStorage` and closes no
+  window;
+- two `GCMyStoreInfo` (UI mode 0, the first opening the window): the second deletes `g_pStorage2`,
+  and since the window is running it is not handed the new one (`GCMyStoreInfoHandler.cpp`);
+  a `GCOtherStoreInfo` the player asked for, then a `GCMyStoreInfo`, does the same.
 
-**How:** give `tests/fuzz/handler_world.h` a *recording* host set: the host interfaces are
-function-pointer structs ([host interfaces](../architecture/host-interfaces.md)), so an adapter
-per interface stores the last call's arguments and aborts (the harness's crash path, as a
-`CHECK` does) on a value the real host would index out of range: zone ids against the zone
-table, direction bytes against eight, grade and rank bytes against their tables. Start with the
-hosts [packet input safety](../protocol/packet-input-safety.md) names under the walk. Do not link
-`VS_UI` into the fuzzer. Build and run per the fuzzing page's recipe (Clang with libFuzzer and
-the sanitizers; the replay ctests over `tests/fuzz/regressions/` run everywhere).
+**How:** confirm each route in the real window code, then have the model close or re-point the
+window before it frees the object it draws, through the host the handler already uses
+(`DialogPresentation`, `VsUiPresentation`, `ZoneLoading`); an NPC's shop needs its removal to reach
+the shop window. A value a library function could check is checked in the library: the handlers
+and `MPlayer` are `gamemodel`'s.
 
-**Test:** the replay ctests stay green; a value a recording host refuses gets a regression input
-and a unit test. Record the run in the fuzzing page's *Triage* paragraph and in the code-health
-review's *Found by fuzzing* table, which is where runs are recorded (the fuzzing page has no
-table).
+**Test:** a unit test per route drives the handlers in order with the recording hosts installed
+(`tests/fuzz/recording_hosts.h`) and checks that no open window is left with the freed object;
+on the unfixed code ASan reports the read the recording host makes. Each route is a row in the
+code-health review's *Found by reading* table.
+
+### 12. A quest condition byte indexes a four-entry table
+
+**What:** `C_VS_UI_QUEST_MANAGER::RunGQuestExcuteElement` and its action sibling
+(`VS_UI/src/vs_ui_gamecommon2.cpp`) look a quest element up by
+`szConditonType[min(5, bCondition)]`, a table of four names, where the two siblings above them use
+`min(3, ...)`. `bCondition` is `GCExecuteElement`'s byte, unchecked through
+`GCExecuteElementHandler` and `C_VS_UI_GAME`; a condition of 4 or more is cut to index 4 or 5,
+which reads a pointer past the table and hands it to `XMLTree::GetChild`. It needs the quest manager `GCGQuestStatusInfo` makes
+and a quest id the quest file holds. The walk of 2026-10-25 named the quest id and missed this
+byte.
+
+**How:** refuse a condition past the table in the library (`GCExecuteElementHandler`, `gamemodel`)
+and bound the two lookups as their siblings are.
+
+**Test:** a handler test that conditions of 4 and 255 reach no presentation call; the `VS_UI` bound is a
+regression guard. A row in the code-health review's *Found by reading* table.
+
+### 4. The handler fuzzers' seeds do not reach the recording hosts
+
+**What:** the handler targets install the recording presentation hosts of
+`tests/fuzz/recording_hosts.h` (PR #581): the entries whose real adapter reads a model object a
+handler hands it read it too, and the shop, storage, pet storage and personal shop windows are
+modelled as `VS_UI` keeps them, so ASan sees an object freed while its window is still open at
+the end of a run ([fuzzing](../protocol/fuzzing.md#the-handler-targets)). A 15-minute run of each
+target found nothing, but replaying the corpora it left called no recording entry once: the seed
+corpus is made from `tests/golden`, and none of the packets that reach one has a golden.
+
+**How:** write handler seeds with the client's own writers, as `tests/unit/test_packet_goldens.cpp`
+writes a golden, into a directory of their own under `tests/fuzz` (not `tests/golden`, whose files
+are the wire pins the server shares), and give `tools/fuzz/golden2corpus.pl` or the recipe a way to
+add them to the corpus. A seed is a stream of frames: one that opens a window and one that frees
+its object, the routes of task 11 (an NPC, its `GCShopList` and its `GCDeleteObject`; `GCStashList`
+then `GCPetStashList`; two `GCMyStoreInfo`; `GCMorph1` with a storage open).
+A harness gap comes first: a `GCUpdateInfo` seed reaches `PlayerState::SetExtraInfo`, whose kept
+real adapter dereferences the `NULL` `gpC_mouse_pointer` (`PacketFunction.cpp`), so it crashes
+before task 11's third route could be seen. Seven entries need state the world never makes and
+stay unreached, so seeds alone reach only the four windows: `PickUpItem` (a pickup or drop
+item-check buffer), `OkMixingForge` and `OkRemoveOption` (a `TempInformation` request),
+`RunOtherInfo` (an installed `GetOtherInfoName`), and the three item windows (the player using an
+item). Check the reach as the first run was checked: count the
+recording entries' calls while the replay binary replays the corpus a run leaves (a counter kept
+out of the commit), then run each target 15 minutes. The model reads the windows only at the end
+of a run, so a free that a later frame hides is missed; reading them after every dispatched frame
+needs a hook in the dispatch.
+
+**Test:** the replay ctests stay green, and
+`RecordingHosts.AWindowKeepsWhatItIsHandedWhileOpenUntilTheUIClosesIt` pins the window model. A
+crash or sanitizer report a recording host meets gets a regression input and a unit test once its
+route is confirmed in the real adapter. Record the run in the fuzzing page's *Triage* paragraph and
+the code-health review's *Found by fuzzing* section.
 
 ### 10. Kept in view, no task
 

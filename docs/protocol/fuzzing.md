@@ -49,8 +49,22 @@ of the game's zones; the server's map files hold zones from 17 by 25 to 256 by 2
 coordinate is a byte). `InitGameObject` installs the executable's host adapters; the run removes
 them all (`ReleaseGameObjectHosts`) and puts back the model's, `ZoneState`, `CreatureState`,
 `PlayerState` and `MItem`'s, without the entries that reach the UI, a sound or a party member
-over UDP. Every presentation call is then skipped, as in the unit tests, so what an adapter does
-with a handler's value (`GameMain`'s `SetWeather`, a dialog's text) is not reached.
+over UDP. Over them go the recording hosts of `tests/fuzz/recording_hosts.h` (task 4 of the
+[next work plan](../reviews/NEXT.md)), since the real adapters call into `VS_UI`, which the world
+never starts (`gC_vs_ui` is not initialised, so `g_pUIDialog` and `gpC_mouse_pointer` are `NULL`).
+A presentation entry whose real adapter reads a model object a handler hands it reads it too, and
+`PickUpItem`, whose adapter reads its item untested, aborts on `NULL`. Four windows that draw from
+the object they were given on every frame (the shop, the storage, the pet storage, the personal
+shop) are modelled as `VS_UI` keeps them: a `Run` entry opens one with no object, a `Set` entry
+hands an open one its object, a close the real UI makes forgets it (and `CloseAllDialog`, taken
+to close all four, which can only miss a finding), and `IsRunning` answers from that. At the end of every run each open window's object is walked as its `Show` walks it, so ASan
+reports one a later packet freed while the window still drew it; a free that a later packet of
+the same run hides, by closing the window or handing it another object, is not seen. The mouse's
+item and the quest items the UI keeps are not modelled. Every other presentation call is
+skipped, as in the unit tests, so what an adapter does with an integer or a string a handler hands
+it (`GameMain`'s `SetWeather`, a dialog's text) is not reached: the walks of
+[packet input safety](packet-input-safety.md) followed those by reading, and the review of the
+recording hosts found one they missed (task 12 of the next work plan).
 Nor does the world hold a request the player made: a reply that checks the request mode
 `TempInformation` records (a storage move, a trade) finds none and does nothing, as it would if a
 server sent it unasked. `GCReconnectLogin` and `LCReconnect` are read and not dispatched: they
@@ -180,6 +194,13 @@ at five bounds of `CGSMSSend::read` and `GCTimeLimitItemInfo::read` that are pro
 since task 3 of the [next work plan](../reviews/NEXT.md) (2026-10-27), so the read-path `Assert`s
 left check pointers; the login target failed none in 25 minutes. The datagram target failed none in 16 minutes run with
 `DE_FUZZ_ABORT_ON_ASSERT=1` (the `RC` readers hold no `Assert`; `Datagram::read` holds two).
+The handler targets ran 15 minutes each with the recording hosts on 2026-10-29 (248,844 and
+211,632 inputs) and found nothing, but replaying the corpora they left called no recording entry
+once: the seed corpus holds no packet that reaches one, and seven of the entries need state this
+world never makes (an item-check buffer, a request `TempInformation` records, an installed
+`GetOtherInfoName`, the player using an item), so seeds alone can reach only the four windows;
+that run tested the hosts' install, not the objects they read (the [code-health review](../reviews/code-health-review-2026-08-29.md)'s
+*Found by fuzzing* section has the run).
 `DE_FUZZ_ABORT_ON_ASSERT=1` turns a failed `Assert` (an `AssertionError`, normally a rejected
 input) into a crash, to see which ones hostile input reaches. `-close_fd_mask=3` hides the
 crash's own message, so triage by replaying the file through the replay binary of an ASan tree:
