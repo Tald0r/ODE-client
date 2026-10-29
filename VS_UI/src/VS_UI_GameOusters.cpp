@@ -333,7 +333,7 @@ void C_VS_UI_OUSTERS::Show()
 			int exp_width = m_pC_main_spk->GetWidth(OUSTERS_EXP_BAR);
 			int exp_height = m_pC_main_spk->GetHeight(OUSTERS_EXP_BAR);
 			int exp_bar = /*int((float)exp_width * ((float)exp_remain / (float)goal_exp));*/
-				exp_width * (goal_exp - exp_remain) / goal_exp;
+				BarFill(exp_width, goal_exp - exp_remain, goal_exp);
 			
 			//exp bar
 			rect.Set(0, 0, exp_bar, exp_height);

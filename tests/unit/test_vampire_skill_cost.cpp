@@ -27,6 +27,8 @@
 #include "MSkillManager.h"
 #include "SkillDef.h"
 
+#include <climits>
+
 namespace {
 
 // A vampire level for the skills whose cost does not read it.
@@ -176,4 +178,19 @@ TEST(VampireSkillCost, AnUnknownSkillCostsNothing)
 	MSkillInfoTable table;
 	CHECK_EQ(0, table.GetVampireConsumeMP(-1, 98, kLevel));
 	CHECK_EQ(0, table.GetVampireConsumeMP(table.GetSize(), 98, kLevel));
+}
+
+// The player's level reaches the formula through GCModifyInformation's
+// 32-bit entries too, past the byte the PC infos carry (Level_t). Past it
+// the formula takes the byte's last level: the delay, (30 + level) * 2 *
+// 100, overflowed an int from about 10.7 million and was 0 at -30, which
+// the skill window divided by.
+TEST(VampireSkillCost, WillOfLifeTakesALevelPastTheWireByteAsItsLast)
+{
+	CHECK(GetWillOfLifeDelay(-30) > 0);
+	CHECK_EQ(GetWillOfLifeDelay(0), GetWillOfLifeDelay(-30));
+	CHECK_EQ(GetWillOfLifeDelay(255), GetWillOfLifeDelay(256));
+	CHECK_EQ(GetWillOfLifeDelay(255), GetWillOfLifeDelay(INT_MAX));
+	CHECK_EQ(GetWillOfLifeHP(255), GetWillOfLifeHP(INT_MAX));
+	CHECK_EQ((30 + 150) * 2 * 100, GetWillOfLifeDelay(150));
 }
